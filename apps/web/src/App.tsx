@@ -24,6 +24,7 @@ import { GroupPage } from './pages/public/GroupPage.js';
 import { PassPage } from './pages/public/PassPage.js';
 import { PublicRegisterPage } from './pages/public/PublicRegisterPage.js';
 import { UnsubscribePage } from './pages/public/UnsubscribePage.js';
+import { ReportsPage } from './pages/reports/ReportsPage.js';
 import { RolesPage } from './pages/RolesPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
@@ -94,6 +95,14 @@ export default function App() {
           element={
             <Guard any={['events.view', 'events.create', 'events.edit']}>
               <SeriesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="reportes"
+          element={
+            <Guard any={['reports.view', 'reports.export']}>
+              <ReportsPage />
             </Guard>
           }
         />

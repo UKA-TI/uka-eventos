@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { apiRequest, errorText, jsonRequest } from '../../api.js';
 import { usePermissions } from '../../auth/session.js';
 import { Field, Loading, Notice, PageHeading } from '../../components/ui.js';
-import { formatMoney, issuesToErrors } from '../text.js';
+import { formatAmount, issuesToErrors } from '../text.js';
 
 const emptyForm = { name: '', website: '', notes: '' };
 
@@ -222,7 +222,7 @@ export function CompaniesPage() {
                         {company.contacts}
                       </Link>
                     </td>
-                    {seesDonations && <td>{formatMoney(company.donated)}</td>}
+                    {seesDonations && <td>{formatAmount(company.donated)}</td>}
                     <td>
                       {can('contacts.manage') && (
                         <div className="row-actions">

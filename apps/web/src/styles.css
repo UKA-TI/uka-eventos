@@ -490,7 +490,7 @@ code {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -1762,6 +1762,203 @@ span.row-actions {
 }
 
 /* --------------------------------------------------------------------------
+   Reportes
+   Azul institucional y un amarillo oscurecido: el #fece00 no contrasta sobre
+   blanco como marca de datos. Pareja validada para daltonismo; los valores
+   siempre van escritos y existe la tabla, así que nada depende solo del color.
+   -------------------------------------------------------------------------- */
+.serie-1 {
+  background: #0077c9;
+}
+
+.serie-2 {
+  background: #d99a00;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.chart {
+  margin: 0;
+}
+
+.chart-grid .chart {
+  margin-bottom: 0;
+}
+
+.chart-head {
+  margin-bottom: 14px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  color: var(--texto);
+  font-size: 0.8rem;
+  list-style: none;
+}
+
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.chart-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.chart-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r);
+}
+
+.chart-row.is-active {
+  background: var(--fondo-suave);
+}
+
+.chart-label {
+  display: grid;
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.chart-label small {
+  color: var(--tenue);
+  font-size: 0.74rem;
+  font-weight: 400;
+}
+
+.chart-bars {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chart-bar-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chart-bar {
+  flex: none;
+  width: calc((100% - 92px) * var(--share));
+  min-width: 2px;
+  height: 14px;
+  border-radius: 0 4px 4px 0;
+}
+
+.chart-value {
+  flex: none;
+  color: var(--tinta);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 4;
+  right: 8px;
+  bottom: calc(100% - 4px);
+  display: grid;
+  gap: 2px;
+  max-width: 280px;
+  padding: 8px 10px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--blanco);
+  box-shadow: var(--sombra-2);
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+.chart-tip span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tenue);
+}
+
+.chart-tip b {
+  color: var(--tinta);
+}
+
+.chart-tip i {
+  width: 10px;
+  height: 2px;
+}
+
+.sort-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.sort-button:hover {
+  color: var(--azul-oscuro);
+}
+
+.compare-table tbody th {
+  background: none;
+  color: var(--tinta);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.inline-select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r);
+  background: var(--blanco);
+  color: var(--tinta);
+  font-size: 0.88rem;
+}
+
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.home-summary {
+  margin-bottom: 4px;
+}
+
+/* --------------------------------------------------------------------------
    Pantallas chicas
    -------------------------------------------------------------------------- */
 @media (max-width: 860px) {
@@ -1822,7 +2019,12 @@ span.row-actions {
 
   .filters select {
     flex: 1 1 140px;
-    max-width: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .inline-select {
+    width: 100%;
   }
 
   th,

@@ -25,6 +25,7 @@ import {
 import { donationsRouter } from './modules/donations/donations.js';
 import { eventsRouter } from './modules/events/events.js';
 import { publicRouter } from './modules/public/public.js';
+import { reportsRouter } from './modules/reports/reports.js';
 import { rolesRouter } from './modules/roles/roles.js';
 import { seriesRouter } from './modules/series/series.js';
 import { usersRouter } from './modules/users/users.js';
@@ -113,6 +114,7 @@ export function createApp(
   app.use('/api/email-templates', templatesRouter);
   app.use('/api/campaigns', campaignsRouter);
   app.use('/api/donations', donationsRouter);
+  app.use('/api/reports', reportsRouter);
   app.use('/api/public', publicRouter);
 
   app.use('/api', (_request, response) => {

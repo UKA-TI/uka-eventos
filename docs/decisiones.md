@@ -158,3 +158,17 @@ Revisar esta limitación antes de agregar colaboradores.
 - **Se guarda lo que realmente se recibió.** El monto admite descuentos y cortesías (0). Una misma
   referencia de pago no se puede conciliar dos veces dentro de un evento.
 - **Pendiente:** esa liga no pregunta el formulario personalizado del evento, igual que la de mesas.
+
+## Reportes
+
+- **Solo eventos publicados.** Los borradores no cuentan en ningún reporte.
+- **Registrados** son los asistentes confirmados, no las compras: una mesa de 10 sin registrar
+  suma 10 lugares vendidos y 0 registrados. **Asistencia** es quienes ingresaron entre los
+  registrados, y **Ocupación** los lugares apartados o vendidos contra el aforo.
+- **Ingresos** son los pagos vigentes de pedidos no cancelados. Los **donativos** van aparte y
+  nunca se suman a los ingresos.
+- **Nuevas y que repiten** se calculan con el orden cronológico de todos los eventos, sin importar
+  el filtro: alguien que vino en 2026 repite en 2027 aunque solo se mire 2027.
+- **Ver y descargar son permisos distintos.** Los archivos contienen datos personales y cada
+  descarga queda en la auditoría. El texto que parece fórmula de Excel se neutraliza, porque esos
+  datos los captura cualquier persona en el registro público.

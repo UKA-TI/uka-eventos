@@ -494,6 +494,17 @@ export function EventRegistrationsTab({
         />
       )}
 
+      {can('reports.export') && total > 0 && (
+        <div className="section-actions">
+          <a
+            className="button secondary small"
+            href={`/api/reports/export/events/${event.id}/registrations.csv`}
+          >
+            Descargar registros
+          </a>
+        </div>
+      )}
+
       <div className="filters">
         <input
           type="search"

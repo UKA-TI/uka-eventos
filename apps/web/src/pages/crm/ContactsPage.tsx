@@ -302,6 +302,20 @@ export function ContactsPage() {
           {data.total.toLocaleString('es-MX')}{' '}
           {data.total === 1 ? 'contacto' : 'contactos'} ·{' '}
           {data.reachable.toLocaleString('es-MX')} con correo y sin baja
+          {can('reports.export') && data.total > 0 && (
+            <>
+              {' · '}
+              <a
+                href={`/api/reports/export/contacts.csv?${(() => {
+                  const query = new URLSearchParams(params);
+                  query.delete('page');
+                  return query.toString();
+                })()}`}
+              >
+                Descargar lista
+              </a>
+            </>
+          )}
           {hasFilters && (
             <>
               {' · '}

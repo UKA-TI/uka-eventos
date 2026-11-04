@@ -12,6 +12,12 @@ const paths = {
       <path d="M3 10h18M8 3v4M16 3v4" />
     </>
   ),
+  chart: (
+    <>
+      <path d="M4 20V4M4 20h16" />
+      <path d="M8.5 16v-4M13 16V8M17.5 16v-6" />
+    </>
+  ),
   layers: (
     <>
       <path d="m12 3 9 5-9 5-9-5 9-5Z" />

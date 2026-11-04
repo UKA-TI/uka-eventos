@@ -110,6 +110,12 @@ export function Shell({
               Series
             </NavLink>
           )}
+          {can('reports.view', 'reports.export') && (
+            <NavLink className={linkClass} to="/reportes">
+              <Icon name="chart" />
+              Reportes
+            </NavLink>
+          )}
           {can('checkin.operate', 'checkin.manage') && (
             <NavLink className={linkClass} to="/recepcion">
               <Icon name="scan" />

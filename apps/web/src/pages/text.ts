@@ -14,6 +14,11 @@ export function formatMoney(amount: number, currency = 'MXN') {
     : amount.toLocaleString('es-MX', { style: 'currency', currency });
 }
 
+/** Para totales e importes: cero es $0.00, no "Gratis". */
+export function formatAmount(amount: number, currency = 'MXN') {
+  return amount.toLocaleString('es-MX', { style: 'currency', currency });
+}
+
 export function formatEventDate(
   value: string | Date | null,
   timeZone: string,

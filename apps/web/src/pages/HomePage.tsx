@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { eventResponseSchema } from '@uka/shared';
+import { eventResponseSchema, reportEventsResponseSchema } from '@uka/shared';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { apiRequest } from '../api.js';
@@ -55,7 +55,23 @@ export function HomePage() {
     queryFn: async () =>
       z.array(eventResponseSchema).parse(await apiRequest('/api/events')),
   });
+  const canSeeReports = can('reports.view', 'reports.export');
+  const report = useQuery({
+    queryKey: ['reports-events'],
+    enabled: canSeeReports,
+    queryFn: async () =>
+      reportEventsResponseSchema.parse(await apiRequest('/api/reports/events')),
+  });
   const user = session.data?.user;
+  const latestYear = Math.max(
+    0,
+    ...(report.data ?? []).map((row) => row.editionYear),
+  );
+  const latest = (report.data ?? []).filter(
+    (row) => row.editionYear === latestYear,
+  );
+  const total = (pick: (row: (typeof latest)[number]) => number) =>
+    latest.reduce((sum, row) => sum + pick(row), 0);
   const list = events.data ?? [];
   const active = list.filter((event) => event.status === 'active');
   const links = quickLinks.filter((link) => can(...link.any));
@@ -79,18 +95,50 @@ export function HomePage() {
           ))}
         </nav>
       )}
-      {canSeeEvents ? (
-        <>
+      {latest.length > 0 && (
+        <div className="home-summary">
+          <div className="panel-heading">
+            <h2>Edición {latestYear}</h2>
+            <Link to="/reportes">Ver reportes</Link>
+          </div>
           <div className="stats">
             <article className="stat">
-              <span>Eventos activos</span>
-              <strong>{events.isPending ? '—' : active.length}</strong>
+              <span>Registrados</span>
+              <strong>
+                {total((row) => row.registered).toLocaleString('es-MX')}
+              </strong>
             </article>
             <article className="stat">
-              <span>Eventos visibles</span>
-              <strong>{events.isPending ? '—' : list.length}</strong>
+              <span>Asistieron</span>
+              <strong>
+                {total((row) => row.attended).toLocaleString('es-MX')}
+              </strong>
+            </article>
+            <article className="stat">
+              <span>Ingresos</span>
+              <strong>
+                {total((row) => row.income).toLocaleString('es-MX', {
+                  style: 'currency',
+                  currency: 'MXN',
+                  maximumFractionDigits: 0,
+                })}
+              </strong>
+            </article>
+            <article className="stat">
+              <span>Donativos</span>
+              <strong>
+                {total((row) => row.donations).toLocaleString('es-MX', {
+                  style: 'currency',
+                  currency: 'MXN',
+                  maximumFractionDigits: 0,
+                })}
+              </strong>
             </article>
           </div>
+        </div>
+      )}
+      {canSeeEvents ? (
+        <>
           <div className="panel">
             <div className="panel-heading">
               <h2>Eventos activos</h2>

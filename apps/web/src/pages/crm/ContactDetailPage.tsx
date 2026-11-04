@@ -8,7 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../../api.js';
 import { usePermissions } from '../../auth/session.js';
 import { Loading, Notice, PageHeading } from '../../components/ui.js';
-import { formatMoney } from '../text.js';
+import { formatAmount } from '../text.js';
 import { ContactForm } from './ContactForm.js';
 import {
   emptyContactForm,
@@ -234,7 +234,7 @@ export function ContactDetailPage() {
           <article className="stat">
             <span>Donado</span>
             <strong>
-              {formatMoney(
+              {formatAmount(
                 activeDonations.reduce((sum, item) => sum + item.amount, 0),
               )}
             </strong>
@@ -384,7 +384,7 @@ export function ContactDetailPage() {
               {data.donations.map((donation) => (
                 <li key={donation.id}>
                   <span>
-                    {formatMoney(donation.amount, donation.currency)}
+                    {formatAmount(donation.amount, donation.currency)}
                     <small>
                       {shortDate(donation.receivedAt)}
                       {donation.event ? ` · ${donation.event.name}` : ''}

@@ -65,6 +65,14 @@ export const permissionCatalog = [
     ],
   },
   {
+    key: 'reports',
+    label: 'Reportes',
+    actions: [
+      { code: 'reports.view', label: 'Ver tablero y comparativos' },
+      { code: 'reports.export', label: 'Descargar archivos con datos' },
+    ],
+  },
+  {
     key: 'users',
     label: 'Usuarios',
     actions: [
@@ -1179,3 +1187,38 @@ export const unsubscribeResponseSchema = z.object({
   optedOut: z.boolean(),
   privacyUrl: z.string(),
 });
+
+// ---------------------------------------------------------------------------
+// Reportes
+// ---------------------------------------------------------------------------
+
+export const reportEventSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  editionYear: z.number(),
+  startsAt: z.string().nullable(),
+  seriesId: z.string(),
+  seriesName: z.string(),
+  eventType: z.string(),
+  capacity: z.number().nullable(),
+  seatsTaken: z.number(),
+  seatsSold: z.number(),
+  occupancy: z.number().nullable(),
+  registered: z.number(),
+  attended: z.number(),
+  attendanceRate: z.number().nullable(),
+  income: z.number(),
+  pendingIncome: z.number(),
+  donations: z.number(),
+  donationCount: z.number(),
+  people: z.number(),
+  newPeople: z.number(),
+  returningPeople: z.number(),
+  companies: z.number(),
+  returningCompanies: z.number(),
+});
+
+export type ReportEvent = z.infer<typeof reportEventSchema>;
+
+export const reportEventsResponseSchema = z.array(reportEventSchema);

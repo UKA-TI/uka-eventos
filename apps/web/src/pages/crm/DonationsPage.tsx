@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../../api.js';
 import { usePermissions } from '../../auth/session.js';
 import { Field, Loading, Notice, PageHeading } from '../../components/ui.js';
-import { formatMoney, issuesToErrors } from '../text.js';
+import { formatAmount, issuesToErrors } from '../text.js';
 import { useCrmOptions } from './crm.js';
 
 const todayInput = () => {
@@ -339,11 +339,25 @@ export function DonationsPage() {
         </div>
       )}
 
+      {can('reports.export') && (
+        <div className="section-actions">
+          <a
+            className="button secondary small"
+            href={`/api/reports/export/donations.csv?${new URLSearchParams({
+              ...(eventId ? { eventId } : {}),
+              ...(year ? { year } : {}),
+            }).toString()}`}
+          >
+            Descargar donativos
+          </a>
+        </div>
+      )}
+
       {data && (
         <div className="stats">
           <article className="stat">
             <span>Total recibido</span>
-            <strong>{formatMoney(data.totalAmount)}</strong>
+            <strong>{formatAmount(data.totalAmount)}</strong>
           </article>
           <article className="stat">
             <span>Donativos</span>
@@ -432,7 +446,7 @@ export function DonationsPage() {
                     </td>
                     <td>{donation.event?.name ?? '—'}</td>
                     <td>
-                      {formatMoney(donation.amount, donation.currency)}
+                      {formatAmount(donation.amount, donation.currency)}
                       {donation.voidedAt && (
                         <small className="cell-note">
                           <span className="badge bad">Anulado</span>{' '}
