@@ -4,6 +4,11 @@ import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
+import appleIcon from '../../../../api/assets/mail/apple.png';
+import googleIcon from '../../../../api/assets/mail/google.png';
+import mapIcon from '../../../../api/assets/mail/map.png';
+import outlookIcon from '../../../../api/assets/mail/outlook.png';
+import pdfIcon from '../../../../api/assets/mail/pdf.png';
 import { formatEventDate, issuesToErrors } from '../text.js';
 import { PublicLayout } from './PublicLayout.js';
 
@@ -173,6 +178,7 @@ export function PassPage() {
               className="button primary"
               href={`/api/public/passes/${token}/pass.pdf`}
             >
+              <img src={pdfIcon} alt="" />
               Descargar PDF
             </a>
             {data.calendar && (
@@ -184,6 +190,7 @@ export function PassPage() {
                     target="_blank"
                     rel="noreferrer"
                   >
+                    <img src={googleIcon} alt="" />
                     Google Calendar
                   </a>
                   <a
@@ -191,9 +198,11 @@ export function PassPage() {
                     target="_blank"
                     rel="noreferrer"
                   >
+                    <img src={outlookIcon} alt="" />
                     Outlook
                   </a>
                   <a href={`/api/public/passes/${token}/event.ics`}>
+                    <img src={appleIcon} alt="" />
                     Apple Calendar u otro (.ics)
                   </a>
                 </div>
@@ -206,6 +215,7 @@ export function PassPage() {
                 target="_blank"
                 rel="noreferrer"
               >
+                <img src={mapIcon} alt="" />
                 Cómo llegar
               </a>
             )}

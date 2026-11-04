@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { PRIVACY_NOTICE_URL } from '@uka/shared';
+import { PNG } from 'pngjs';
 import QRCode from 'qrcode';
 import { prisma } from '../../database.js';
 import {
@@ -29,18 +30,81 @@ type EmailContent = Omit<OutgoingEmail, 'inlineImages'> & {
 
 const LOGO_FILE = new URL('../../../../../img/logo_uka.png', import.meta.url);
 const LOGO_CONTENT_ID = 'uka-logo';
-const LOGO_HEADER = `<img src="cid:${LOGO_CONTENT_ID}" width="120" height="120" alt="Un Kilo de Ayuda" style="display:block;margin:0 0 4px">`;
+const LOGO_HEADER = `<img src="cid:${LOGO_CONTENT_ID}" width="120" height="120" alt="Un Kilo de Ayuda" style="display:block;margin:0 0 4px;border-radius:8px;background:#ffffff">`;
 const TEXT_HEADER =
   '<p style="margin:0 0 4px;color:#0077C9;font-size:13px;font-weight:bold">Un Kilo de Ayuda</p>';
 
-/** Se lee en cada envío para que reemplazar el archivo baste para cambiar el logo. */
+const ICON_DIR = new URL('../../../assets/mail/', import.meta.url);
+
+/** Solo adjunta los íconos que el correo usa. Sin el archivo, el botón queda sin ícono. */
+async function withIcons(
+  html: string,
+): Promise<{ html: string; images: InlineImage[] }> {
+  const names = [
+    ...new Set([...html.matchAll(/cid:icon-(\w+)/g)].map((match) => match[1]!)),
+  ];
+  const images: InlineImage[] = [];
+  let result = html;
+  for (const name of names) {
+    try {
+      const file = await readFile(new URL(`${name}.png`, ICON_DIR));
+      images.push({
+        contentId: `icon-${name}`,
+        name: `${name}.png`,
+        contentBase64: file.toString('base64'),
+      });
+    } catch {
+      result = result.replaceAll(
+        new RegExp(`<img src="cid:icon-${name}"[^>]*> `, 'g'),
+        '',
+      );
+    }
+  }
+  return { html: result, images };
+}
+
+/**
+ * El logo tiene letras negras sobre fondo transparente: en un correo en modo oscuro
+ * no se leerían. Se pone sobre blanco al enviar, para seguir usando el mismo archivo.
+ */
+function onWhite(file: Buffer): Buffer {
+  try {
+    const image = PNG.sync.read(file);
+    const { data } = image;
+    for (let index = 0; index < data.length; index += 4) {
+      const alpha = data[index + 3]! / 255;
+      data[index] = Math.round(data[index]! * alpha + 255 * (1 - alpha));
+      data[index + 1] = Math.round(
+        data[index + 1]! * alpha + 255 * (1 - alpha),
+      );
+      data[index + 2] = Math.round(
+        data[index + 2]! * alpha + 255 * (1 - alpha),
+      );
+      data[index + 3] = 255;
+    }
+    return PNG.sync.write(image);
+  } catch {
+    return file;
+  }
+}
+
+let cachedLogo: { mtimeMs: number; contentBase64: string } | null = null;
+
+/** Revisa el archivo en cada envío para que reemplazarlo baste para cambiar el logo. */
 async function readLogo(): Promise<InlineImage | null> {
   try {
-    const file = await readFile(LOGO_FILE);
+    // Procesar la imagen es costoso: se guarda hasta que el archivo cambie.
+    const { mtimeMs } = await stat(LOGO_FILE);
+    if (cachedLogo?.mtimeMs !== mtimeMs) {
+      cachedLogo = {
+        mtimeMs,
+        contentBase64: onWhite(await readFile(LOGO_FILE)).toString('base64'),
+      };
+    }
     return {
       contentId: LOGO_CONTENT_ID,
       name: 'logo_uka.png',
-      contentBase64: file.toString('base64'),
+      contentBase64: cachedLogo.contentBase64,
     };
   } catch {
     return null;
@@ -95,11 +159,18 @@ function button(url: string, label: string): string {
 const SOFT_BORDER = '#c6cdd6';
 
 /** Botón para correo: una celda con fondo, porque Outlook ignora el relleno de un enlace. */
-function actionCell(url: string, text: string, primary = false): string {
-  const background = primary ? '#0077C9' : '#ffffff';
-  const border = primary ? '#0077C9' : SOFT_BORDER;
-  const color = primary ? '#ffffff' : '#14212e';
-  return `<td align="center" bgcolor="${background}" style="border:1px solid ${border};border-radius:6px;background:${background}"><a href="${escapeHtml(url)}" style="display:block;padding:11px 6px;color:${color};font-size:14px;font-weight:bold;text-decoration:none">${escapeHtml(text)}</a></td>`;
+function actionCell(
+  url: string,
+  text: string,
+  options: { primary?: boolean; icon?: string } = {},
+): string {
+  const background = options.primary ? '#0077C9' : '#ffffff';
+  const border = options.primary ? '#0077C9' : SOFT_BORDER;
+  const color = options.primary ? '#ffffff' : '#14212e';
+  const icon = options.icon
+    ? `<img src="cid:icon-${options.icon}" width="20" height="20" alt="" style="vertical-align:middle;margin-right:7px;border:0"> `
+    : '';
+  return `<td align="center" bgcolor="${background}" style="border:1px solid ${border};border-radius:6px;background:${background}"><a href="${escapeHtml(url)}" style="display:block;padding:10px 4px;color:${color};font-size:14px;font-weight:bold;text-decoration:none">${icon}<span style="vertical-align:middle">${escapeHtml(text)}</span></a></td>`;
 }
 
 /** Fila de botones del mismo ancho, separados por celdas vacías. */
@@ -142,20 +213,20 @@ function passActions(
   return [
     '<div style="margin:18px 0 0">',
     actionRow([
-      actionCell(passUrl(passId), 'Ver mi pase', true),
-      actionCell(passPdfUrl(passId), 'Descargar PDF'),
+      actionCell(passUrl(passId), 'Ver mi pase', { primary: true }),
+      actionCell(passPdfUrl(passId), 'Descargar PDF', { icon: 'pdf' }),
     ]),
     calendar
       ? `<p style="margin:14px 0 6px;color:#5e6b79;font-size:13px;font-weight:bold">Agregar a mi calendario</p>${actionRow(
           [
-            actionCell(calendar.google, 'Google'),
-            actionCell(calendar.outlook, 'Outlook'),
-            actionCell(passIcsUrl(passId), 'Apple u otro'),
+            actionCell(calendar.google, 'Google', { icon: 'google' }),
+            actionCell(calendar.outlook, 'Outlook', { icon: 'outlook' }),
+            actionCell(passIcsUrl(passId), 'Apple u otro', { icon: 'apple' }),
           ],
         )}`
       : '',
     event.mapUrl
-      ? `<div style="margin-top:14px">${actionRow([actionCell(event.mapUrl, 'Cómo llegar a la sede')])}</div>`
+      ? `<div style="margin-top:14px">${actionRow([actionCell(event.mapUrl, 'Cómo llegar a la sede', { icon: 'map' })])}</div>`
       : '',
     '</div>',
   ].join('');
@@ -574,7 +645,9 @@ export async function renderEmail(
   if (!content) {
     return null;
   }
-  const images = content.inlineImages ?? [];
+  const icons = await withIcons(content.html);
+  content.html = icons.html;
+  const images = [...(content.inlineImages ?? []), ...icons.images];
   const logo = await readLogo();
   // Sin el archivo, el correo sale igual: no se detiene un pase por una imagen.
   return logo
