@@ -10,8 +10,9 @@ import type { HealthResponse } from '@uka/shared';
 import { config } from './config.js';
 import { healthDatabase } from './database.js';
 import { AppError, createErrorHandler } from './errors.js';
-import { createAuthRouter } from './modules/auth/auth.js';
+import { createAuthRouter, requireAuth } from './modules/auth/auth.js';
 import type { MicrosoftTokenVerifier } from './modules/auth/entra.js';
+import { checkinRouter } from './modules/checkin/checkin.js';
 import { eventsRouter } from './modules/events/events.js';
 import { publicRouter } from './modules/public/public.js';
 import { rolesRouter } from './modules/roles/roles.js';
@@ -92,6 +93,7 @@ export function createApp(
 
   app.use('/api/auth', createAuthRouter(options.microsoftVerifier));
   app.use('/api/events', eventsRouter);
+  app.use('/api/checkin', requireAuth, checkinRouter);
   app.use('/api/series', seriesRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/roles', rolesRouter);

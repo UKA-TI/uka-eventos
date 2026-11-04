@@ -5,6 +5,14 @@ export interface MailTransport {
   send(toEmail: string, message: OutgoingEmail): Promise<void>;
 }
 
+/**
+ * El servicio no está disponible o mal configurado: el mensaje no tiene la culpa.
+ * Sirve para no gastar sus intentos mientras se corrige, por ejemplo un secreto vencido.
+ */
+export class MailServiceError extends Error {
+  override name = 'MailServiceError';
+}
+
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
 async function getAccessToken(): Promise<string> {
@@ -28,11 +36,12 @@ async function getAccessToken(): Promise<string> {
     access_token?: string;
     expires_in?: number;
     error?: string;
-    error_description?: string;
+    error_codes?: number[];
   };
   if (!response.ok || !body.access_token) {
-    throw new Error(
-      `No se obtuvo el token de correo: ${body.error ?? response.status}`,
+    const code = body.error_codes?.[0];
+    throw new MailServiceError(
+      `No se obtuvo el token de correo: ${body.error ?? response.status}${code ? ` (AADSTS${code})` : ''}`,
     );
   }
   cachedToken = {
@@ -80,9 +89,18 @@ export const graphTransport: MailTransport = {
     );
     if (!response.ok) {
       const detail = await response.text();
-      throw new Error(
-        `Microsoft Graph respondió ${response.status}: ${detail.slice(0, 300)}`,
-      );
+      const text = `Microsoft Graph respondió ${response.status}: ${detail.slice(0, 300)}`;
+      // Permisos que aún no se propagan, límites de Microsoft o caídas: no es
+      // culpa del mensaje. Un 400 sí lo es, por ejemplo una dirección inválida.
+      if (
+        response.status === 401 ||
+        response.status === 403 ||
+        response.status === 429 ||
+        response.status >= 500
+      ) {
+        throw new MailServiceError(text);
+      }
+      throw new Error(text);
     }
   },
 };

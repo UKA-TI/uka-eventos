@@ -86,6 +86,7 @@ model Event {
   counters            EventCounter[]
   orders              Order[]
   emailMessages       EmailMessage[]
+  incidents           Incident[]
   tables              Table[]
   registrations       Registration[]
   checkins            Checkin[]
@@ -238,6 +239,7 @@ model Pass {
   revokedAt      DateTime?    @map("revoked_at") @db.DateTime(3)
   registration   Registration @relation(fields: [registrationId], references: [id])
   checkin        Checkin?
+  incidents      Incident[]
 
   @@index([registrationId, status])
   @@map("passes")
@@ -251,6 +253,9 @@ model Checkin {
   operatorUserId String?     @map("operator_user_id") @db.VarChar(30)
   checkedInAt    DateTime    @default(now()) @map("checked_in_at") @db.DateTime(3)
   raffleFolio    String?     @map("raffle_folio") @db.VarChar(16)
+  source         String      @default("online") @db.VarChar(16)
+  clientEventId  String?     @unique @map("client_event_id") @db.VarChar(40)
+  manualReason   String?     @map("manual_reason") @db.VarChar(255)
   event          Event       @relation(fields: [eventId], references: [id])
   pass           Pass        @relation(fields: [passId], references: [id])
   accessPoint    AccessPoint @relation(fields: [accessPointId], references: [id])
@@ -260,6 +265,31 @@ model Checkin {
   @@index([eventId, checkedInAt])
   @@index([accessPointId, checkedInAt])
   @@map("checkins")
+}
+
+model Incident {
+  id             String       @id @default(cuid()) @db.VarChar(30)
+  eventId        String       @map("event_id") @db.VarChar(30)
+  clientEventId  String?      @unique @map("client_event_id") @db.VarChar(40)
+  passId         String?      @map("pass_id") @db.VarChar(30)
+  accessPointId  String?      @map("access_point_id") @db.VarChar(30)
+  operatorUserId String?      @map("operator_user_id") @db.VarChar(30)
+  type           String       @db.VarChar(16)
+  status         String       @default("open") @db.VarChar(16)
+  description    String       @db.VarChar(500)
+  occurredAt     DateTime     @map("occurred_at") @db.DateTime(3)
+  resolution     String?      @db.VarChar(500)
+  resolvedById   String?      @map("resolved_by_id") @db.VarChar(30)
+  resolvedAt     DateTime?    @map("resolved_at") @db.DateTime(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  event          Event        @relation(fields: [eventId], references: [id])
+  pass           Pass?        @relation(fields: [passId], references: [id], onDelete: SetNull)
+  accessPoint    AccessPoint? @relation(fields: [accessPointId], references: [id], onDelete: SetNull)
+  operator       User?        @relation("IncidentOperator", fields: [operatorUserId], references: [id], onDelete: SetNull)
+  resolvedBy     User?        @relation("IncidentResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([eventId, status, occurredAt])
+  @@map("incidents")
 }
 
 model EventCounter {
@@ -275,23 +305,25 @@ model EventCounter {
 }
 
 model User {
-  id               String        @id @default(cuid()) @db.VarChar(30)
-  email            String        @unique @db.VarChar(254)
-  displayName      String        @map("display_name") @db.VarChar(180)
-  status           String        @default("invited") @db.VarChar(24)
-  roleId           String        @map("role_id") @db.VarChar(30)
-  entraTid         String?       @map("entra_tid") @db.VarChar(64)
-  entraOid         String?       @map("entra_oid") @db.VarChar(64)
-  lastLoginAt      DateTime?     @map("last_login_at") @db.DateTime(3)
-  createdAt        DateTime      @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt        DateTime      @updatedAt @map("updated_at") @db.DateTime(3)
-  role             Role          @relation(fields: [roleId], references: [id])
-  sessions         AuthSession[]
-  checkins         Checkin[]     @relation("CheckinOperator")
-  ordersCreated    Order[]       @relation("OrderCreator")
-  paymentsRecorded Payment[]     @relation("PaymentRecorder")
-  paymentsVoided   Payment[]     @relation("PaymentVoider")
-  auditLogs        AuditLog[]
+  id                String        @id @default(cuid()) @db.VarChar(30)
+  email             String        @unique @db.VarChar(254)
+  displayName       String        @map("display_name") @db.VarChar(180)
+  status            String        @default("invited") @db.VarChar(24)
+  roleId            String        @map("role_id") @db.VarChar(30)
+  entraTid          String?       @map("entra_tid") @db.VarChar(64)
+  entraOid          String?       @map("entra_oid") @db.VarChar(64)
+  lastLoginAt       DateTime?     @map("last_login_at") @db.DateTime(3)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.DateTime(3)
+  role              Role          @relation(fields: [roleId], references: [id])
+  sessions          AuthSession[]
+  checkins          Checkin[]     @relation("CheckinOperator")
+  incidentsReported Incident[]    @relation("IncidentOperator")
+  incidentsResolved Incident[]    @relation("IncidentResolver")
+  ordersCreated     Order[]       @relation("OrderCreator")
+  paymentsRecorded  Payment[]     @relation("PaymentRecorder")
+  paymentsVoided    Payment[]     @relation("PaymentVoider")
+  auditLogs         AuditLog[]
 
   @@unique([entraTid, entraOid])
   @@index([roleId])
@@ -334,12 +366,13 @@ model RolePermission {
 }
 
 model AccessPoint {
-  id        String    @id @default(cuid()) @db.VarChar(30)
-  eventId   String    @map("event_id") @db.VarChar(30)
-  name      String    @db.VarChar(100)
-  status    String    @default("active") @db.VarChar(24)
-  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(3)
-  event     Event     @relation(fields: [eventId], references: [id])
+  id        String     @id @default(cuid()) @db.VarChar(30)
+  eventId   String     @map("event_id") @db.VarChar(30)
+  name      String     @db.VarChar(100)
+  status    String     @default("active") @db.VarChar(24)
+  createdAt DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  event     Event      @relation(fields: [eventId], references: [id])
+  incidents Incident[]
   checkins  Checkin[]
 
   @@unique([eventId, name])

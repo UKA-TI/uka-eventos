@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions, useSession } from '../auth/session.js';
+import { checkinStore } from '../checkin/store.js';
 import { Loading, Notice } from './ui.js';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -26,11 +27,21 @@ export function Layout() {
   }
 
   const logout = async () => {
+    const pending = checkinStore.pendingCount();
+    if (
+      pending > 0 &&
+      !window.confirm(
+        `Este dispositivo tiene ${pending} lecturas de recepción sin enviar y se perderán al cerrar sesión. ¿Salir de todos modos?`,
+      )
+    ) {
+      return;
+    }
     try {
       await apiRequest(
         '/api/auth/logout',
         jsonRequest('POST', undefined, csrfToken),
       );
+      checkinStore.clear();
       queryClient.clear();
       navigate('/login', { replace: true });
     } catch (error) {
@@ -59,6 +70,11 @@ export function Layout() {
           {can('events.view', 'events.create', 'events.edit') && (
             <NavLink className={linkClass} to="/series">
               Series
+            </NavLink>
+          )}
+          {can('checkin.operate', 'checkin.manage') && (
+            <NavLink className={linkClass} to="/recepcion">
+              Recepción
             </NavLink>
           )}
           {(can('users.view', 'users.manage') ||

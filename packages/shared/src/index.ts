@@ -32,6 +32,14 @@ export const permissionCatalog = [
     ],
   },
   {
+    key: 'checkin',
+    label: 'Recepción',
+    actions: [
+      { code: 'checkin.operate', label: 'Operar el check-in' },
+      { code: 'checkin.manage', label: 'Puntos de acceso e incidencias' },
+    ],
+  },
+  {
     key: 'users',
     label: 'Usuarios',
     actions: [
@@ -582,6 +590,7 @@ export const orderListResponseSchema = z.object({
     amountPending: z.number(),
     emailsQueued: z.number(),
     emailsFailed: z.number(),
+    mailProblem: z.string().nullable(),
     mailConfigured: z.boolean(),
   }),
 });
@@ -662,3 +671,136 @@ export const publicGroupResponseSchema = z.object({
 });
 
 export type PublicGroup = z.infer<typeof publicGroupResponseSchema>;
+
+export const accessPointInputSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Escribe el nombre del punto de acceso.')
+    .max(100),
+  active: z.boolean(),
+});
+
+export const checkinItemSchema = z.object({
+  clientId: z.string().min(8).max(40),
+  tokenHash: z.string().regex(/^[0-9a-f]{64}$/),
+  accessPointId: z.string().min(1).max(30),
+  scannedAt: z.string().datetime({ offset: true }),
+  manualReason: z.string().trim().max(255).nullable(),
+});
+
+export type CheckinItem = z.infer<typeof checkinItemSchema>;
+
+export const checkinBatchSchema = z.object({
+  items: z.array(checkinItemSchema).min(1).max(200),
+});
+
+const checkinGuestFields = {
+  guestName: z.string(),
+  folio: z.string(),
+  ticketName: z.string(),
+};
+
+export const checkinResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('ok'),
+    ...checkinGuestFields,
+    checkedInAt: z.string(),
+    raffleFolio: z.string().nullable(),
+  }),
+  z.object({
+    status: z.literal('duplicate'),
+    ...checkinGuestFields,
+    checkedInAt: z.string(),
+    accessPointName: z.string(),
+    operatorName: z.string().nullable(),
+  }),
+  z.object({ status: z.literal('revoked'), ...checkinGuestFields }),
+  z.object({ status: z.literal('unknown') }),
+]);
+
+export type CheckinResult = z.infer<typeof checkinResultSchema>;
+
+export const checkinSyncResponseSchema = z.object({
+  results: z.array(
+    z.object({ clientId: z.string(), result: checkinResultSchema }),
+  ),
+});
+
+export const offlineListSchema = z.object({
+  generatedAt: z.string(),
+  entries: z.array(
+    z.object({
+      tokenHash: z.string(),
+      ...checkinGuestFields,
+      checkedInAt: z.string().nullable(),
+    }),
+  ),
+});
+
+export type OfflineList = z.infer<typeof offlineListSchema>;
+
+export const checkinEventsSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    startsAt: z.string().nullable(),
+    timeZone: z.string(),
+    venue: z.string().nullable(),
+    accessPoints: z.array(z.object({ id: z.string(), name: z.string() })),
+  }),
+);
+
+export type CheckinEvent = z.infer<typeof checkinEventsSchema>[number];
+
+export const checkinOverviewSchema = z.object({
+  expected: z.number(),
+  checkedIn: z.number(),
+  openIncidents: z.number(),
+  accessPoints: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      active: z.boolean(),
+      checkins: z.number(),
+    }),
+  ),
+  recent: z.array(
+    z.object({
+      id: z.string(),
+      ...checkinGuestFields,
+      checkedInAt: z.string(),
+      accessPointName: z.string(),
+      operatorName: z.string().nullable(),
+      source: z.string(),
+      manualReason: z.string().nullable(),
+      raffleFolio: z.string().nullable(),
+    }),
+  ),
+});
+
+export const incidentInputSchema = z.object({
+  accessPointId: z.string().min(1).max(30),
+  description: z.string().trim().min(3, 'Describe lo ocurrido.').max(500),
+});
+
+export const incidentResolveSchema = z.object({
+  resolution: z.string().trim().min(3, 'Escribe cómo se resolvió.').max(500),
+});
+
+export const incidentListSchema = z.array(
+  z.object({
+    id: z.string(),
+    type: z.string(),
+    status: z.string(),
+    description: z.string(),
+    occurredAt: z.string(),
+    accessPointName: z.string().nullable(),
+    operatorName: z.string().nullable(),
+    resolution: z.string().nullable(),
+    resolvedBy: z.string().nullable(),
+    resolvedAt: z.string().nullable(),
+  }),
+);
+
+export type IncidentRecord = z.infer<typeof incidentListSchema>[number];

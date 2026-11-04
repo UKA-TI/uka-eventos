@@ -4,6 +4,10 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { usePermissions, useSession } from './auth/session.js';
 import { Layout } from './components/Layout.js';
 import { Loading } from './components/ui.js';
+import {
+  ReceptionHomePage,
+  ReceptionStationPage,
+} from './pages/checkin/ReceptionPage.js';
 import { EventDetailPage } from './pages/EventDetailPage.js';
 import { EventsPage } from './pages/EventsPage.js';
 import { HomePage } from './pages/HomePage.js';
@@ -45,6 +49,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/recepcion" element={<ReceptionHomePage />} />
+      <Route path="/recepcion/:eventId" element={<ReceptionStationPage />} />
       <Route path="/r/:slug" element={<PublicRegisterPage />} />
       <Route path="/pase/:token" element={<PassPage />} />
       <Route path="/mesa/:token" element={<GroupPage />} />

@@ -34,8 +34,8 @@ Decisiones del responsable del proyecto:
 | ------- | ------------------------------------------------------------------------------ | ----------- |
 | A       | Limpieza, login con Microsoft, perfiles y diseño institucional                 | Terminada   |
 | B       | Series y ediciones, módulos activables, tipos de boleto, formulario por evento | Terminada   |
-| C       | Registro público, QR, correo con limitador, pagos manuales                     | En revisión |
-| D       | Check-in PWA híbrido, puntos de acceso, incidencias                            | Pendiente   |
+| C       | Registro público, QR, correo con limitador, pagos manuales                     | Terminada   |
+| D       | Check-in PWA híbrido, puntos de acceso, incidencias                            | En revisión |
 | E       | Contactos, empresas, segmentos, invitaciones, donativos manuales               | Pendiente   |
 | F       | Tablero, comparativos y exportación                                            | Pendiente   |
 | Después | Pago en línea, plataforma de donativos, landing de la Gala                     | Pendiente   |
@@ -88,6 +88,17 @@ Decisiones del responsable del proyecto:
   hash. Permite reenviar el mismo QR sin almacenarlo. Cambiar el secreto invalida los QR.
 - **Sobreventa:** la venta bloquea la fila del evento dentro de la transacción, de modo
   que el cupo no se excede con registros simultáneos.
+- **Check-in híbrido:** la misma regla atiende lecturas en vivo y sincronizadas. El
+  dispositivo envía el hash del token, nunca el token, y cada lectura lleva un id propio
+  para que reenviarla no duplique nada. El índice único por pase impide dos ingresos
+  aunque lean dos puertas a la vez. Al sincronizar se respeta la hora de lectura, nunca
+  una hora futura.
+- **Datos en el dispositivo:** la lista sin conexión solo lleva nombre, folio y boleto.
+  Se borra al cerrar sesión, con aviso si quedan lecturas sin enviar.
+- **Lector de QR:** se usa `jsQR` en lugar de la API del navegador, que no existe en
+  iPhone. La app instalable es propia y solo guarda la interfaz, nunca respuestas de la API.
+- **Rifa:** si el módulo está activo, el folio se asigna al ingresar. En una lectura sin
+  conexión se asigna al sincronizar, así que no se puede mostrar en ese momento.
 - **Datos de invitados capturados por terceros:** quien captura confirma que el invitado
   autorizó compartir sus datos, y queda registrado. El pase enlaza el aviso de privacidad.
 - **Base de datos:** MariaDB 10.11.19, igual que GoDaddy. En local escucha en
@@ -103,7 +114,8 @@ Decisiones del responsable del proyecto:
   empresa y de las ventas directas capturadas por el equipo.
 - Los pedidos pendientes de pago ocupan lugar hasta que alguien los cancele; no vencen
   solos. Definir si deben tener fecha límite.
-- Módulos aún sin pantalla: acompañantes, mesas, rifa y donativos.
+- Módulos aún sin pantalla: acompañantes, mesas y donativos.
+- Probar el check-in en teléfonos reales, en Android y en iPhone, con HTTPS.
 - Tema visual de la Gala en páginas públicas: queda para la landing.
 - Importar las ventas actuales de la Gala cuando exista el archivo. Sin eso, esos
   compradores no recibirán su QR.

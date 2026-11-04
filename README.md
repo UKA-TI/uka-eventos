@@ -69,6 +69,20 @@ eventos de ejemplo. Se niega a correr en producción.
 - **Correos:** van a una cola con límite de envío. Sin configurar `MAIL_CLIENT_*`, esperan
   en la cola. Ver `docs/correo-microsoft.md`.
 
+## Recepción
+
+La pantalla de recepción está en `/recepcion` y se puede instalar en el teléfono desde
+el navegador: en Android con **Instalar app** y en iPhone, desde Safari, con **Compartir >
+Agregar a inicio**. La cámara y el modo sin conexión requieren HTTPS.
+
+- **Con internet:** cada lectura se valida en vivo, así que un QR no entra dos veces.
+- **Sin internet:** valida contra la lista descargada y guarda las lecturas para enviarlas
+  al volver la señal. Si dos teléfonos sin señal leyeron el mismo pase, cuenta el primero
+  y el otro queda como incidencia.
+- **Antes del evento:** cada teléfono debe abrir la pantalla con internet e iniciar sesión,
+  para descargar la lista. Esa lista solo tiene nombre, folio y tipo de boleto, y se borra
+  al cerrar sesión.
+
 ## Calidad
 
 ```powershell

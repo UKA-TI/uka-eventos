@@ -428,14 +428,36 @@ export function EventRegistrationsTab({
           enviarán al conectarlo.
         </p>
       )}
+      {summary.mailConfigured && summary.mailProblem && (
+        <p className="notice warn" role="status">
+          El correo no se está enviando, pero los mensajes esperan en la cola:{' '}
+          {summary.mailProblem}
+        </p>
+      )}
       {summary.emailsFailed > 0 && (
-        <Notice>
+        <p className="notice error" role="alert">
           {summary.emailsFailed}{' '}
           {summary.emailsFailed === 1
             ? 'correo no se pudo enviar'
             : 'correos no se pudieron enviar'}
-          .
-        </Notice>
+          .{' '}
+          {canManage && (
+            <button
+              className="link-button"
+              type="button"
+              disabled={act.isPending}
+              onClick={() => {
+                setNotice(undefined);
+                act.mutate({
+                  path: 'retry-emails',
+                  success: 'Los correos volvieron a la cola.',
+                });
+              }}
+            >
+              Reintentar
+            </button>
+          )}
+        </p>
       )}
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
 

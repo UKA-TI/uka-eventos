@@ -5,6 +5,7 @@ import { createApp } from '../src/app.js';
 import { ensureSystemData } from '../src/bootstrap.js';
 import { prisma } from '../src/database.js';
 import type { MicrosoftIdentity } from '../src/modules/auth/entra.js';
+import { MailServiceError } from '../src/modules/mail/graph-transport.js';
 import { processMailQueue } from '../src/modules/mail/queue.js';
 import type { OutgoingEmail } from '../src/modules/mail/templates.js';
 
@@ -176,6 +177,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
     await prisma.consent.deleteMany({
       where: { registrationId: { in: registrationIds } },
     });
+    await prisma.incident.deleteMany({ where: { eventId } });
     await prisma.checkin.deleteMany({ where: { eventId } });
     await prisma.accessPoint.deleteMany({ where: { eventId } });
     await prisma.pass.deleteMany({
@@ -576,6 +578,50 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
       { perMinute: limited.sent, perDay: 100 },
     );
     expect(blocked.sent).toBe(0);
+
+    // Un secreto vencido no debe gastar los intentos ni perder mensajes.
+    const beforeService = await prisma.emailMessage.count({
+      where: { eventId, status: 'pending' },
+    });
+    const service = await processMailQueue(
+      {
+        send: async () => {
+          throw new MailServiceError('invalid_client');
+        },
+      },
+      { perMinute: 10_000, perDay: 10_000 },
+    );
+    expect(service.failed).toBe(1);
+    expect(
+      await prisma.emailMessage.count({ where: { eventId, status: 'failed' } }),
+    ).toBe(0);
+    expect(
+      await prisma.emailMessage.count({
+        where: { eventId, attempts: { gt: 0 } },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.emailMessage.count({
+        where: { eventId, status: 'pending' },
+      }),
+    ).toBe(beforeService);
+    await prisma.emailMessage.updateMany({
+      where: { eventId, status: 'pending' },
+      data: { nextAttemptAt: new Date(0), lastError: null },
+    });
+
+    // Las direcciones de prueba nunca se envían, aunque el correo esté conectado.
+    const reserved = await processMailQueue(
+      {
+        send: async () => {
+          throw new Error('no debe intentar enviar');
+        },
+      },
+      { perMinute: 1, perDay: 10_000 },
+      { skipReservedDomains: true },
+    );
+    expect(reserved.skipped + reserved.sent).toBeLessThanOrEqual(1);
+    expect(reserved.failed).toBe(0);
 
     const failing = await processMailQueue(
       {

@@ -18,7 +18,7 @@ const systemRoles: {
     code: 'RECEPTION',
     name: 'Recepción',
     description: 'Operación del evento y acceso de asistentes.',
-    permissions: ['events.view'],
+    permissions: ['events.view', 'checkin.operate'],
   },
   {
     code: 'QUERY',

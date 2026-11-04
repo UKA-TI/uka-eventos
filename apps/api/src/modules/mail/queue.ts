@@ -2,12 +2,20 @@ import type { Logger } from 'pino';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { config } from '../../config.js';
 import { prisma } from '../../database.js';
-import { graphTransport, type MailTransport } from './graph-transport.js';
+import {
+  graphTransport,
+  MailServiceError,
+  type MailTransport,
+} from './graph-transport.js';
 import { renderEmail } from './templates.js';
 
 const MAX_ATTEMPTS = 5;
 const STALE_CLAIM_MS = 10 * 60 * 1000;
 const TICK_MS = 10_000;
+const SERVICE_RETRY_MS = 5 * 60 * 1000;
+
+// Dominios reservados para pruebas (RFC 2606): nunca existen como destinatarios.
+const RESERVED_DOMAIN = /\.(test|example|invalid|localhost)$/i;
 
 export function mailConfigured(): boolean {
   return Boolean(
@@ -34,6 +42,7 @@ export async function processMailQueue(
     perMinute: config.MAIL_RATE_PER_MINUTE,
     perDay: config.MAIL_DAILY_LIMIT,
   },
+  options = { skipReservedDomains: false },
 ): Promise<{ sent: number; failed: number; skipped: number }> {
   const now = Date.now();
   await prisma.emailMessage.updateMany({
@@ -76,6 +85,21 @@ export async function processMailQueue(
       continue;
     }
     try {
+      if (
+        options.skipReservedDomains &&
+        RESERVED_DOMAIN.test(message.toEmail)
+      ) {
+        await prisma.emailMessage.update({
+          where: { id: message.id },
+          data: {
+            status: 'skipped',
+            lastError: 'Dirección de prueba',
+            claimedAt: null,
+          },
+        });
+        result.skipped += 1;
+        continue;
+      }
       const email = await renderEmail(message.kind, message.refId);
       if (!email) {
         // El pedido cambió, por ejemplo se canceló: ya no debe enviarse.
@@ -103,6 +127,25 @@ export async function processMailQueue(
       });
       result.sent += 1;
     } catch (error) {
+      if (error instanceof MailServiceError) {
+        // Todos los mensajes fallarían igual: se detiene el envío y se reintenta
+        // después, sin gastar sus intentos. Nada se pierde mientras se corrige.
+        await prisma.emailMessage.update({
+          where: { id: message.id },
+          data: {
+            status: 'pending',
+            claimedAt: null,
+            lastError: error.message.slice(0, 500),
+            nextAttemptAt: new Date(Date.now() + SERVICE_RETRY_MS),
+          },
+        });
+        await prisma.emailMessage.updateMany({
+          where: { status: 'pending', nextAttemptAt: { lte: new Date() } },
+          data: { nextAttemptAt: new Date(Date.now() + SERVICE_RETRY_MS) },
+        });
+        result.failed += 1;
+        break;
+      }
       const attempts = message.attempts + 1;
       await prisma.emailMessage.update({
         where: { id: message.id },
@@ -136,7 +179,9 @@ export function startMailWorker(logger: Logger): () => void {
     }
     running = true;
     try {
-      const result = await processMailQueue(graphTransport);
+      const result = await processMailQueue(graphTransport, undefined, {
+        skipReservedDomains: true,
+      });
       if (result.sent || result.failed) {
         logger.info(result, 'Mail queue processed');
       }

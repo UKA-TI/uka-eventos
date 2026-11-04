@@ -72,6 +72,17 @@ Reinicia la API. El envío usa `AZURE_TENANT_ID`, que ya está configurado.
 **Pon un recordatorio antes de que venza el secreto.** Al vencer, los correos se
 quedarán en la cola hasta que capturas uno nuevo.
 
+## Si el correo deja de funcionar
+
+Los mensajes no se pierden: si Microsoft rechaza las credenciales, responde 401, 403 o 429,
+o tiene una caída, la cola se detiene y reintenta cada 5 minutos sin gastar los intentos del
+mensaje. El aviso aparece en la pestaña **Registros** del evento. Solo cuentan como fallidos
+los errores propios de un mensaje, como una dirección inválida, y esos se pueden reintentar
+desde ahí.
+
+Las direcciones de dominios reservados para pruebas (`.test`, `.example`, `.invalid`,
+`.localhost`) nunca se envían.
+
 ## Límites de envío
 
 La cola envía hasta 25 correos por minuto y 8,000 al día, por debajo de los límites de
@@ -80,9 +91,9 @@ Microsoft 365 de 30 por minuto y 10,000 destinatarios al día por buzón. Se aju
 
 ## Si algo falla
 
-| Error                             | Causa probable                                                                   |
-| --------------------------------- | -------------------------------------------------------------------------------- |
-| `No se obtuvo el token de correo` | El secreto es incorrecto o venció, o el `MAIL_CLIENT_ID` no corresponde.         |
-| `Microsoft Graph respondió 403`   | El permiso aún no se propaga o el alcance no incluye el buzón. Revisa el paso 2. |
-| `Microsoft Graph respondió 404`   | `MAIL_FROM` no coincide con un buzón existente.                                  |
-| `Microsoft Graph respondió 429`   | Microsoft limitó los envíos. La cola reintenta sola, cada vez con más espera.    |
+| Error                                             | Causa probable                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `No se obtuvo el token de correo: invalid_client` | El secreto es incorrecto o venció, se capturó el **Id. secreto** en lugar del **Valor**, o `MAIL_CLIENT_ID` no corresponde. |
+| `Microsoft Graph respondió 403`                   | El permiso aún no se propaga o el alcance no incluye el buzón. Revisa el paso 2.                                            |
+| `Microsoft Graph respondió 404`                   | `MAIL_FROM` no coincide con un buzón existente.                                                                             |
+| `Microsoft Graph respondió 429`                   | Microsoft limitó los envíos. La cola reintenta sola, cada vez con más espera.                                               |

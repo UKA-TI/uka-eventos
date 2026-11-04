@@ -84,7 +84,7 @@ ordersRouter.get(
         : {}),
     };
 
-    const [orders, total, active, payments, queue] = await Promise.all([
+    const [orders, total, active, payments, queue, stuck] = await Promise.all([
       prisma.order.findMany({
         where,
         include: orderInclude,
@@ -108,6 +108,11 @@ ordersRouter.get(
         by: ['status'],
         where: { eventId },
         _count: { _all: true },
+      }),
+      prisma.emailMessage.findFirst({
+        where: { eventId, status: 'pending', lastError: { not: null } },
+        orderBy: { nextAttemptAt: 'desc' },
+        select: { lastError: true },
       }),
     ]);
 
@@ -150,6 +155,7 @@ ordersRouter.get(
         amountPending: Math.max(due - collected, 0),
         emailsQueued: queueCount('pending') + queueCount('sending'),
         emailsFailed: queueCount('failed'),
+        mailProblem: stuck?.lastError ?? null,
         mailConfigured: mailConfigured(),
       },
       orders: orders.map((order) => ({
@@ -232,6 +238,33 @@ ordersRouter.post(
       details: { reference: order.reference },
     });
     response.status(201).json({ id: order.id, reference: order.reference });
+  }),
+);
+
+ordersRouter.post(
+  '/retry-emails',
+  requirePermission('registrations.manage'),
+  requireCsrf,
+  asyncHandler(async (request, response) => {
+    const { eventId } = request.params as { eventId: string };
+    const { count } = await prisma.emailMessage.updateMany({
+      where: { eventId, status: 'failed' },
+      data: {
+        status: 'pending',
+        attempts: 0,
+        lastError: null,
+        nextAttemptAt: new Date(),
+      },
+    });
+    await recordAudit({
+      userId: currentUser(request).id,
+      action: 'email.retry',
+      entityType: 'event',
+      entityId: eventId,
+      eventId,
+      details: { count },
+    });
+    response.json({ count });
   }),
 );
 

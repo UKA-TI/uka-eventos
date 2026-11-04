@@ -10,6 +10,7 @@ import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
+import { EventCheckinTab } from './EventCheckinTab.js';
 import { EventFormFieldsTab } from './EventFormFieldsTab.js';
 import { EventGeneralForm } from './EventGeneralForm.js';
 import { EventModulesTab } from './EventModulesTab.js';
@@ -21,6 +22,7 @@ import { formatEventDate, issuesToErrors, slugify } from './text.js';
 const tabs = [
   ['resumen', 'Resumen'],
   ['registros', 'Registros'],
+  ['checkin', 'Check-in'],
   ['boletos', 'Boletos'],
   ['formulario', 'Formulario'],
   ['modulos', 'Módulos'],
@@ -332,12 +334,13 @@ export function EventDetailPage() {
         {tabs
           .filter(
             ([value]) =>
-              value !== 'registros' ||
-              can(
-                'registrations.view',
-                'registrations.manage',
-                'payments.manage',
-              ),
+              (value !== 'registros' ||
+                can(
+                  'registrations.view',
+                  'registrations.manage',
+                  'payments.manage',
+                )) &&
+              (value !== 'checkin' || can('checkin.operate', 'checkin.manage')),
           )
           .map(([value, label]) => (
             <button
@@ -379,6 +382,7 @@ export function EventDetailPage() {
       {tab === 'registros' && (
         <EventRegistrationsTab event={event} onChanged={() => refresh()} />
       )}
+      {tab === 'checkin' && <EventCheckinTab event={event} />}
       {tab === 'boletos' && (
         <EventTicketsTab event={event} onChanged={() => refresh()} />
       )}
