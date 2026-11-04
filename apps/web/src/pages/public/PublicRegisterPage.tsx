@@ -169,6 +169,16 @@ export function PublicRegisterPage() {
         <Notice>Por ahora no hay boletos a la venta.</Notice>
       ) : (
         <form onSubmit={submit} noValidate>
+          {data.tickets.some((ticket) => ticket.price > 0) && (
+            <p className="form-note">
+              ¿Ya pagaste tu boleto por otro medio? No lo compres de nuevo:
+              escríbenos a{' '}
+              <a href="mailto:eventos@unkilodeayuda.org.mx">
+                eventos@unkilodeayuda.org.mx
+              </a>{' '}
+              y te enviaremos tu invitación para registrarte.
+            </p>
+          )}
           <h2 className="form-section">Elige tu boleto</h2>
           {errors.ticketTypeId && (
             <small className="field-error">{errors.ticketTypeId}</small>

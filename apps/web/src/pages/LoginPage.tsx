@@ -82,45 +82,56 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <div className="login-card">
-        <img className="login-logo" src={logoUrl} alt="Un Kilo de Ayuda" />
-        <h1>EVENTOS UKA</h1>
-        <p className="muted">
-          Acceso para colaboradores con cuenta de Microsoft de Un Kilo de Ayuda.
+      <aside className="login-aside">
+        <p className="login-kicker">EVENTOS UKA</p>
+        <h2>Eventos, boletos y contactos en un solo lugar.</h2>
+        <p>
+          Crea eventos, registra asistentes y opera la recepción de Un Kilo de
+          Ayuda.
         </p>
-        <Notice>{notice}</Notice>
-        {authConfig.isError && <Notice>{authConfig.error.message}</Notice>}
-        {microsoft ? (
-          <button
-            className="button primary wide"
-            type="button"
-            disabled={busy}
-            onClick={signIn}
-          >
-            {busy ? 'Conectando…' : 'Iniciar sesión con Microsoft'}
-          </button>
-        ) : (
-          <Notice>
-            El inicio de sesión con Microsoft aún no está configurado.
-          </Notice>
-        )}
-        {authConfig.data?.devLoginEnabled && (
-          <div className="dev-login">
-            <small>Solo en este equipo de desarrollo:</small>
-            <div className="dev-login-buttons">
-              {devAccounts.map(([email, label]) => (
-                <button
-                  key={email}
-                  className="button secondary small"
-                  type="button"
-                  onClick={() => void devLogin(email)}
-                >
-                  {label}
-                </button>
-              ))}
+      </aside>
+      <div className="login-main">
+        <div className="login-card">
+          <img className="login-logo" src={logoUrl} alt="Un Kilo de Ayuda" />
+          <h1>Inicia sesión</h1>
+          <p className="muted">
+            Acceso para colaboradores con cuenta de Microsoft de Un Kilo de
+            Ayuda.
+          </p>
+          <Notice>{notice}</Notice>
+          {authConfig.isError && <Notice>{authConfig.error.message}</Notice>}
+          {microsoft ? (
+            <button
+              className="button primary wide"
+              type="button"
+              disabled={busy}
+              onClick={signIn}
+            >
+              {busy ? 'Conectando…' : 'Iniciar sesión con Microsoft'}
+            </button>
+          ) : (
+            <Notice>
+              El inicio de sesión con Microsoft aún no está configurado.
+            </Notice>
+          )}
+          {authConfig.data?.devLoginEnabled && (
+            <div className="dev-login">
+              <small>Solo en este equipo de desarrollo:</small>
+              <div className="dev-login-buttons">
+                {devAccounts.map(([email, label]) => (
+                  <button
+                    key={email}
+                    className="button secondary small"
+                    type="button"
+                    onClick={() => void devLogin(email)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );

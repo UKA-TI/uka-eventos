@@ -44,7 +44,7 @@ export function SegmentsPage() {
         description="Un segmento guarda filtros de contactos y se actualiza solo: siempre incluye a quien los cumpla hoy."
         action={
           can('contacts.view', 'contacts.manage') && (
-            <Link className="button primary link-as-button" to="/contactos">
+            <Link className="button primary" to="/contactos">
               Crear desde contactos
             </Link>
           )

@@ -429,9 +429,9 @@ export function EventRegistrationsTab({
 
       {!summary.mailConfigured && (
         <p className="notice warn" role="status">
-          El correo todavía no está conectado. Hay {summary.emailsQueued}{' '}
-          {summary.emailsQueued === 1 ? 'mensaje' : 'mensajes'} en cola; se
-          enviarán al conectarlo.
+          El correo todavía no está conectado.{' '}
+          {summary.emailsQueued > 0 &&
+            `${summary.emailsQueued === 1 ? 'Hay 1 mensaje en cola; se enviará' : `Hay ${summary.emailsQueued} mensajes en cola; se enviarán`} al conectarlo.`}
         </p>
       )}
       {summary.mailConfigured && summary.mailProblem && (
@@ -476,7 +476,7 @@ export function EventRegistrationsTab({
             setReconciling(false);
             setNotice({
               kind: 'ok',
-              text: `Compra ${reference} conciliada. Se envió la invitación para registrarse.`,
+              text: `Compra ${reference} conciliada. La invitación para registrarse ya está en la cola de correo.`,
             });
           }}
         />

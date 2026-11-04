@@ -4,7 +4,46 @@ import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { apiRequest } from '../api.js';
 import { usePermissions, useSession } from '../auth/session.js';
+import { Icon, type IconName } from '../components/icons.js';
 import { PageHeading, StatusBadge } from '../components/ui.js';
+import type { PermissionCode } from '@uka/shared';
+
+const quickLinks: {
+  to: string;
+  icon: IconName;
+  title: string;
+  text: string;
+  any: PermissionCode[];
+}[] = [
+  {
+    to: '/eventos/nuevo',
+    icon: 'calendar',
+    title: 'Crear evento',
+    text: 'Configura boletos, módulos y registro.',
+    any: ['events.create'],
+  },
+  {
+    to: '/recepcion',
+    icon: 'scan',
+    title: 'Abrir recepción',
+    text: 'Escanea pases en la entrada.',
+    any: ['checkin.operate', 'checkin.manage'],
+  },
+  {
+    to: '/contactos',
+    icon: 'contacts',
+    title: 'Ver contactos',
+    text: 'Historial, notas y segmentos.',
+    any: ['contacts.view', 'contacts.manage'],
+  },
+  {
+    to: '/comunicaciones/nueva',
+    icon: 'mail',
+    title: 'Escribir una invitación',
+    text: 'Prepara un envío a un segmento.',
+    any: ['communications.manage'],
+  },
+];
 
 export function HomePage() {
   const session = useSession();
@@ -19,13 +58,27 @@ export function HomePage() {
   const user = session.data?.user;
   const list = events.data ?? [];
   const active = list.filter((event) => event.status === 'active');
+  const links = quickLinks.filter((link) => can(...link.any));
 
   return (
     <section>
       <PageHeading
         title={`Hola, ${user?.displayName ?? ''}`}
-        description={`Tu perfil es ${user?.roleName ?? ''}.`}
+        description={`Perfil: ${user?.roleName ?? ''}`}
       />
+      {links.length > 0 && (
+        <nav className="quick-links" aria-label="Accesos rápidos">
+          {links.map((link) => (
+            <Link key={link.to} className="quick-link" to={link.to}>
+              <Icon name={link.icon} />
+              <span>
+                {link.title}
+                <small>{link.text}</small>
+              </span>
+            </Link>
+          ))}
+        </nav>
+      )}
       {canSeeEvents ? (
         <>
           <div className="stats">

@@ -238,7 +238,7 @@ export function EventDetailPage() {
   return (
     <section>
       <Link className="back-link" to="/eventos">
-        ← Eventos
+        Eventos
       </Link>
       <div className="page-heading">
         <div>
