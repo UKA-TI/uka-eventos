@@ -10,10 +10,13 @@
   ],
   "scripts": {
     "dev": "npm run build --workspace @uka/shared && concurrently -k -n web,api -c cyan,magenta \"npm run dev --workspace @uka/web\" \"npm run dev --workspace @uka/api\"",
+    "start": "npm run start --workspace @uka/api",
     "build": "npm run build --workspace @uka/shared && npm run build --workspace @uka/api && npm run build --workspace @uka/web",
     "lint": "eslint .",
     "typecheck": "npm run build --workspace @uka/shared && npm run typecheck --workspaces --if-present",
     "test": "npm run build --workspace @uka/shared && npm run test --workspaces --if-present",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"

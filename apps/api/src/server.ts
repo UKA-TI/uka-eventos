@@ -4,8 +4,9 @@ import { pool } from './database.js';
 import { pino } from 'pino';
 
 const logger = pino({ level: config.LOG_LEVEL });
-const server = createApp().listen(config.API_PORT, () => {
-  logger.info({ port: config.API_PORT }, 'API started');
+const port = config.PORT ?? config.API_PORT;
+const server = createApp().listen(port, () => {
+  logger.info({ port }, 'API started');
 });
 
 function shutdown() {

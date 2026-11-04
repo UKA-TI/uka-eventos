@@ -2,40 +2,69 @@
 
 ## Fase 0
 
-- El repo local se inicializó con `main` y el trabajo de preparación vive en
-  `feat/phase-0-bootstrap`. El repo privado nuevo `UKA-TI/uka-eventos` está
-  creado y el PR #1 está abierto contra `main`.
-- La protección de `main` sigue pendiente: GitHub respondió HTTP 403 indicando
-  que el plan actual no admite protección para este repo privado. No se debe
-  cambiar la visibilidad para sortearlo; habilitar la función mediante el plan
-  o transferencia apropiados y después exigir PR y el check `quality`.
-- La versión del servicio MySQL de Docker está parametrizada en `MYSQL_IMAGE`.
-  `mysql:8.0` es solo un valor local provisional y debe igualarse a la versión
-  disponible en GoDaddy antes de cerrar la prueba de infraestructura.
-- Host, puerto, base, usuario, contraseña, TLS y lista de IPs para Remote MySQL
-  dependen del cPanel y deben configurarse fuera del repositorio.
+- El repo privado `UKA-TI/uka-eventos` está creado. El trabajo está en
+  `feat/phase-0-bootstrap` y el PR #1 apunta a `main`.
+- La CI `quality` pasó en el PR: `npm ci`, lint, typecheck, pruebas y build.
+- El equipo reporta haber validado en GoDaddy Node.js v22.23.4 y una conexión
+  desde el hosting a MySQL de cPanel mediante `SELECT 1`. Se acepta como prueba
+  previa de compatibilidad del proveedor; todavía no valida el despliegue ni
+  las variables de esta aplicación.
+- La API acepta el `PORT` asignado por GoDaddy, con `API_PORT` como alternativa
+  para desarrollo local. La configuración de base de datos se inyecta por
+  `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
+- No se necesita Docker en producción ni para arrancar web y API localmente.
+  Compose queda como opción para desarrollar con MySQL y Mailpit aislados.
+  `MYSQL_IMAGE=mysql:8.0` es una opción local provisional y configurable; al
+  ejecutar la prueba local, puede elegirse una versión compatible con cPanel.
+- Mailpit es solo una bandeja local; el SMTP institucional no se configura en
+  esta fase.
 - `CORS_ORIGIN`, puertos y nivel de logs son configurables por entorno. El
-  origen permitido de producción debe confirmarse antes del despliegue.
-- Mailpit es solo una bandeja local; las credenciales SMTP institucionales no
-  se configuran ni se necesitan para el endpoint de salud.
-- La configuración PWA y el lector de QR se incorporarán en la Fase 5, junto
-  con el flujo de check-in, para no activar plugins sin una superficie que los
-  consuma en esta fase.
-- El equipo no tiene Docker CLI disponible en esta máquina. Aunque hay un
-  servicio MySQL local escuchando en el puerto 3306, no sustituye la prueba de
-  Compose ni la conexión remota exigida para cerrar la fase. La API arranca,
-  pero el health check local responde 503 porque las credenciales de ejemplo
-  no corresponden al MySQL local.
+  origen permitido de producción debe confirmarse antes de desplegar el frontend.
+- El smoke test automatizado prueba la ruta HTTP y verifica que emite `SELECT 1`
+  (con una conexión simulada). El equipo aún debe desplegar esta API en GoDaddy
+  y comprobar la ruta contra el MySQL real de cPanel.
 
-## Pendiente para cierre de Fase 0
+## Controles de `main` mientras el repo siga privado
 
-1. Habilitar la protección de ramas para el repo privado y requerir el PR y el
-   check `quality` en `main`.
-2. Instalar Docker Desktop y probar `docker compose up -d` con MySQL y Mailpit.
-3. En cPanel, habilitar Remote MySQL para la IP de salida que corresponda y
-   configurar un usuario de base de datos dedicado. No guardar ni compartir
-   contraseñas en Git o chat.
-4. Confirmar versión/host/puerto/nombre de MySQL, allowlist y que GoDaddy
-   Node.js Hosting admite Node 22.13 o superior y variables de entorno.
-5. Desplegar la API y verificar que `/api/health` en GoDaddy devuelve HTTP 200
-   tras ejecutar `SELECT 1` contra el MySQL de cPanel.
+La cuenta GitHub actual responde HTTP 403 al consultar la protección de ramas y
+GitHub informa que el plan debe actualizarse o el repo hacerse público. No
+cambiar la visibilidad para sortear el control.
+
+Alternativas:
+
+1. **Seguir en GitHub con controles técnicos completos (recomendación):** usar
+   un plan que admita protección de ramas en repos privados. En cuenta personal,
+   evaluar GitHub Pro; para administración centralizada de organización, GitHub
+   Team. Entonces exigir PR hacia `main`, impedir push/force-push directo,
+   requerir `quality` y configurar aprobación independiente si hay más de una
+   persona revisora.
+2. **Mantener GitHub Free privado como está:** ejecutar CI en cada PR, limitar
+   acceso de escritura y hacer que una persona responsable revise y fusione
+   manualmente. Esto conserva la privacidad, pero es un control de proceso: no
+   impide técnicamente un push directo ni obliga al servidor a exigir CI verde.
+   No equivale al criterio original de protección obligatoria.
+3. **Migrar el repo canónico privado a GitLab Free:** GitLab documenta reglas de
+   rama protegida en el nivel Free; se puede bloquear push directo y permitir
+   merge por Merge Request. En Free, las aprobaciones de MR son opcionales y no
+   bloquean la fusión; validar los checks obligatorios de pipeline para la
+   configuración concreta antes de migrar. Requiere mover el repositorio y
+   sustituir GitHub Actions por GitLab CI (o definir un espejo).
+
+Fuentes oficiales consultadas:
+
+- [Planes de GitHub](https://docs.github.com/en/get-started/learning-about-github/githubs-plans)
+- [Protección de ramas de GitHub](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Reglasets de GitHub: planes y alcance](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
+- [Ramas protegidas de GitLab](https://docs.gitlab.com/user/project/repository/branches/protected/)
+- [Aprobaciones de Merge Request en GitLab](https://docs.gitlab.com/user/project/merge_requests/approvals/)
+
+## Cierre pendiente de Fase 0
+
+1. Elegir una alternativa de control para `main` y configurar/verificar el
+   control técnico o documentar formalmente la excepción de proceso.
+2. Desplegar esta API en GoDaddy Node.js Hosting, configurar las variables de
+   entorno allí (sin guardar secretos en Git) y confirmar que
+   `GET /api/health` devuelve HTTP 200 cuando la aplicación ejecuta `SELECT 1`
+   contra MySQL de cPanel.
+3. La prueba de Docker Compose local es opcional; no bloquea la fase si el equipo
+   acepta desarrollar contra MySQL instalado o el entorno remoto autorizado.

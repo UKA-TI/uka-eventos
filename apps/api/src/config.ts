@@ -12,6 +12,7 @@ const configSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  PORT: z.coerce.number().int().min(1).max(65535).optional(),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
