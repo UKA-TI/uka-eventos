@@ -1,70 +1,74 @@
-# Decisiones y pendientes
+# Decisiones y riesgos aceptados
 
-## Fase 0
+## Fase 0 — cerrada con excepciones aprobadas
 
-- El repo privado `UKA-TI/uka-eventos` está creado. El trabajo está en
-  `feat/phase-0-bootstrap` y el PR #1 apunta a `main`.
-- La CI `quality` pasó en el PR: `npm ci`, lint, typecheck, pruebas y build.
-- El equipo reporta haber validado en GoDaddy Node.js v22.23.4 y una conexión
-  desde el hosting a MySQL de cPanel mediante `SELECT 1`. Se acepta como prueba
-  previa de compatibilidad del proveedor; todavía no valida el despliegue ni
-  las variables de esta aplicación.
-- La API acepta el `PORT` asignado por GoDaddy, con `API_PORT` como alternativa
-  para desarrollo local. La configuración de base de datos se inyecta por
-  `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
-- No se necesita Docker en producción ni para arrancar web y API localmente.
-  Compose queda como opción para desarrollar con MySQL y Mailpit aislados.
-  `MYSQL_IMAGE=mysql:8.0` es una opción local provisional y configurable; al
-  ejecutar la prueba local, puede elegirse una versión compatible con cPanel.
-- Mailpit es solo una bandeja local; el SMTP institucional no se configura en
-  esta fase.
-- `CORS_ORIGIN`, puertos y nivel de logs son configurables por entorno. El
-  origen permitido de producción debe confirmarse antes de desplegar el frontend.
-- El smoke test automatizado prueba la ruta HTTP y verifica que emite `SELECT 1`
-  (con una conexión simulada). El equipo aún debe desplegar esta API en GoDaddy
-  y comprobar la ruta contra el MySQL real de cPanel.
+- Repo privado: `UKA-TI/uka-eventos`. El PR #1 se usó para integrar la base de
+  Fase 0; la CI `quality` pasó con instalación limpia, lint, typecheck, pruebas
+  y build.
+- La cuenta actual no puede habilitar protección de ramas para este repo
+  privado con el plan disponible: GitHub devuelve HTTP 403 e indica que se
+  requiere GitHub Pro o hacer público el repo. El usuario decidió conservarlo
+  privado y continuar con el control manual, aceptando que GitHub no bloquea
+  técnicamente los pushes directos ni exige que `quality` esté verde antes de
+  integrar. Política acordada: cambios por PR, revisión manual y comprobar CI
+  verde antes de fusionar; limitar el acceso de escritura. Revisar la limitación
+  antes de agregar colaboradores o usar el flujo para producción.
+- El equipo reporta pruebas previas satisfactorias en GoDaddy con Node.js
+  v22.23.4 y conexión a MySQL de cPanel mediante `SELECT 1`. Por petición del
+  usuario, se difiere el despliegue de esta app y su `/api/health` real en
+  GoDaddy. Esa validación específica sigue pendiente antes del uso en producción.
+- Docker no es requisito de producción ni para arrancar web y API localmente.
+  Compose permanece disponible como conveniencia para MySQL y Mailpit locales;
+  no se instaló Docker ni se validó Compose en esta máquina.
+- `.nvmrc` fija Node.js 22.23.4. La API usa el `PORT` asignado por GoDaddy y
+  obtiene su conexión de `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y
+  `DB_PASSWORD`. No guardar secretos en Git.
+- `CORS_ORIGIN`, puertos y nivel de logs son configurables por entorno. Mailpit
+  y el SMTP institucional no se configuran para la prueba de salud.
+- Prueba local del mockup web/API: `npm run dev` arrancó sin Docker, el frontend
+  respondió HTTP 200 y `/api/health` respondió HTTP 200 con
+  `{"status":"ok","database":"ok"}`. Para esa lectura se usó `root` local de
+  MariaDB en variables temporales del proceso; no se escribió contraseña en
+  `.env` ni en Git.
+- El servidor local es MariaDB 10.4.32, no una instalación confirmada de la
+  misma versión/producto que cPanel. No se usará como evidencia de paridad con
+  GoDaddy.
 
-## Controles de `main` mientras el repo siga privado
+## GitHub: alternativas revisadas
 
-La cuenta GitHub actual responde HTTP 403 al consultar la protección de ramas y
-GitHub informa que el plan debe actualizarse o el repo hacerse público. No
-cambiar la visibilidad para sortear el control.
+1. **GitHub Pro (cuenta personal) o GitHub Team (organización):** continuar con
+   repo privado y habilitar protección técnica: PR obligatorio, push/force-push
+   directo bloqueado, check `quality` requerido y, si hay otro revisor,
+   aprobación independiente. Es la opción recomendada para eliminar la
+   excepción actual.
+2. **GitLab Free privado:** permite proteger ramas y limitar push/merge; sin
+   embargo, las aprobaciones de MR en Free son opcionales y no bloquean la
+   fusión. Requiere mover el repo canónico y adaptar GitHub Actions a GitLab CI
+   (o mantener un espejo).
+3. **GitHub Free privado actual:** mantener PR/revisión/CI como política manual.
+   Preserva privacidad y evita migración/licencia, pero no ofrece la garantía
+   técnica pedida originalmente. Es la opción elegida temporalmente por el
+   usuario.
 
-Alternativas:
-
-1. **Seguir en GitHub con controles técnicos completos (recomendación):** usar
-   un plan que admita protección de ramas en repos privados. En cuenta personal,
-   evaluar GitHub Pro; para administración centralizada de organización, GitHub
-   Team. Entonces exigir PR hacia `main`, impedir push/force-push directo,
-   requerir `quality` y configurar aprobación independiente si hay más de una
-   persona revisora.
-2. **Mantener GitHub Free privado como está:** ejecutar CI en cada PR, limitar
-   acceso de escritura y hacer que una persona responsable revise y fusione
-   manualmente. Esto conserva la privacidad, pero es un control de proceso: no
-   impide técnicamente un push directo ni obliga al servidor a exigir CI verde.
-   No equivale al criterio original de protección obligatoria.
-3. **Migrar el repo canónico privado a GitLab Free:** GitLab documenta reglas de
-   rama protegida en el nivel Free; se puede bloquear push directo y permitir
-   merge por Merge Request. En Free, las aprobaciones de MR son opcionales y no
-   bloquean la fusión; validar los checks obligatorios de pipeline para la
-   configuración concreta antes de migrar. Requiere mover el repositorio y
-   sustituir GitHub Actions por GitLab CI (o definir un espejo).
-
-Fuentes oficiales consultadas:
+Fuentes oficiales:
 
 - [Planes de GitHub](https://docs.github.com/en/get-started/learning-about-github/githubs-plans)
 - [Protección de ramas de GitHub](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [Reglasets de GitHub: planes y alcance](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
+- [Reglasets de GitHub](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
 - [Ramas protegidas de GitLab](https://docs.gitlab.com/user/project/repository/branches/protected/)
 - [Aprobaciones de Merge Request en GitLab](https://docs.gitlab.com/user/project/merge_requests/approvals/)
 
-## Cierre pendiente de Fase 0
+## Bloqueo para probar Fase 1 localmente
 
-1. Elegir una alternativa de control para `main` y configurar/verificar el
-   control técnico o documentar formalmente la excepción de proceso.
-2. Desplegar esta API en GoDaddy Node.js Hosting, configurar las variables de
-   entorno allí (sin guardar secretos en Git) y confirmar que
-   `GET /api/health` devuelve HTTP 200 cuando la aplicación ejecuta `SELECT 1`
-   contra MySQL de cPanel.
-3. La prueba de Docker Compose local es opcional; no bloquea la fase si el equipo
-   acepta desarrollar contra MySQL instalado o el entorno remoto autorizado.
+- XAMPP tiene MariaDB 10.4.32. `SELECT 1` funciona, pero la escritura de un
+  usuario local falló y MariaDB informó que el índice de `mysql.global_priv`
+  está corrupto. La cuenta temporal `uka_app@localhost` quedó sin privilegios;
+  su limpieza también fue rechazada por el índice corrupto. No hacer más
+  escrituras ni intentar reparar tablas del sistema sin respaldo/autorización.
+- La base vacía `uka_eventos` fue creada para la prueba. No contiene datos de la
+  aplicación.
+- Antes de migrar o sembrar Fase 1: recuperar MariaDB local con respaldo o
+  disponer de otra instancia de prueba, y confirmar la versión exacta de MySQL
+  o MariaDB de GoDaddy para igualar el entorno de pruebas.
+- El smoke test de `/api/health` desplegado en GoDaddy se difirió por decisión
+  del usuario y deberá realizarse antes de producción.
