@@ -22,6 +22,18 @@ const configSchema = z.object({
   DB_NAME: z.string().default('uka_eventos'),
   DB_USER: z.string().default('uka_app'),
   DB_PASSWORD: z.string().default('uka_local_dev'),
+  DATABASE_URL: z
+    .string()
+    .url()
+    .refine((value) => value.startsWith('mysql://'), {
+      message: 'DATABASE_URL must use the mysql:// protocol',
+    })
+    .optional(),
 });
 
-export const config = configSchema.parse(process.env);
+const parsedConfig = configSchema.parse(process.env);
+const databaseUrl =
+  parsedConfig.DATABASE_URL ??
+  `mysql://${encodeURIComponent(parsedConfig.DB_USER)}:${encodeURIComponent(parsedConfig.DB_PASSWORD)}@${parsedConfig.DB_HOST}:${parsedConfig.DB_PORT}/${encodeURIComponent(parsedConfig.DB_NAME)}`;
+
+export const config = { ...parsedConfig, DATABASE_URL: databaseUrl };

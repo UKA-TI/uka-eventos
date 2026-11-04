@@ -1,5 +1,6 @@
 node_modules/
 dist/
 coverage/
+apps/api/src/generated/
 package-lock.json
 uka-eventos-mockup-gala.html

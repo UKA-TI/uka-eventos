@@ -72,3 +72,34 @@ Fuentes oficiales:
   o MariaDB de GoDaddy para igualar el entorno de pruebas.
 - El smoke test de `/api/health` desplegado en GoDaddy se difirió por decisión
   del usuario y deberá realizarse antes de producción.
+
+## Fase 1 — implementación en curso
+
+- Prisma 7 con adaptador MariaDB/MySQL y cliente generado en build. Se eligió
+  Prisma 7.10.1 tras detectar que Prisma 6.19 presentaba hallazgos altos en
+  `npm audit`; la versión elegida deja la auditoría sin vulnerabilidades.
+- La API acepta `DATABASE_URL`; conserva `DB_HOST`, `DB_PORT`, `DB_NAME`,
+  `DB_USER` y `DB_PASSWORD` como alternativa de compatibilidad. Prisma CLI
+  requiere `DATABASE_URL`. Los caracteres especiales de usuario o contraseña
+  deben codificarse como URL.
+- El folio se forma con el prefijo configurado, los dos últimos dígitos del
+  año UTC de `Event.startsAt` y un consecutivo de cuatro dígitos. El seed Gala
+  representa el 11/02/2027 18:30 de Ciudad de México como 12/02/2027 00:30 UTC.
+  La hora final se deja sin definir porque el mockup la señala como supuesto.
+- `status`, `registrationMode` y `purpose` se guardan como texto para evitar
+  fijar vocabularios de negocio todavía no acordados. El seed mantiene los tres
+  eventos en borrador; dos son ejemplos genéricos sin fecha ni aforo. El aforo,
+  acompañantes, cuota, sede y modo de la Gala reflejan los valores del mockup.
+- El seed es exclusivamente de desarrollo; requiere contraseñas locales
+  distintas (mínimo 12 caracteres), no incluidas en Git. Las cuentas ficticias
+  usan el dominio reservado `.test`.
+- El esquema incluye las entidades requeridas, `DATETIME(3)`, relaciones e
+  índices únicos para folios por evento, hashes de token, un check-in por pase
+  y folios de rifa por evento. El `SELECT ... FOR UPDATE` del contador queda
+  dentro de la transacción de Prisma.
+- **Bloqueo de cierre:** la versión exacta de MySQL/MariaDB de GoDaddy sigue sin
+  confirmarse y XAMPP conserva la corrupción documentada en `mysql.global_priv`.
+  No se harán reparaciones ni escrituras allí. Aunque se generen esquema y
+  migración fuera de línea y pasen pruebas unitarias, no se considerará
+  validada la migración ni la prueba de 500 transacciones hasta contar con una
+  base de pruebas sana y confirmar la versión del hosting.

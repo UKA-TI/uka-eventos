@@ -1,6 +1,6 @@
 import { createApp } from './app.js';
 import { config } from './config.js';
-import { pool } from './database.js';
+import { prisma } from './database.js';
 import { pino } from 'pino';
 
 const logger = pino({ level: config.LOG_LEVEL });
@@ -11,7 +11,7 @@ const server = createApp().listen(port, () => {
 
 function shutdown() {
   server.close(() => {
-    void pool.end().then(() => process.exit(0));
+    void prisma.$disconnect().then(() => process.exit(0));
   });
 }
 

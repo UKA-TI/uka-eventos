@@ -18,7 +18,10 @@ Plataforma de registro y operación de eventos de Un Kilo de Ayuda. El archivo
 2. Usa la versión de Node declarada en `.nvmrc` (con nvm-windows, por ejemplo,
    `nvm install 22.23.4` y `nvm use 22.23.4`). Copia `.env.example` a `.env` y
    configura una base MySQL accesible. No uses credenciales de producción en
-   el equipo local.
+   el equipo local. `DATABASE_URL` es la cadena que usa Prisma; codifica en
+   URL cualquier carácter especial de usuario o contraseña. Las variables
+   `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` siguen siendo
+   compatibles con la API si no se define `DATABASE_URL`.
 3. En una terminal PowerShell, ejecuta:
 
    ```powershell
@@ -34,6 +37,29 @@ MySQL. Si el servicio de base de datos no está disponible, responde HTTP 503.
 La interfaz y la API arrancan sin Docker, pero el estado de salud será 503 si
 no hay una base MySQL accesible y configurada en `.env`.
 
+### Prisma y datos de desarrollo
+
+Con una base MySQL compatible configurada en `DATABASE_URL`, ejecuta:
+
+```powershell
+npm run db:generate
+npm run db:migrate
+```
+
+`db:migrate` crea y aplica una migración local de desarrollo. Para un entorno
+ya desplegado, aplica migraciones revisadas con `npm run db:deploy`; no uses
+`migrate dev` en producción.
+
+El seed es solo para desarrollo y solicita `SEED_ADMIN_PASSWORD`,
+`SEED_RECEPTION_PASSWORD` y `SEED_QUERY_PASSWORD` en `.env` (cada una con al
+menos 12 caracteres). No usa contraseñas predeterminadas. Ejecútalo con
+`npm run db:seed`; crea el evento Gala y datos ficticios y es repetible.
+
+La prueba unitaria de folios, con cobertura mínima del 90%, corre con
+`npm run test:folio-coverage`. La verificación de concurrencia contra MySQL
+real requiere una base migrada y corre con `npm run test:folio-integration`;
+crea y elimina un evento de prueba.
+
 ### Servicios locales opcionales
 
 Para levantar MySQL y Mailpit con Docker Compose, ejecuta
@@ -46,9 +72,11 @@ ejecuta la API y el servicio MySQL de cPanel. En ese entorno la aplicación usa
 el `PORT` que asigna GoDaddy y requiere las variables de conexión MySQL.
 
 Para preparar la API para GoDaddy, ejecuta `npm ci`, `npm run build` y
-`npm start`. Configura `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`
-en las variables de entorno de la aplicación en cPanel; no subas `.env` al
-hosting ni al repositorio. El endpoint de humo es `GET /api/health`.
+`npm start`. Configura `DATABASE_URL` en las variables de entorno de la
+aplicación en cPanel (o las variables `DB_*` compatibles con la API); no subas
+`.env` al hosting ni al repositorio. Antes de ejecutar migraciones o el seed
+desde CLI, configura también `DATABASE_URL`. El endpoint de humo es
+`GET /api/health`.
 
 ## Calidad
 

@@ -4,10 +4,10 @@ import { createApp } from '../src/app.js';
 
 describe('GET /api/health', () => {
   it('returns healthy when SELECT 1 succeeds', async () => {
-    const database = { query: vi.fn().mockResolvedValue([[{ 1: 1 }], []]) };
+    const database = { query: vi.fn().mockResolvedValue([{ 1: 1 }]) };
     const response = await request(createApp(database)).get('/api/health');
 
-    expect(database.query).toHaveBeenCalledWith('SELECT 1');
+    expect(database.query).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'ok', database: 'ok' });
   });
