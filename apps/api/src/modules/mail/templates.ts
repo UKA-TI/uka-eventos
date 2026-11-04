@@ -92,8 +92,22 @@ function button(url: string, label: string): string {
   return `<p style="margin:18px 0"><a href="${url}" style="display:inline-block;padding:11px 18px;background:#0077C9;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></p>`;
 }
 
-const link = (url: string, text: string) =>
-  `<a href="${escapeHtml(url)}" style="color:#0077C9">${escapeHtml(text)}</a>`;
+const SOFT_BORDER = '#c6cdd6';
+
+/** Botón para correo: una celda con fondo, porque Outlook ignora el relleno de un enlace. */
+function actionCell(url: string, text: string, primary = false): string {
+  const background = primary ? '#0077C9' : '#ffffff';
+  const border = primary ? '#0077C9' : SOFT_BORDER;
+  const color = primary ? '#ffffff' : '#14212e';
+  return `<td align="center" bgcolor="${background}" style="border:1px solid ${border};border-radius:6px;background:${background}"><a href="${escapeHtml(url)}" style="display:block;padding:11px 6px;color:${color};font-size:14px;font-weight:bold;text-decoration:none">${escapeHtml(text)}</a></td>`;
+}
+
+/** Fila de botones del mismo ancho, separados por celdas vacías. */
+function actionRow(cells: string[]): string {
+  const gap =
+    '<td width="8" style="width:8px;font-size:0;line-height:0">&nbsp;</td>';
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;margin:0 0 8px"><tr>${cells.join(gap)}</tr></table>`;
+}
 
 function programRow(event: {
   programStartsAt: Date | null;
@@ -113,7 +127,7 @@ function programRow(event: {
 }
 
 /** Las mismas opciones que la página del pase, para quien solo abre el correo. */
-function passTools(
+function passActions(
   passId: string,
   folio: string,
   event: {
@@ -125,16 +139,26 @@ function passTools(
   },
 ): string {
   const calendar = calendarLinks(event, folio);
-  const lines = [
-    `<p style="margin:0 0 6px">${link(passPdfUrl(passId), 'Descargar pase en PDF')}</p>`,
+  return [
+    '<div style="margin:18px 0 0">',
+    actionRow([
+      actionCell(passUrl(passId), 'Ver mi pase', true),
+      actionCell(passPdfUrl(passId), 'Descargar PDF'),
+    ]),
     calendar
-      ? `<p style="margin:0 0 6px">Agregar al calendario: ${link(calendar.google, 'Google')} · ${link(calendar.outlook, 'Outlook')} · ${link(passIcsUrl(passId), 'Apple u otro (.ics)')}</p>`
+      ? `<p style="margin:14px 0 6px;color:#5e6b79;font-size:13px;font-weight:bold">Agregar a mi calendario</p>${actionRow(
+          [
+            actionCell(calendar.google, 'Google'),
+            actionCell(calendar.outlook, 'Outlook'),
+            actionCell(passIcsUrl(passId), 'Apple u otro'),
+          ],
+        )}`
       : '',
     event.mapUrl
-      ? `<p style="margin:0 0 6px">${link(event.mapUrl, 'Cómo llegar')}</p>`
+      ? `<div style="margin-top:14px">${actionRow([actionCell(event.mapUrl, 'Cómo llegar a la sede')])}</div>`
       : '',
-  ];
-  return lines.join('');
+    '</div>',
+  ].join('');
 }
 
 async function renderEventReminder(
@@ -164,8 +188,7 @@ ${details([
   ['Sede', event.venue ?? 'Por confirmar'],
   ['Folio', registration.folio],
 ])}
-${button(passUrl(pass.id), 'Ver mi pase')}
-${passTools(pass.id, registration.folio, event)}`,
+${passActions(pass.id, registration.folio, event)}`,
     ),
   };
 }
@@ -214,8 +237,7 @@ ${details([
   ['Folio', registration.folio],
 ])}
 <p style="margin:0;text-align:center"><img src="cid:pase-qr" width="240" height="240" alt="Código QR de tu pase"></p>
-${button(passUrl(pass.id), 'Ver mi pase')}
-${passTools(pass.id, registration.folio, event)}`,
+${passActions(pass.id, registration.folio, event)}`,
     ),
   };
 }
