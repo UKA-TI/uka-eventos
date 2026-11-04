@@ -18,6 +18,7 @@ import {
   requireCsrf,
   requirePermission,
 } from '../auth/auth.js';
+import { ordersRouter } from '../orders/orders.js';
 import { formFieldsRouter, formFieldView } from './form-fields.js';
 import { ticketTypesRouter, ticketTypeView } from './ticket-types.js';
 
@@ -30,10 +31,10 @@ const eventDetailInclude = {
   series: { select: { id: true, name: true, type: true } },
   ticketTypes: {
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    include: { _count: { select: { registrations: true } } },
+    include: { _count: { select: { orders: true } } },
   },
   formFields: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
-  _count: { select: { registrations: true, ticketTypes: true } },
+  _count: { select: { orders: true, ticketTypes: true } },
 } satisfies Prisma.EventInclude;
 
 function checkDates(startsAt: string | null, endsAt: string | null) {
@@ -78,7 +79,8 @@ function eventView<
 export function activationIssues(event: {
   startsAt: Date | null;
   folioPrefix: string | null;
-  ticketTypes: { active: boolean }[];
+  paymentInstructions: string | null;
+  ticketTypes: { active: boolean; price: { toNumber(): number } }[];
 }): string[] {
   const issues: string[] = [];
   if (!event.startsAt) {
@@ -89,6 +91,16 @@ export function activationIssues(event: {
   }
   if (!event.ticketTypes.some((ticket) => ticket.active)) {
     issues.push('Agrega al menos un tipo de boleto activo.');
+  }
+  if (
+    !event.paymentInstructions &&
+    event.ticketTypes.some(
+      (ticket) => ticket.active && ticket.price.toNumber() > 0,
+    )
+  ) {
+    issues.push(
+      'Agrega las instrucciones de pago, porque hay boletos de paga.',
+    );
   }
   return issues;
 }
@@ -117,7 +129,7 @@ function detailView(event: Awaited<ReturnType<typeof loadDetail>>) {
     ticketTypes: event.ticketTypes.map(ticketTypeView),
     formFields: event.formFields.map(formFieldView),
     activationIssues: activationIssues(event),
-    registrationCount: event._count.registrations,
+    registrationCount: event._count.orders,
   };
 }
 
@@ -184,6 +196,7 @@ eventsRouter.put(
       const issues = activationIssues({
         startsAt: data.startsAt,
         folioPrefix: data.folioPrefix,
+        paymentInstructions: data.paymentInstructions,
         ticketTypes: current.ticketTypes,
       });
       if (issues.length > 0) {
@@ -242,7 +255,7 @@ eventsRouter.post(
         throw new AppError(409, `Aún no se puede activar: ${issues.join(' ')}`);
       }
     }
-    if (status === 'draft' && current._count.registrations > 0) {
+    if (status === 'draft' && current._count.orders > 0) {
       throw new AppError(
         409,
         'Este evento ya tiene registros y no puede volver a borrador.',
@@ -285,6 +298,7 @@ eventsRouter.post(
         endsAt: input.endsAt ? new Date(input.endsAt) : null,
         timeZone: source.timeZone,
         venue: source.venue,
+        paymentInstructions: source.paymentInstructions,
         capacity: source.capacity,
         folioPrefix: source.folioPrefix,
         currency: source.currency,
@@ -336,7 +350,7 @@ eventsRouter.delete(
     if (current.status !== 'draft') {
       throw new AppError(409, 'Solo se pueden eliminar eventos en borrador.');
     }
-    if (current._count.registrations > 0) {
+    if (current._count.orders > 0) {
       throw new AppError(409, 'Este evento ya tiene registros.');
     }
     await prisma.$transaction([
@@ -356,3 +370,4 @@ eventsRouter.delete(
 
 eventsRouter.use('/:eventId/tickets', ticketTypesRouter);
 eventsRouter.use('/:eventId/fields', formFieldsRouter);
+eventsRouter.use('/:eventId/orders', ordersRouter);

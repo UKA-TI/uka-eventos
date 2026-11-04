@@ -33,6 +33,19 @@ const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().trim().toLowerCase().email().optional(),
   ),
+  PASS_TOKEN_SECRET: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(32).optional(),
+  ),
+  PUBLIC_BASE_URL: z.string().url().default('http://localhost:5173'),
+  MAIL_FROM: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().email().default('eventos@unkilodeayuda.org.mx'),
+  ),
+  MAIL_CLIENT_ID: optionalText,
+  MAIL_CLIENT_SECRET: optionalText,
+  MAIL_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(30).default(25),
+  MAIL_DAILY_LIMIT: z.coerce.number().int().min(1).max(10000).default(8000),
   DEV_LOGIN_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
@@ -57,6 +70,9 @@ if (parsedConfig.NODE_ENV === 'production') {
   if (!parsedConfig.SESSION_SECRET) {
     throw new Error('SESSION_SECRET must be set in production');
   }
+  if (!parsedConfig.PASS_TOKEN_SECRET) {
+    throw new Error('PASS_TOKEN_SECRET must be set in production');
+  }
   if (parsedConfig.DEV_LOGIN_ENABLED) {
     throw new Error('DEV_LOGIN_ENABLED must not be enabled in production');
   }
@@ -75,5 +91,7 @@ export const config = {
   ...parsedConfig,
   SESSION_SECRET:
     parsedConfig.SESSION_SECRET ?? 'local-development-session-secret-32chars',
+  PASS_TOKEN_SECRET:
+    parsedConfig.PASS_TOKEN_SECRET ?? 'local-development-pass-secret-32-chars',
   DATABASE_URL: databaseUrl,
 };

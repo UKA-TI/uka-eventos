@@ -13,12 +13,14 @@ import { dateTimeInZoneToIso } from './dates.js';
 import { EventFormFieldsTab } from './EventFormFieldsTab.js';
 import { EventGeneralForm } from './EventGeneralForm.js';
 import { EventModulesTab } from './EventModulesTab.js';
+import { EventRegistrationsTab } from './EventRegistrationsTab.js';
 import { EventSummaryTab } from './EventSummaryTab.js';
 import { EventTicketsTab } from './EventTicketsTab.js';
 import { formatEventDate, issuesToErrors, slugify } from './text.js';
 
 const tabs = [
   ['resumen', 'Resumen'],
+  ['registros', 'Registros'],
   ['boletos', 'Boletos'],
   ['formulario', 'Formulario'],
   ['modulos', 'Módulos'],
@@ -327,23 +329,33 @@ export function EventDetailPage() {
       )}
 
       <div className="tabs" role="tablist" aria-label="Secciones del evento">
-        {tabs.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={tab === value}
-            className={tab === value ? 'tab active' : 'tab'}
-            onClick={() => {
-              setTab(value);
-              setEditing(false);
-            }}
-          >
-            {label}
-            {value === 'boletos' ? ` (${event.ticketTypes.length})` : ''}
-            {value === 'formulario' ? ` (${event.formFields.length})` : ''}
-          </button>
-        ))}
+        {tabs
+          .filter(
+            ([value]) =>
+              value !== 'registros' ||
+              can(
+                'registrations.view',
+                'registrations.manage',
+                'payments.manage',
+              ),
+          )
+          .map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={tab === value}
+              className={tab === value ? 'tab active' : 'tab'}
+              onClick={() => {
+                setTab(value);
+                setEditing(false);
+              }}
+            >
+              {label}
+              {value === 'boletos' ? ` (${event.ticketTypes.length})` : ''}
+              {value === 'formulario' ? ` (${event.formFields.length})` : ''}
+            </button>
+          ))}
       </div>
 
       {tab === 'resumen' &&
@@ -364,6 +376,9 @@ export function EventDetailPage() {
             onEdit={canEdit ? () => setEditing(true) : undefined}
           />
         ))}
+      {tab === 'registros' && (
+        <EventRegistrationsTab event={event} onChanged={() => refresh()} />
+      )}
       {tab === 'boletos' && (
         <EventTicketsTab event={event} onChanged={() => refresh()} />
       )}

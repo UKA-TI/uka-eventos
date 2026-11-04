@@ -48,6 +48,7 @@ const eventBody = (seriesId: string, overrides: object = {}) => ({
   endsAt: null,
   timeZone: 'America/Mexico_City',
   venue: 'Sede',
+  paymentInstructions: null,
   capacity: 100,
   folioPrefix: null,
   currency: 'MXN',
@@ -286,6 +287,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('events configuration flow', () => {
       eventBody(seriesId, {
         startsAt: '2027-02-12T00:30:00.000Z',
         folioPrefix: 'GAL',
+        paymentInstructions: 'Transferencia',
       }),
     );
     expect(complete.status).toBe(200);
@@ -298,9 +300,13 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('events configuration flow', () => {
     expect(active.body.status).toBe('active');
     expect((await viewer.agent.get(`/api/events/${eventId}`)).status).toBe(200);
 
-    const incomplete = await admin
-      .write('put', `/api/events/${eventId}`)
-      .send(eventBody(seriesId, { startsAt: null, folioPrefix: 'GAL' }));
+    const incomplete = await admin.write('put', `/api/events/${eventId}`).send(
+      eventBody(seriesId, {
+        startsAt: null,
+        folioPrefix: 'GAL',
+        paymentInstructions: 'Transferencia',
+      }),
+    );
     expect(incomplete.status).toBe(409);
 
     const [first, second] = active.body.ticketTypes as { id: string }[];

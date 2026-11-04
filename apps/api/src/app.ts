@@ -13,6 +13,7 @@ import { AppError, createErrorHandler } from './errors.js';
 import { createAuthRouter } from './modules/auth/auth.js';
 import type { MicrosoftTokenVerifier } from './modules/auth/entra.js';
 import { eventsRouter } from './modules/events/events.js';
+import { publicRouter } from './modules/public/public.js';
 import { rolesRouter } from './modules/roles/roles.js';
 import { seriesRouter } from './modules/series/series.js';
 import { usersRouter } from './modules/users/users.js';
@@ -94,6 +95,7 @@ export function createApp(
   app.use('/api/series', seriesRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/roles', rolesRouter);
+  app.use('/api/public', publicRouter);
 
   app.use('/api', (_request, response) => {
     response.status(404).json({ error: 'Not found' });

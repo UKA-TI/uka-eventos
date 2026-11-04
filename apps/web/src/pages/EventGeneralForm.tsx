@@ -33,6 +33,7 @@ function initialForm(event?: EventDetail) {
     endsAt: event?.endsAt ? toLocalDateTime(event.endsAt, event.timeZone) : '',
     timeZone: event?.timeZone ?? 'America/Mexico_City',
     venue: event?.venue ?? '',
+    paymentInstructions: event?.paymentInstructions ?? '',
     capacity: event?.capacity?.toString() ?? '',
     folioPrefix: event?.folioPrefix ?? '',
     companionLimit: String(event?.companionLimit ?? 0),
@@ -105,6 +106,7 @@ export function EventGeneralForm({
           : null,
         timeZone: form.timeZone,
         venue: form.venue.trim() || null,
+        paymentInstructions: form.paymentInstructions.trim() || null,
         capacity: form.capacity === '' ? null : Number(form.capacity),
         folioPrefix: form.folioPrefix.trim().toUpperCase() || null,
         currency: event?.currency ?? 'MXN',
@@ -296,6 +298,19 @@ export function EventGeneralForm({
             />
           </Field>
         )}
+        <div className="span-all">
+          <Field
+            label="Instrucciones de pago"
+            error={errors.paymentInstructions}
+            hint="Banco, cuenta y a dónde enviar el comprobante. Se muestran al registrarse en boletos de paga."
+          >
+            <textarea
+              rows={3}
+              value={form.paymentInstructions}
+              onChange={(e) => update('paymentInstructions', e.target.value)}
+            />
+          </Field>
+        </div>
         <div className="span-all">
           <Field label="Descripción" error={errors.description}>
             <textarea

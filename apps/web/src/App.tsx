@@ -9,6 +9,9 @@ import { EventsPage } from './pages/EventsPage.js';
 import { HomePage } from './pages/HomePage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { NewEventPage } from './pages/NewEventPage.js';
+import { GroupPage } from './pages/public/GroupPage.js';
+import { PassPage } from './pages/public/PassPage.js';
+import { PublicRegisterPage } from './pages/public/PublicRegisterPage.js';
 import { RolesPage } from './pages/RolesPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
@@ -42,6 +45,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/r/:slug" element={<PublicRegisterPage />} />
+      <Route path="/pase/:token" element={<PassPage />} />
+      <Route path="/mesa/:token" element={<GroupPage />} />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route

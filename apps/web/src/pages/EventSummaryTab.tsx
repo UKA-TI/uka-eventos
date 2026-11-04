@@ -29,6 +29,10 @@ export function EventSummaryTab({
     rows.push(['Acompañantes por persona', String(event.companionLimit)]);
   }
 
+  const publicUrl = `${window.location.origin}/r/${event.slug}`;
+  const isOpen =
+    event.status === 'active' && event.modules.includes('publicRegistration');
+
   return (
     <div className="panel">
       <div className="panel-heading">
@@ -43,6 +47,14 @@ export function EventSummaryTab({
           </button>
         )}
       </div>
+      {isOpen && (
+        <p className="public-link">
+          Liga de registro:{' '}
+          <a href={publicUrl} target="_blank" rel="noreferrer">
+            {publicUrl}
+          </a>
+        </p>
+      )}
       <dl className="data-list">
         {rows.map(([label, value]) => (
           <div key={label}>
@@ -59,6 +71,13 @@ export function EventSummaryTab({
           </dd>
         </div>
       </dl>
+      {event.paymentInstructions && (
+        <p className="event-description">
+          <strong>Instrucciones de pago</strong>
+          <br />
+          {event.paymentInstructions}
+        </p>
+      )}
       {event.description && (
         <p className="event-description">{event.description}</p>
       )}

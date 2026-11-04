@@ -33,8 +33,8 @@ Decisiones del responsable del proyecto:
 | Fase    | Alcance                                                                        | Estado      |
 | ------- | ------------------------------------------------------------------------------ | ----------- |
 | A       | Limpieza, login con Microsoft, perfiles y diseño institucional                 | Terminada   |
-| B       | Series y ediciones, módulos activables, tipos de boleto, formulario por evento | En revisión |
-| C       | Registro público, QR, correo con limitador, pagos manuales                     | Pendiente   |
+| B       | Series y ediciones, módulos activables, tipos de boleto, formulario por evento | Terminada   |
+| C       | Registro público, QR, correo con limitador, pagos manuales                     | En revisión |
 | D       | Check-in PWA híbrido, puntos de acceso, incidencias                            | Pendiente   |
 | E       | Contactos, empresas, segmentos, invitaciones, donativos manuales               | Pendiente   |
 | F       | Tablero, comparativos y exportación                                            | Pendiente   |
@@ -72,11 +72,24 @@ Decisiones del responsable del proyecto:
   esta fase solo se configuran; sus pantallas llegan en las fases siguientes.
 - **Formulario:** nombre, apellidos, correo y teléfono siempre se piden; cada evento
   agrega sus propias preguntas.
-- **Correo (fase C):** Microsoft desactiva por defecto el SMTP con contraseña a fines
-  de diciembre de 2026, así que el envío debe usar Microsoft Graph con OAuth. Esa parte
-  sí requerirá un secreto en el servidor, en un registro separado y limitado al buzón
-  de eventos. El límite vigente es de 30 mensajes por minuto y 10,000 destinatarios
-  al día por buzón.
+- **Correo:** Microsoft 365 con Microsoft Graph, porque el SMTP con contraseña se
+  desactiva por defecto a fines de diciembre de 2026. Usa un registro propio con secreto,
+  limitado al buzón de eventos con RBAC para aplicaciones de Exchange. Una cola en la
+  base de datos envía hasta 25 correos por minuto y 8,000 al día, y reintenta con espera
+  creciente. Los límites de Microsoft son de 30 por minuto y 10,000 destinatarios al día
+  por buzón. Un correo que ya no aplica, como el aviso de un pedido ya pagado, se omite.
+- **Pedidos y lugares:** un pedido es la compra y cada persona es un registro con su
+  folio y su pase. Un boleto de un lugar es de quien lo compra; uno de varios lugares se
+  reparte con una liga privada una vez confirmado.
+- **QR después del pago:** en eventos de paga el pase se emite solo cuando el pago total
+  se registra en el CRM. En los gratuitos, al registrarse. Anular un pago que deja
+  incompleto el pedido, o cancelarlo, invalida sus pases.
+- **Tokens de pases:** se derivan del id con `PASS_TOKEN_SECRET` y la base solo guarda su
+  hash. Permite reenviar el mismo QR sin almacenarlo. Cambiar el secreto invalida los QR.
+- **Sobreventa:** la venta bloquea la fila del evento dentro de la transacción, de modo
+  que el cupo no se excede con registros simultáneos.
+- **Datos de invitados capturados por terceros:** quien captura confirma que el invitado
+  autorizó compartir sus datos, y queda registrado. El pase enlaza el aviso de privacidad.
 - **Base de datos:** MariaDB 10.11.19, igual que GoDaddy. En local escucha en
   `127.0.0.1:3307`. XAMPP (MariaDB 10.4) no se usa porque su tabla de privilegios
   reportó un índice corrupto.
@@ -85,6 +98,13 @@ Decisiones del responsable del proyecto:
 
 ## Pendientes
 
+- Conectar el correo. Ver `docs/correo-microsoft.md`.
+- Revisar con el responsable legal el consentimiento de los invitados capturados por una
+  empresa y de las ventas directas capturadas por el equipo.
+- Los pedidos pendientes de pago ocupan lugar hasta que alguien los cancele; no vencen
+  solos. Definir si deben tener fecha límite.
+- Módulos aún sin pantalla: acompañantes, mesas, rifa y donativos.
+- Tema visual de la Gala en páginas públicas: queda para la landing.
 - Importar las ventas actuales de la Gala cuando exista el archivo. Sin eso, esos
   compradores no recibirán su QR.
 - Crear el registro de EVENTOS UKA en Entra ID y probar el login real. Ver

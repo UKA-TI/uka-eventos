@@ -818,6 +818,241 @@ tbody:last-child tr:last-child td {
   font-weight: 600;
 }
 
+/* Páginas públicas */
+.public-page {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  align-content: start;
+}
+
+.public-header img {
+  display: block;
+  width: 130px;
+}
+
+.public-card {
+  width: min(100%, 640px);
+  padding: clamp(20px, 5vw, 36px);
+  border-top: 4px solid var(--amarillo);
+  border-radius: var(--r-lg);
+  background: var(--blanco);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 7%);
+}
+
+.public-footer {
+  font-size: 0.85rem;
+}
+
+.public-data {
+  margin: 16px 0;
+}
+
+.ticket-options {
+  display: grid;
+  gap: 10px;
+}
+
+.ticket-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+
+.ticket-option.active {
+  border-color: var(--azul);
+  background: var(--azul-claro);
+}
+
+.ticket-option.disabled {
+  color: var(--tenue);
+  cursor: not-allowed;
+}
+
+.ticket-option input {
+  accent-color: var(--azul);
+}
+
+.ticket-option span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.ticket-option small {
+  color: var(--texto);
+}
+
+.ticket-option b {
+  white-space: nowrap;
+}
+
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.privacy-check {
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.instructions {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--azul);
+  border-radius: var(--r);
+  background: var(--azul-claro);
+}
+
+.instructions p {
+  margin: 4px 0 0;
+  white-space: pre-line;
+}
+
+.link-as-button {
+  display: block;
+  box-sizing: border-box;
+  margin-top: 12px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pass {
+  text-align: center;
+}
+
+.pass-event {
+  margin: 0 0 4px;
+  color: var(--azul);
+  font-weight: 700;
+}
+
+.pass-qr {
+  display: block;
+  width: min(100%, 280px);
+  margin: 16px auto;
+}
+
+.pass .data-list {
+  text-align: left;
+}
+
+.pass-note {
+  font-size: 0.85rem;
+}
+
+.progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--linea);
+}
+
+.progress i {
+  display: block;
+  height: 100%;
+  background: var(--azul);
+}
+
+.progress-label {
+  margin: 6px 0 14px;
+  color: var(--tenue);
+  font-size: 0.85rem;
+}
+
+.guest-list {
+  margin-bottom: 14px;
+}
+
+/* Registros en el CRM */
+.stat strong small {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.public-link {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  background: var(--azul-claro);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.detail-row > td {
+  padding: 0;
+  background: #fafbfc;
+  white-space: normal;
+}
+
+.order-detail {
+  padding: 16px;
+}
+
+.order-detail h3,
+.inner-form h3 {
+  margin: 0 0 6px;
+  color: var(--tenue);
+  font-size: 0.8rem;
+}
+
+.order-detail p {
+  margin: 0 0 12px;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.compact-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.compact-list .voided {
+  color: var(--tenue);
+  text-decoration: line-through;
+}
+
+.inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.inner-form {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--blanco);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 820px) {
   .shell {
     display: block;

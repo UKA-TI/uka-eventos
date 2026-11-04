@@ -14,6 +14,7 @@ Microsoft de la organización.
 - `packages/shared`: validaciones y catálogo de permisos que usan las dos apps.
 - `docs/decisiones.md`: decisiones y pendientes del proyecto.
 - `docs/microsoft-entra.md`: cómo registrar la aplicación en Entra ID.
+- `docs/correo-microsoft.md`: cómo conectar el envío de correos.
 - `docs/despliegue-godaddy.md`: cómo publicar en GoDaddy.
 
 Se trabaja primero en local y después se exporta a GoDaddy.
@@ -55,6 +56,18 @@ eventos de ejemplo. Se niega a correr en producción.
   propio perfil o desactivarse.
 - **Módulos nuevos:** se agregan al catálogo `permissionCatalog` de
   `packages/shared/src/index.ts` y aparecen solos en la matriz.
+
+## Registro, pases y pagos
+
+- **Ligas públicas, sin iniciar sesión:** `/r/<dirección>` para registrarse, `/pase/<token>`
+  para ver el pase y `/mesa/<token>` para capturar invitados de un boleto con varios lugares.
+- **Boletos gratuitos:** el pase se emite al registrarse.
+- **Boletos de paga:** el lugar queda apartado y el pase se emite cuando el total se
+  registra en el CRM. Si se anula el pago o se cancela el pedido, el QR deja de ser válido.
+- **Cupo:** los pedidos pendientes y confirmados ocupan lugar. Un pendiente lo libera
+  solo si se cancela.
+- **Correos:** van a una cola con límite de envío. Sin configurar `MAIL_CLIENT_*`, esperan
+  en la cola. Ver `docs/correo-microsoft.md`.
 
 ## Calidad
 

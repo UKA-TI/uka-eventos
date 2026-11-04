@@ -16,7 +16,7 @@ export function ticketTypeView(ticket: {
   salesStart: Date | null;
   salesEnd: Date | null;
   active: boolean;
-  _count: { registrations: number };
+  _count: { orders: number };
 }) {
   return {
     id: ticket.id,
@@ -28,7 +28,7 @@ export function ticketTypeView(ticket: {
     salesStart: ticket.salesStart,
     salesEnd: ticket.salesEnd,
     active: ticket.active,
-    registrationCount: ticket._count.registrations,
+    registrationCount: ticket._count.orders,
   };
 }
 
@@ -41,7 +41,7 @@ function ticketData(input: TicketTypeInput) {
 }
 
 const countRegistrations = {
-  _count: { select: { registrations: true } },
+  _count: { select: { orders: true } },
 } as const;
 
 /** Cada ruta valida que el boleto pertenezca al evento de la dirección. */
@@ -158,7 +158,7 @@ ticketTypesRouter.delete(
       ticketId: string;
     };
     const current = await loadTicket(eventId, ticketId);
-    if (current._count.registrations > 0) {
+    if (current._count.orders > 0) {
       throw new AppError(
         409,
         'Este boleto ya tiene registros. Desactívalo en lugar de borrarlo.',

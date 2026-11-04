@@ -15,7 +15,7 @@
     "db:seed": "prisma db seed",
     "test:folio-integration": "npm run db:generate && tsx test/folio.integration.ts",
     "test:folio-coverage": "npm run db:generate && vitest run --coverage --coverage.include=src/modules/folios/folio-service.ts --coverage.lines=90 --coverage.functions=90 --coverage.branches=90 --coverage.statements=90",
-    "test:db-integration": "npm run db:generate && cross-env RUN_DB_TESTS=1 vitest run test/access.integration.test.ts test/events.integration.test.ts"
+    "test:db-integration": "npm run db:generate && cross-env RUN_DB_TESTS=1 vitest run test/access.integration.test.ts test/events.integration.test.ts test/orders.integration.test.ts --no-file-parallelism"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.1",
@@ -29,11 +29,13 @@
     "jose": "^6.2.15",
     "pino": "10.4.0",
     "pino-http": "11.0.0",
+    "qrcode": "^1.5.4",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/cors": "2.8.17",
     "@types/express": "4.17.21",
+    "@types/qrcode": "^1.5.6",
     "@types/supertest": "6.0.2",
     "@vitest/coverage-v8": "^4.1.12",
     "cross-env": "^10.1.0",

@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { ensureSystemData } from './bootstrap.js';
 import { config } from './config.js';
 import { prisma } from './database.js';
+import { startMailWorker } from './modules/mail/queue.js';
 import { pino } from 'pino';
 
 const logger = pino({ level: config.LOG_LEVEL });
@@ -18,7 +19,10 @@ const server = createApp().listen(port, () => {
   logger.info({ port }, 'API started');
 });
 
+const stopMailWorker = startMailWorker(logger);
+
 function shutdown() {
+  stopMailWorker();
   server.close(() => {
     void prisma.$disconnect().then(() => process.exit(0));
   });

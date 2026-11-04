@@ -40,6 +40,8 @@ async function seed() {
         venue: 'Sede de ejemplo',
         capacity: 400,
         folioPrefix: 'GAL',
+        paymentInstructions:
+          'Transferencia a la cuenta de ejemplo. Envía tu comprobante a eventos@unkilodeayuda.org.mx con tu folio.',
       },
       tickets: [
         { name: 'Boleto individual', price: 5500, seatsIncluded: 1 },
