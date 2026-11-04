@@ -46,8 +46,10 @@ npm run db:generate
 npm run db:migrate
 ```
 
-`db:migrate` crea y aplica una migración local de desarrollo. Para un entorno
-ya desplegado, aplica migraciones revisadas con `npm run db:deploy`; no uses
+`db:migrate` crea y aplica una migración local de desarrollo. Necesita una base
+shadow: configura `SHADOW_DATABASE_URL` con un esquema vacío e independiente o
+da al usuario local de migraciones permiso para crearla. En un entorno ya
+desplegado, aplica migraciones revisadas con `npm run db:deploy`; no uses
 `migrate dev` en producción.
 
 El seed es solo para desarrollo y solicita `SEED_ADMIN_PASSWORD`,

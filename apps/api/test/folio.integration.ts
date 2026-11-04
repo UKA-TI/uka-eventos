@@ -29,7 +29,14 @@ try {
   const failures = results.filter(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   );
-  assert.equal(failures.length, 0, 'all 500 folio transactions must succeed');
+  assert.equal(
+    failures.length,
+    0,
+    `all 500 folio transactions must succeed: ${failures
+      .slice(0, 3)
+      .map((failure) => String(failure.reason))
+      .join('; ')}`,
+  );
 
   const folios = results.map((result) => {
     assert.equal(result.status, 'fulfilled');

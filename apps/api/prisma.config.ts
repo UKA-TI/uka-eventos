@@ -17,5 +17,6 @@ export default defineConfig({
     url:
       process.env.DATABASE_URL ??
       'mysql://uka_app:uka_local_dev@127.0.0.1:3306/uka_eventos',
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });

@@ -17,12 +17,20 @@ export class PrismaFolioDatabase implements FolioDatabase {
             }),
           lockCounter: async (eventId) => {
             const rows = await transaction.$queryRaw<
-              { currentValue: number }[]
+              { currentValue: number | bigint | string }[]
             >`SELECT current_value AS currentValue
               FROM event_counters
               WHERE event_id = ${eventId} AND counter_type = 'registration'
               FOR UPDATE`;
-            return rows[0]?.currentValue ?? null;
+            const value = rows[0]?.currentValue;
+            if (value === undefined || value === null) {
+              return null;
+            }
+
+            const currentValue = Number(value);
+            return Number.isSafeInteger(currentValue)
+              ? currentValue
+              : Number.NaN;
           },
           updateCounter: async (eventId, currentValue) => {
             await transaction.eventCounter.update({
