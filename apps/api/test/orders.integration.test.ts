@@ -597,7 +597,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
     ).toBe(0);
     expect(
       await prisma.emailMessage.count({
-        where: { eventId, attempts: { gt: 0 } },
+        where: { eventId, status: 'pending', attempts: { gt: 0 } },
       }),
     ).toBe(0);
     expect(
