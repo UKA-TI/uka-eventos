@@ -1,6 +1,6 @@
 import { logoUrl } from '../brand.js';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions, useSession } from '../auth/session.js';
@@ -20,7 +20,24 @@ function initials(name: string): string {
     .join('');
 }
 
+/** Valida la sesión antes de mostrar el CRM. Recepción usa Shell directamente. */
 export function Layout() {
+  const session = useSession();
+  if (session.isPending) {
+    return <Loading />;
+  }
+  if (!session.data?.user) {
+    return <Navigate to="/login" replace />;
+  }
+  return (
+    <Shell>
+      <Outlet />
+    </Shell>
+  );
+}
+
+/** Menú principal y marco de la aplicación, para quien ya tiene una sesión. */
+export function Shell({ children }: { children: ReactNode }) {
   const session = useSession();
   const { can, csrfToken } = usePermissions();
   const queryClient = useQueryClient();
@@ -29,11 +46,8 @@ export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const user = session.data?.user;
 
-  if (session.isPending) {
-    return <Loading />;
-  }
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return null;
   }
 
   const logout = async () => {
@@ -188,7 +202,7 @@ export function Layout() {
         </header>
         <main className="content">
           <Notice>{notice}</Notice>
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>

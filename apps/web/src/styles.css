@@ -1568,6 +1568,10 @@ span.row-actions {
   font-size: 1.3rem;
 }
 
+.reception-home .station-list {
+  max-width: 640px;
+}
+
 .station-list {
   display: grid;
   gap: 10px;

@@ -11,7 +11,8 @@ import {
 } from '../../checkin/store.js';
 import { QrScanner } from '../../checkin/QrScanner.js';
 import { useStation, type StationOutcome } from '../../checkin/useStation.js';
-import { Loading, Notice } from '../../components/ui.js';
+import { Shell } from '../../components/Layout.js';
+import { Loading, Notice, PageHeading } from '../../components/ui.js';
 import { formatEventDate } from '../text.js';
 
 const RESULT_MS = 3500;
@@ -111,6 +112,7 @@ function ResultOverlay({
 }
 
 export function ReceptionHomePage() {
+  const session = useSession();
   const operator = useOperator();
   const navigate = useNavigate();
   const events = useQuery({
@@ -137,37 +139,57 @@ export function ReceptionHomePage() {
 
   const list = events.data ?? checkinStore.events();
 
+  const content = (
+    <>
+      {events.isPending && <Loading />}
+      {!events.isPending && list.length === 0 && (
+        <p className="muted">
+          No hay eventos activos con check-in. Actívalo en el módulo del evento.
+        </p>
+      )}
+      <div className="station-list">
+        {list.map((event) => (
+          <button
+            key={event.id}
+            type="button"
+            className="station-option"
+            onClick={() => navigate(`/recepcion/${event.id}`)}
+          >
+            <strong>{event.name}</strong>
+            <small>
+              {formatEventDate(event.startsAt, event.timeZone, true)}
+              {event.venue ? ` · ${event.venue}` : ''}
+            </small>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  // Con sesión se navega como en el resto del CRM. Sin conexión no hay sesión que
+  // validar y el teléfono debe poder operar: se muestra la vista independiente.
+  if (session.data?.user) {
+    return (
+      <Shell>
+        <section className="reception-home">
+          <PageHeading
+            title="Elige el evento"
+            description="Abre la recepción del evento para escanear pases. En el teléfono también funciona sin internet."
+          />
+          {content}
+        </section>
+      </Shell>
+    );
+  }
+
   return (
     <div className="station-home">
       <header className="station-bar">
         <strong>Recepción</strong>
-        <Link to="/">Ir al CRM</Link>
       </header>
       <main className="station-content">
         <h1>Elige el evento</h1>
-        {events.isPending && <Loading />}
-        {!events.isPending && list.length === 0 && (
-          <p className="muted">
-            No hay eventos activos con check-in. Actívalo en el módulo del
-            evento.
-          </p>
-        )}
-        <div className="station-list">
-          {list.map((event) => (
-            <button
-              key={event.id}
-              type="button"
-              className="station-option"
-              onClick={() => navigate(`/recepcion/${event.id}`)}
-            >
-              <strong>{event.name}</strong>
-              <small>
-                {formatEventDate(event.startsAt, event.timeZone, true)}
-                {event.venue ? ` · ${event.venue}` : ''}
-              </small>
-            </button>
-          ))}
-        </div>
+        {content}
       </main>
     </div>
   );
