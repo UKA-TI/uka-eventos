@@ -288,6 +288,14 @@ async function loadGroupView(token: string) {
     venue: order.event.venue,
     ticketName: order.ticketType.name,
     contactName: `${order.buyer.firstName} ${order.buyer.lastName}`,
+    source: order.source,
+    buyer: {
+      firstName: order.buyer.firstName,
+      lastName: order.buyer.lastName,
+      email: order.buyer.email,
+      phone: order.buyer.phone,
+      organization: order.buyer.organization,
+    },
     seats: order.seats,
     privacyUrl: PRIVACY_NOTICE_URL,
     guests: order.registrations.map((registration) => ({

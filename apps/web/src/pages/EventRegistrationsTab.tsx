@@ -12,6 +12,7 @@ import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
 import { dateTimeInZoneToIso, toLocalDateTime } from './dates.js';
+import { ReconciledOrderForm } from './ReconciledOrderForm.js';
 import { formatMoney, issuesToErrors } from './text.js';
 
 const orderStatus: Record<string, [string, string]> = {
@@ -334,6 +335,7 @@ export function EventRegistrationsTab({
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeState>();
@@ -402,6 +404,10 @@ export function EventRegistrationsTab({
           <strong>{summary.seatsConfirmed.toLocaleString('es-MX')}</strong>
         </article>
         <article className="stat">
+          <span>Lugares por registrar</span>
+          <strong>{summary.seatsToRegister.toLocaleString('es-MX')}</strong>
+        </article>
+        <article className="stat">
           <span>Cobrado</span>
           <strong>
             {summary.amountCollected.toLocaleString('es-MX', {
@@ -461,6 +467,21 @@ export function EventRegistrationsTab({
       )}
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
 
+      {reconciling && (
+        <ReconciledOrderForm
+          event={event}
+          onCancel={() => setReconciling(false)}
+          onDone={async (reference) => {
+            await refresh();
+            setReconciling(false);
+            setNotice({
+              kind: 'ok',
+              text: `Compra ${reference} conciliada. Se envió la invitación para registrarse.`,
+            });
+          }}
+        />
+      )}
+
       {creating && (
         <NewOrderForm
           event={event}
@@ -497,6 +518,21 @@ export function EventRegistrationsTab({
           <option value="confirmed">Confirmado</option>
           <option value="cancelled">Cancelado</option>
         </select>
+        {can('payments.manage') &&
+          event.status === 'active' &&
+          !reconciling && (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                setNotice(undefined);
+                setCreating(false);
+                setReconciling(true);
+              }}
+            >
+              Conciliar compra
+            </button>
+          )}
         {canManage && event.status === 'active' && !creating && (
           <button
             className="button primary"
@@ -549,7 +585,21 @@ export function EventRegistrationsTab({
                         </small>
                       </td>
                       <td>{order.ticketName}</td>
-                      <td>{order.seats}</td>
+                      <td>
+                        {order.seats}
+                        {order.status === 'confirmed' &&
+                          (order.seats > 1 ||
+                            order.source === 'reconciled') && (
+                            <small className="cell-note">
+                              {
+                                order.registrations.filter(
+                                  (item) => item.status !== 'cancelled',
+                                ).length
+                              }{' '}
+                              registrados
+                            </small>
+                          )}
+                      </td>
                       <td>
                         {order.amountDue === 0
                           ? 'Gratis'
@@ -690,14 +740,29 @@ export function EventRegistrationsTab({
                                   </ul>
                                 )}
                                 {order.groupUrl && (
-                                  <p>
+                                  <p className="inline-actions">
                                     <a
                                       href={order.groupUrl}
                                       target="_blank"
                                       rel="noreferrer"
                                     >
-                                      Abrir liga de invitados
+                                      Abrir liga de registro
                                     </a>
+                                    <button
+                                      className="link-button"
+                                      type="button"
+                                      disabled={act.isPending}
+                                      onClick={() => {
+                                        setNotice(undefined);
+                                        act.mutate({
+                                          path: `${order.id}/resend-link`,
+                                          success:
+                                            'La liga se agregó a la cola de correo.',
+                                        });
+                                      }}
+                                    >
+                                      Reenviar liga
+                                    </button>
                                   </p>
                                 )}
                               </div>

@@ -541,6 +541,31 @@ export const paymentInputSchema = z.object({
 
 export type PaymentInput = z.infer<typeof paymentInputSchema>;
 
+/** Compra hecha por otro medio: el pago ya se concilió y la persona se registra después. */
+export const reconciledOrderSchema = z.object({
+  firstName: personFields.firstName,
+  lastName: personFields.lastName,
+  email: personFields.email,
+  phone: z.string().trim().max(32).nullable(),
+  organization: z.string().trim().max(180).nullable(),
+  ticketTypeId: z.string().min(1, 'Selecciona un boleto.').max(30),
+  quantity: z
+    .number('Escribe la cantidad.')
+    .int('Escribe una cantidad entera.')
+    .min(1, 'Debe ser al menos 1.')
+    .max(500, 'La cantidad es demasiado alta.'),
+  amount: z
+    .number('Escribe el monto recibido.')
+    .min(0, 'No puede ser negativo.')
+    .max(99_999_999, 'El monto es demasiado alto.'),
+  method: z.enum(['transfer', 'cash', 'card', 'other']),
+  reference: z.string().trim().max(120).nullable(),
+  notes: z.string().trim().max(500).nullable(),
+  paidAt: z.string().datetime({ offset: true }),
+});
+
+export type ReconciledOrderInput = z.infer<typeof reconciledOrderSchema>;
+
 export const orderStatusSchema = z.enum([
   'pending_payment',
   'confirmed',
@@ -561,6 +586,7 @@ export const orderResponseSchema = z.object({
   status: orderStatusSchema,
   source: z.string(),
   seats: z.number(),
+  quantity: z.number(),
   amountDue: z.number(),
   amountPaid: z.number(),
   createdAt: z.string(),
@@ -610,6 +636,7 @@ export const orderListResponseSchema = z.object({
   summary: z.object({
     seatsTaken: z.number(),
     seatsConfirmed: z.number(),
+    seatsToRegister: z.number(),
     pendingOrders: z.number(),
     amountCollected: z.number(),
     amountPending: z.number(),
@@ -682,6 +709,14 @@ export const publicGroupResponseSchema = z.object({
   venue: z.string().nullable(),
   ticketName: z.string(),
   contactName: z.string(),
+  source: z.string(),
+  buyer: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    email: z.string().nullable(),
+    phone: z.string().nullable(),
+    organization: z.string().nullable(),
+  }),
   seats: z.number(),
   privacyUrl: z.string(),
   guests: z.array(

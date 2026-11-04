@@ -108,6 +108,7 @@ model Order {
   createdById    String?        @map("created_by_id") @db.VarChar(30)
   reference      String         @db.VarChar(16)
   seats          Int            @db.UnsignedInt
+  quantity       Int            @default(1) @db.UnsignedInt
   amountDue      Decimal        @map("amount_due") @db.Decimal(10, 2)
   status         String         @default("pending_payment") @db.VarChar(24)
   source         String         @db.VarChar(16)

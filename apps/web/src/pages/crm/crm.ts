@@ -92,6 +92,7 @@ const messageKinds: Record<string, string> = {
   pass: 'Pase con QR',
   order_pending: 'Registro recibido',
   group_link: 'Liga de invitados',
+  registration_invite: 'Invitación a registrarse',
   campaign: 'Comunicación',
   campaign_test: 'Prueba de comunicación',
 };

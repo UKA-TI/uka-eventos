@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { orderInputSchema, paymentInputSchema } from '@uka/shared';
+import {
+  orderInputSchema,
+  paymentInputSchema,
+  reconciledOrderSchema,
+} from '@uka/shared';
 import { z } from 'zod';
 import { asyncHandler } from '../../async-handler.js';
 import { recordAudit } from '../../audit.js';
@@ -11,8 +15,10 @@ import { groupUrl, passUrl } from '../passes/tokens.js';
 import {
   cancelOrder,
   createOrder,
+  createReconciledOrder,
   recordPayment,
   resendPass,
+  resendPrivateLink,
   voidPayment,
 } from './order-service.js';
 
@@ -84,37 +90,41 @@ ordersRouter.get(
         : {}),
     };
 
-    const [orders, total, active, payments, queue, stuck] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        include: orderInclude,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-      }),
-      prisma.order.count({ where }),
-      prisma.order.findMany({
-        where: { eventId, status: { not: 'cancelled' } },
-        select: { id: true, status: true, seats: true, amountDue: true },
-      }),
-      prisma.payment.findMany({
-        where: {
-          voidedAt: null,
-          order: { eventId, status: { not: 'cancelled' } },
-        },
-        select: { orderId: true, amount: true },
-      }),
-      prisma.emailMessage.groupBy({
-        by: ['status'],
-        where: { eventId },
-        _count: { _all: true },
-      }),
-      prisma.emailMessage.findFirst({
-        where: { eventId, status: 'pending', lastError: { not: null } },
-        orderBy: { nextAttemptAt: 'desc' },
-        select: { lastError: true },
-      }),
-    ]);
+    const [orders, total, active, payments, queue, stuck, registered] =
+      await Promise.all([
+        prisma.order.findMany({
+          where,
+          include: orderInclude,
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * PAGE_SIZE,
+          take: PAGE_SIZE,
+        }),
+        prisma.order.count({ where }),
+        prisma.order.findMany({
+          where: { eventId, status: { not: 'cancelled' } },
+          select: { id: true, status: true, seats: true, amountDue: true },
+        }),
+        prisma.payment.findMany({
+          where: {
+            voidedAt: null,
+            order: { eventId, status: { not: 'cancelled' } },
+          },
+          select: { orderId: true, amount: true },
+        }),
+        prisma.emailMessage.groupBy({
+          by: ['status'],
+          where: { eventId },
+          _count: { _all: true },
+        }),
+        prisma.emailMessage.findFirst({
+          where: { eventId, status: 'pending', lastError: { not: null } },
+          orderBy: { nextAttemptAt: 'desc' },
+          select: { lastError: true },
+        }),
+        prisma.registration.count({
+          where: { eventId, status: 'confirmed' },
+        }),
+      ]);
 
     const passIds = orders.flatMap((order) =>
       order.registrations.flatMap((item) => item.passes.map((pass) => pass.id)),
@@ -148,6 +158,12 @@ ordersRouter.get(
         seatsConfirmed: active
           .filter((order) => order.status === 'confirmed')
           .reduce((sum, order) => sum + order.seats, 0),
+        seatsToRegister: Math.max(
+          active
+            .filter((order) => order.status === 'confirmed')
+            .reduce((sum, order) => sum + order.seats, 0) - registered,
+          0,
+        ),
         pendingOrders: active.filter(
           (order) => order.status === 'pending_payment',
         ).length,
@@ -164,6 +180,7 @@ ordersRouter.get(
         status: order.status,
         source: order.source,
         seats: order.seats,
+        quantity: order.quantity,
         amountDue: order.amountDue.toNumber(),
         amountPaid: order.payments
           .filter((payment) => !payment.voidedAt)
@@ -238,6 +255,56 @@ ordersRouter.post(
       details: { reference: order.reference },
     });
     response.status(201).json({ id: order.id, reference: order.reference });
+  }),
+);
+
+ordersRouter.post(
+  '/reconciled',
+  requirePermission('payments.manage'),
+  requireCsrf,
+  asyncHandler(async (request, response) => {
+    const { eventId } = request.params as { eventId: string };
+    const input = reconciledOrderSchema.parse(request.body);
+    const user = currentUser(request);
+    const order = await createReconciledOrder({
+      eventId,
+      input,
+      userId: user.id,
+    });
+    await recordAudit({
+      userId: user.id,
+      action: 'order.reconcile',
+      entityType: 'order',
+      entityId: order.id,
+      eventId,
+      details: {
+        reference: order.reference,
+        quantity: input.quantity,
+        amount: input.amount,
+      },
+    });
+    response.status(201).json({ id: order.id, reference: order.reference });
+  }),
+);
+
+ordersRouter.post(
+  '/:orderId/resend-link',
+  requirePermission('registrations.manage', 'payments.manage'),
+  requireCsrf,
+  asyncHandler(async (request, response) => {
+    const { eventId, orderId } = request.params as {
+      eventId: string;
+      orderId: string;
+    };
+    await resendPrivateLink(eventId, orderId);
+    await recordAudit({
+      userId: currentUser(request).id,
+      action: 'order.resend_link',
+      entityType: 'order',
+      entityId: orderId,
+      eventId,
+    });
+    response.status(202).json({ queued: true });
   }),
 );
 

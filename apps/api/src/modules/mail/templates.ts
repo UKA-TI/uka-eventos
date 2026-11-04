@@ -194,6 +194,43 @@ ${button(groupUrl(order.id), 'Registrar invitados')}
   };
 }
 
+async function renderRegistrationInvite(
+  refId: string,
+): Promise<EmailContent | null> {
+  const order = await prisma.order.findUnique({
+    where: { id: refId },
+    include: {
+      buyer: true,
+      event: true,
+      ticketType: { select: { name: true } },
+    },
+  });
+  if (!order || order.status !== 'confirmed' || !order.groupTokenHash) {
+    return null;
+  }
+  const several = order.seats > 1;
+  return {
+    subject: `Completa tu registro para ${order.event.name}`,
+    html: layout(
+      'Tu compra está confirmada',
+      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. Confirmamos tu pago. ${
+        several
+          ? `Registra a las ${order.seats} personas que asistirán: cada una recibirá su propio pase con código QR.`
+          : 'Completa tu registro para recibir tu pase con código QR.'
+      }</p>
+${details([
+  ['Evento', order.event.name],
+  ['Fecha', formatDate(order.event.startsAt, order.event.timeZone)],
+  ['Boleto', order.ticketType.name],
+  ['Lugares', String(order.seats)],
+  ['Referencia', order.reference],
+])}
+${button(groupUrl(order.id), several ? 'Registrar asistentes' : 'Completar mi registro')}
+<p style="margin:0;color:#6b6b6b;font-size:13px">Esta liga es privada: no la compartas${several ? ' fuera de tu grupo' : ''}.</p>`,
+    ),
+  };
+}
+
 interface MergeValues {
   nombre: string;
   apellidos: string;
@@ -327,6 +364,8 @@ function renderContent(
       return renderOrderPending(refId);
     case 'group_link':
       return renderGroupLink(refId);
+    case 'registration_invite':
+      return renderRegistrationInvite(refId);
     case 'campaign':
       return renderCampaign(refId);
     case 'campaign_test':

@@ -25,6 +25,7 @@ export function GroupPage() {
     kind: 'ok' | 'error';
     text: string;
   }>();
+  const [prefilled, setPrefilled] = useState(false);
   const key = ['public-group', token];
 
   const group = useQuery({
@@ -49,7 +50,7 @@ export function GroupPage() {
       setAuthorized(false);
       setNotice({
         kind: 'ok',
-        text: 'Invitado registrado. Recibirá su pase por correo.',
+        text: 'Registro guardado. El pase llegará por correo.',
       });
     },
     onError: (error) =>
@@ -80,6 +81,24 @@ export function GroupPage() {
       }),
   });
 
+  // Quien compró suele ser el primer asistente: se le ahorra volver a capturar.
+  if (
+    group.data &&
+    !prefilled &&
+    group.data.source === 'reconciled' &&
+    group.data.guests.length === 0
+  ) {
+    const { buyer } = group.data;
+    setPrefilled(true);
+    setForm({
+      firstName: buyer.firstName,
+      lastName: buyer.lastName,
+      email: buyer.email ?? '',
+      phone: buyer.phone ?? '',
+      organization: buyer.organization ?? '',
+    });
+  }
+
   if (group.isPending) {
     return <Loading />;
   }
@@ -97,6 +116,10 @@ export function GroupPage() {
 
   const data = group.data;
   const left = data.seats - data.guests.length;
+  const reconciled = data.source === 'reconciled';
+  const single = data.seats === 1;
+  const isBuyer =
+    form.email.trim().toLowerCase() === data.buyer.email?.toLowerCase();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -116,7 +139,19 @@ export function GroupPage() {
 
   return (
     <PublicLayout privacyUrl={data.privacyUrl}>
-      <h1>Registra a tus invitados</h1>
+      <h1>
+        {reconciled && single
+          ? 'Completa tu registro'
+          : reconciled
+            ? 'Registra a los asistentes'
+            : 'Registra a tus invitados'}
+      </h1>
+      {reconciled && (
+        <p className="notice ok" role="status">
+          Tu pago está confirmado. Al registrarte recibirás tu pase con código
+          QR.
+        </p>
+      )}
       <p className="muted">
         {data.eventName} · {formatEventDate(data.startsAt, data.timeZone, true)}
         {data.venue ? ` · ${data.venue}` : ''}
@@ -173,7 +208,11 @@ export function GroupPage() {
 
       {left > 0 ? (
         <form onSubmit={submit} noValidate>
-          <h2 className="form-section">Agregar invitado</h2>
+          <h2 className="form-section">
+            {reconciled && data.guests.length === 0
+              ? 'Datos del asistente'
+              : 'Agregar invitado'}
+          </h2>
           <div className="form-grid">
             <Field label="Nombre" error={errors.firstName}>
               <input
@@ -215,7 +254,9 @@ export function GroupPage() {
               onChange={(e) => setAuthorized(e.target.checked)}
             />
             <span>
-              Esta persona me autorizó a compartir sus datos y conoce el{' '}
+              {isBuyer
+                ? 'Acepto el '
+                : 'Esta persona me autorizó a compartir sus datos y conoce el '}
               <a href={data.privacyUrl} target="_blank" rel="noreferrer">
                 aviso de privacidad
               </a>
@@ -231,12 +272,20 @@ export function GroupPage() {
               type="submit"
               disabled={add.isPending}
             >
-              {add.isPending ? 'Guardando…' : 'Agregar invitado'}
+              {add.isPending
+                ? 'Guardando…'
+                : reconciled && data.guests.length === 0
+                  ? 'Registrarme'
+                  : 'Agregar invitado'}
             </button>
           </div>
         </form>
       ) : (
-        <Notice kind="ok">Ya registraste todos los lugares. ¡Gracias!</Notice>
+        <Notice kind="ok">
+          {single
+            ? 'Listo, ya estás registrado. Revisa tu correo para ver tu pase.'
+            : 'Ya registraste todos los lugares. ¡Gracias!'}
+        </Notice>
       )}
     </PublicLayout>
   );

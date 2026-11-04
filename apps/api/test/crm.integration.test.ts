@@ -72,9 +72,14 @@ async function holdOtherMail() {
 async function drain(
   limits = { perMinute: 10_000, perDay: 1_000_000 },
 ): Promise<{ to: string; email: OutgoingEmail }[]> {
+  // Si el servidor de desarrollo está encendido, su cola omite estas direcciones de
+  // prueba por seguridad. Se devuelven a la cola para procesarlas aquí.
   await prisma.emailMessage.updateMany({
-    where: { status: 'pending', toEmail: { endsWith: `@${domain}` } },
-    data: { nextAttemptAt: new Date(0) },
+    where: {
+      toEmail: { endsWith: `@${domain}` },
+      OR: [{ status: 'pending' }, { lastError: 'Dirección de prueba' }],
+    },
+    data: { status: 'pending', lastError: null, nextAttemptAt: new Date(0) },
   });
   const sent: { to: string; email: OutgoingEmail }[] = [];
   await processMailQueue(

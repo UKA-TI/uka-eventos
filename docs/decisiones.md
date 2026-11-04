@@ -147,3 +147,14 @@ Revisar esta limitación antes de agregar colaboradores.
 - **Un donativo no se borra.** Se anula con motivo para que los totales sean auditables.
 - **Un segmento guarda filtros, no personas.** Se actualiza solo; al enviar, los destinatarios
   quedan fijos en esa comunicación.
+
+## Compras hechas por otro medio
+
+- **Quien ya pagó no se registra por la página pública.** Un administrador concilia el pago en el
+  evento (**Registros > Conciliar compra**) y el sistema le envía una invitación con liga privada.
+  Así nadie puede declararse pagado por su cuenta.
+- **El pase sale al registrarse, no al conciliar.** Una compra puede ser de varios boletos o mesas;
+  cada asistente recibe su propio pase.
+- **Se guarda lo que realmente se recibió.** El monto admite descuentos y cortesías (0). Una misma
+  referencia de pago no se puede conciliar dos veces dentro de un evento.
+- **Pendiente:** esa liga no pregunta el formulario personalizado del evento, igual que la de mesas.

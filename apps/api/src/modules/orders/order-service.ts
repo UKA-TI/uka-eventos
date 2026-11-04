@@ -3,6 +3,7 @@ import {
   type GroupGuestInput,
   type OrderInput,
   type PaymentInput,
+  type ReconciledOrderInput,
 } from '@uka/shared';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../database.js';
@@ -83,6 +84,13 @@ async function issuePass(tx: Tx, registrationId: string) {
   return id;
 }
 
+/** Quien compró varios lugares o por otro medio registra a los asistentes con una liga. */
+const usesPrivateLink = (order: { seats: number; source: string }) =>
+  order.seats > 1 || order.source === 'reconciled';
+
+const privateLinkEmail = (order: { source: string }) =>
+  order.source === 'reconciled' ? 'registration_invite' : 'group_link';
+
 /** Confirma un pedido: emite los pases y deja los correos en la cola. */
 async function confirmOrder(tx: Tx, orderId: string) {
   const order = await tx.order.findUniqueOrThrow({
@@ -100,7 +108,7 @@ async function confirmOrder(tx: Tx, orderId: string) {
     data: {
       status: 'confirmed',
       confirmedAt: new Date(),
-      ...(order.seats > 1
+      ...(usesPrivateLink(order)
         ? { groupTokenHash: hashToken(groupToken(order.id)) }
         : {}),
     },
@@ -120,10 +128,10 @@ async function confirmOrder(tx: Tx, orderId: string) {
       });
     }
   }
-  if (order.seats > 1 && order.buyer.email) {
+  if (usesPrivateLink(order) && order.buyer.email) {
     await enqueueEmail(tx, {
       eventId: order.eventId,
-      kind: 'group_link',
+      kind: privateLinkEmail(order),
       refId: order.id,
       toEmail: order.buyer.email,
     });
@@ -154,6 +162,173 @@ async function revokePasses(tx: Tx, orderId: string, status: string) {
     where: { id: { in: ids } },
     data: { status },
   });
+}
+
+async function assertAvailable(
+  tx: Tx,
+  event: { id: string; capacity: number | null },
+  ticket: { id: string; capacity: number | null; seatsIncluded: number },
+  quantity: number,
+) {
+  if (ticket.capacity !== null) {
+    const sold = await tx.order.aggregate({
+      where: { ticketTypeId: ticket.id, status: ACTIVE_ORDER },
+      _sum: { quantity: true },
+    });
+    if ((sold._sum.quantity ?? 0) + quantity > ticket.capacity) {
+      throw new AppError(409, 'Este boleto ya está agotado.');
+    }
+  }
+  if (event.capacity !== null) {
+    const taken = await tx.order.aggregate({
+      where: { eventId: event.id, status: ACTIVE_ORDER },
+      _sum: { seats: true },
+    });
+    if (
+      (taken._sum.seats ?? 0) + ticket.seatsIncluded * quantity >
+      event.capacity
+    ) {
+      throw new AppError(409, 'El evento ya no tiene lugares disponibles.');
+    }
+  }
+}
+
+async function nextReference(tx: Tx, eventId: string) {
+  await tx.eventCounter.upsert({
+    where: {
+      eventId_counterType: { eventId, counterType: 'registration' },
+    },
+    update: {},
+    create: { eventId, counterType: 'registration', currentValue: 0 },
+  });
+  return issueFolioWithin(tx, eventId);
+}
+
+/**
+ * Registra una compra hecha por otro medio. El pago ya se concilió, así que solo
+ * se envía la invitación a registrarse: el pase sale cuando la persona se registra.
+ */
+export async function createReconciledOrder(params: {
+  eventId: string;
+  input: ReconciledOrderInput;
+  userId: string;
+}) {
+  const { eventId, input, userId } = params;
+  return prisma.$transaction(async (tx) => {
+    await lockEvent(tx, eventId);
+    const event = await tx.event.findUnique({ where: { id: eventId } });
+    if (!event) {
+      throw new AppError(404, 'El evento no existe.');
+    }
+    if (event.status !== 'active') {
+      throw new AppError(409, 'Este evento no está activo.');
+    }
+    const ticket = await tx.ticketType.findFirst({
+      where: { id: input.ticketTypeId, eventId },
+    });
+    if (!ticket) {
+      throw new AppError(400, 'Este boleto no existe.');
+    }
+    if (input.amount > 0 && !input.reference) {
+      throw new AppError(
+        400,
+        'Escribe la referencia del pago para conciliarlo.',
+      );
+    }
+    // Conciliar dos veces el mismo pago regalaría lugares.
+    if (input.reference) {
+      const repeated = await tx.payment.findFirst({
+        where: {
+          reference: input.reference,
+          voidedAt: null,
+          order: { eventId, status: { not: 'cancelled' } },
+        },
+        include: { order: { select: { reference: true } } },
+      });
+      if (repeated) {
+        throw new AppError(
+          409,
+          `Ese pago ya se concilió en el pedido ${repeated.order.reference}.`,
+        );
+      }
+    }
+    await assertAvailable(tx, event, ticket, input.quantity);
+
+    const reference = await nextReference(tx, eventId);
+    const contactId = await linkContact(tx, input);
+    const guest = await tx.guest.create({
+      data: {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        organization: input.organization,
+        contactId,
+      },
+    });
+    const order = await tx.order.create({
+      data: {
+        eventId,
+        ticketTypeId: ticket.id,
+        buyerGuestId: guest.id,
+        createdById: userId,
+        reference,
+        quantity: input.quantity,
+        seats: ticket.seatsIncluded * input.quantity,
+        // Lo que realmente se recibió: puede haber descuentos o cortesías.
+        amountDue: input.amount,
+        source: 'reconciled',
+        answers: [],
+      },
+    });
+    if (input.amount > 0) {
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          amount: input.amount,
+          method: input.method,
+          reference: input.reference,
+          notes: input.notes,
+          paidAt: new Date(input.paidAt),
+          recordedById: userId,
+        },
+      });
+    }
+    await confirmOrder(tx, order.id);
+    return order;
+  }, TX_OPTIONS);
+}
+
+/** Vuelve a enviar la liga a quien aún no termina de registrar a sus asistentes. */
+export async function resendPrivateLink(eventId: string, orderId: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({
+      where: { id: orderId, eventId },
+      include: {
+        buyer: true,
+        _count: {
+          select: {
+            registrations: { where: { status: { not: 'cancelled' } } },
+          },
+        },
+      },
+    });
+    if (!order || order.status !== 'confirmed' || !order.groupTokenHash) {
+      throw new AppError(404, 'Este pedido no tiene una liga activa.');
+    }
+    if (!order.buyer.email) {
+      throw new AppError(409, 'Este pedido no tiene correo.');
+    }
+    if (order._count.registrations >= order.seats) {
+      throw new AppError(409, 'Ya se registraron todos los lugares.');
+    }
+    await enqueueEmail(tx, {
+      eventId,
+      kind: privateLinkEmail(order),
+      refId: order.id,
+      toEmail: order.buyer.email,
+    });
+  }, TX_OPTIONS);
 }
 
 export async function createOrder(params: {
@@ -198,33 +373,10 @@ export async function createOrder(params: {
       }
     }
 
-    if (ticket.capacity !== null) {
-      const sold = await tx.order.count({
-        where: { ticketTypeId: ticket.id, status: ACTIVE_ORDER },
-      });
-      if (sold >= ticket.capacity) {
-        throw new AppError(409, 'Este boleto ya está agotado.');
-      }
-    }
-    if (event.capacity !== null) {
-      const taken = await tx.order.aggregate({
-        where: { eventId, status: ACTIVE_ORDER },
-        _sum: { seats: true },
-      });
-      if ((taken._sum.seats ?? 0) + ticket.seatsIncluded > event.capacity) {
-        throw new AppError(409, 'El evento ya no tiene lugares disponibles.');
-      }
-    }
+    await assertAvailable(tx, event, ticket, 1);
 
     const answers = buildAnswers(event.formFields, input.answers);
-    await tx.eventCounter.upsert({
-      where: {
-        eventId_counterType: { eventId, counterType: 'registration' },
-      },
-      update: {},
-      create: { eventId, counterType: 'registration', currentValue: 0 },
-    });
-    const reference = await issueFolioWithin(tx, eventId);
+    const reference = await nextReference(tx, eventId);
     const contactId = await linkContact(tx, input);
     const guest = await tx.guest.create({
       data: {
@@ -428,6 +580,10 @@ async function loadGroup(tx: Tx, token: string) {
 export async function addGroupGuest(token: string, input: GroupGuestInput) {
   return prisma.$transaction(async (tx) => {
     const found = await loadGroup(tx, token);
+    const buyer = await tx.guest.findUniqueOrThrow({
+      where: { id: found.buyerGuestId },
+      select: { email: true },
+    });
     await lockOrder(tx, found.id);
     await lockEvent(tx, found.eventId);
     const taken = await tx.registration.findMany({
@@ -467,7 +623,11 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
     await tx.consent.create({
       data: {
         registrationId: registration.id,
-        purpose: 'group_capture_authorized',
+        // Quien captura sus propios datos consiente; a un tercero solo lo autoriza.
+        purpose:
+          buyer.email === input.email
+            ? 'event_registration'
+            : 'group_capture_authorized',
         noticeVersion: PRIVACY_NOTICE_VERSION,
         granted: true,
         consentedAt: new Date(),
