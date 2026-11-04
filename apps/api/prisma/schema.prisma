@@ -101,31 +101,36 @@ model Event {
 }
 
 model Order {
-  id             String         @id @default(cuid()) @db.VarChar(30)
-  eventId        String         @map("event_id") @db.VarChar(30)
-  ticketTypeId   String         @map("ticket_type_id") @db.VarChar(30)
-  buyerGuestId   String         @map("buyer_guest_id") @db.VarChar(30)
-  createdById    String?        @map("created_by_id") @db.VarChar(30)
-  reference      String         @db.VarChar(16)
-  seats          Int            @db.UnsignedInt
-  quantity       Int            @default(1) @db.UnsignedInt
-  amountDue      Decimal        @map("amount_due") @db.Decimal(10, 2)
-  status         String         @default("pending_payment") @db.VarChar(24)
-  source         String         @db.VarChar(16)
-  answers        Json
-  groupTokenHash String?        @unique @map("group_token_hash") @db.Char(64)
-  confirmedAt    DateTime?      @map("confirmed_at") @db.DateTime(3)
-  cancelledAt    DateTime?      @map("cancelled_at") @db.DateTime(3)
-  createdAt      DateTime       @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt      DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
-  event          Event          @relation(fields: [eventId], references: [id])
-  ticketType     TicketType     @relation(fields: [ticketTypeId], references: [id])
-  buyer          Guest          @relation("OrderBuyer", fields: [buyerGuestId], references: [id])
-  createdBy      User?          @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  registrations  Registration[]
-  payments       Payment[]
+  id                   String         @id @default(cuid()) @db.VarChar(30)
+  eventId              String         @map("event_id") @db.VarChar(30)
+  ticketTypeId         String         @map("ticket_type_id") @db.VarChar(30)
+  buyerGuestId         String         @map("buyer_guest_id") @db.VarChar(30)
+  createdById          String?        @map("created_by_id") @db.VarChar(30)
+  reference            String         @db.VarChar(16)
+  seats                Int            @db.UnsignedInt
+  quantity             Int            @default(1) @db.UnsignedInt
+  amountDue            Decimal        @map("amount_due") @db.Decimal(10, 2)
+  status               String         @default("pending_payment") @db.VarChar(24)
+  source               String         @db.VarChar(16)
+  answers              Json
+  groupTokenHash       String?        @unique @map("group_token_hash") @db.Char(64)
+  delegateName         String?        @map("delegate_name") @db.VarChar(160)
+  delegateEmail        String?        @map("delegate_email") @db.VarChar(254)
+  folioPrefix          String?        @map("folio_prefix") @db.VarChar(10)
+  registrationDeadline DateTime?      @map("registration_deadline") @db.DateTime(3)
+  confirmedAt          DateTime?      @map("confirmed_at") @db.DateTime(3)
+  cancelledAt          DateTime?      @map("cancelled_at") @db.DateTime(3)
+  createdAt            DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
+  event                Event          @relation(fields: [eventId], references: [id])
+  ticketType           TicketType     @relation(fields: [ticketTypeId], references: [id])
+  buyer                Guest          @relation("OrderBuyer", fields: [buyerGuestId], references: [id])
+  createdBy            User?          @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  registrations        Registration[]
+  payments             Payment[]
 
   @@unique([eventId, reference])
+  @@unique([eventId, folioPrefix])
   @@index([eventId, status])
   @@index([ticketTypeId, status])
   @@index([buyerGuestId])

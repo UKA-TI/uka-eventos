@@ -86,6 +86,7 @@ function ResultOverlay({
     ok: { tone: 'ok', title: 'Bienvenida o bienvenido' },
     duplicate: { tone: 'warn', title: 'Este pase ya ingresó' },
     revoked: { tone: 'bad', title: 'Pase no válido' },
+    pending_activation: { tone: 'warn', title: 'Pase sin activar' },
     unknown: { tone: 'bad', title: 'Código no reconocido' },
   }[result.status];
 
@@ -121,6 +122,12 @@ function ResultOverlay({
       )}
       {result.status === 'revoked' && (
         <span>Envía a esta persona a la mesa de incidencias.</span>
+      )}
+      {result.status === 'pending_activation' && (
+        <span>
+          No ha aceptado el aviso de privacidad. Búscalo en la pestaña Buscar
+          para darle ingreso manual.
+        </span>
       )}
       {result.status === 'unknown' && (
         <span>
@@ -543,6 +550,9 @@ function Station({
                   <strong>{entry.guestName}</strong>
                   <small>
                     {entry.ticketName} · {entry.folio}
+                    {entry.pendingActivation && !entry.checkedInAt
+                      ? ' · Sin activar'
+                      : ''}
                   </small>
                 </span>
                 {entry.checkedInAt ? (

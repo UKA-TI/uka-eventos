@@ -172,3 +172,30 @@ Revisar esta limitación antes de agregar colaboradores.
 - **Ver y descargar son permisos distintos.** Los archivos contienen datos personales y cada
   descarga queda en la auditoría. El texto que parece fórmula de Excel se neutraliza, porque esos
   datos los captura cualquier persona en el registro público.
+
+## Mesas y asistentes
+
+- **Quien compra no suele registrar.** Una compra puede nombrar a un asistente: la liga privada le
+  llega a esa persona, no al comprador. Se puede cambiar después desde la pestaña **Mesas**.
+- **La asistente captura, pero no acepta por nadie.** Cada invitado recibe un correo, acepta el aviso
+  de privacidad y solo entonces existe su QR. Solo quien compró y se registra a sí mismo acepta en la
+  liga, y únicamente si no hay asistente.
+- **Un correo, un lugar por evento** en la liga privada, y folios de mesa como `SORIANA-01`. Si un
+  lugar cambia de invitado, el folio nuevo es `SORIANA-01-2`: el anterior queda anulado.
+- **Sin activar, recepción da ingreso a mano** con motivo. La persona entra, pero no se registra un
+  consentimiento que no dio.
+- **La fecha límite es informativa:** se muestra y se marca como vencida, pero no bloquea la captura.
+
+## Pendiente frente al mockup
+
+Revisado contra `uka-eventos-mockup-gala.html`. Wallet quedó fuera por decisión previa.
+
+- Alta autorizada en la puerta, con pase inmediato.
+- Pase: descargar PDF, agregar a calendario, liga al mapa y recuperar el pase por correo.
+- Recordatorio automático antes del evento.
+- Consentimiento opcional para comunicaciones y canal de WhatsApp.
+- Evento: horarios de recepción y programa, liga al mapa y datos en el registro público.
+- Módulos con interruptor pero sin pantalla: acompañantes y mesas físicas.
+- Pantallas de bitácora, consentimientos y operadores.
+- Recepción: linterna y captura de folio con teclado.
+- Tema de gala por evento y landing.

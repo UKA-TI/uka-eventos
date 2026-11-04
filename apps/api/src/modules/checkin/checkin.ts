@@ -162,7 +162,15 @@ async function processItem(params: {
         );
         return incidentOutcome(created, null);
       }
-      if (belongs.status !== 'active') {
+      // Sin aceptar el aviso no hay QR que leer. En la puerta se atiende a mano: la
+      // persona llegó con su mesa y recepción deja el motivo de su ingreso.
+      if (belongs.status === 'pending_activation' && !item.manualReason) {
+        return { status: 'pending_activation', ...guestView(belongs) };
+      }
+      if (
+        belongs.status !== 'active' &&
+        belongs.status !== 'pending_activation'
+      ) {
         const created = await incident(
           'revoked',
           `Se intentó usar el pase revocado ${belongs.registration.folio}.`,
@@ -188,6 +196,12 @@ async function processItem(params: {
         ? await nextRaffleFolio(tx, eventId)
         : null;
 
+      if (belongs.status === 'pending_activation') {
+        await tx.pass.update({
+          where: { id: belongs.id },
+          data: { status: 'active' },
+        });
+      }
       const checkin = await tx.checkin.create({
         data: {
           eventId,
@@ -301,7 +315,10 @@ eventCheckinRouter.get(
     const eventId = eventIdOf(request);
     await assertEvent(eventId);
     const passes = await prisma.pass.findMany({
-      where: { status: 'active', registration: { eventId } },
+      where: {
+        status: { in: ['active', 'pending_activation'] },
+        registration: { eventId },
+      },
       include: passInclude,
     });
     response.json({
@@ -310,6 +327,7 @@ eventCheckinRouter.get(
         tokenHash: pass.tokenHash,
         ...guestView(pass),
         checkedInAt: pass.checkin?.checkedInAt ?? null,
+        pendingActivation: pass.status === 'pending_activation',
       })),
     });
   }),

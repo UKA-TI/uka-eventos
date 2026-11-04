@@ -205,6 +205,12 @@ export function useStation(params: {
         folio: entry.folio,
         ticketName: entry.ticketName,
       };
+      if (entry.pendingActivation && !manualReason) {
+        return {
+          offline: true,
+          result: { status: 'pending_activation', ...guest },
+        };
+      }
       if (entry.checkedInAt) {
         return {
           offline: true,

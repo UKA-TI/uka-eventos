@@ -1,13 +1,106 @@
-import { useQuery } from '@tanstack/react-query';
-import { publicPassResponseSchema } from '@uka/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { passActivationSchema, publicPassResponseSchema } from '@uka/shared';
+import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiRequest } from '../../api.js';
-import { Loading } from '../../components/ui.js';
-import { formatEventDate } from '../text.js';
+import { apiRequest, errorText } from '../../api.js';
+import { Field, Loading, Notice } from '../../components/ui.js';
+import { formatEventDate, issuesToErrors } from '../text.js';
 import { PublicLayout } from './PublicLayout.js';
+
+function ActivationForm({
+  token,
+  guestName,
+  privacyUrl,
+  onDone,
+}: {
+  token: string;
+  guestName: string;
+  privacyUrl: string;
+  onDone: () => Promise<void>;
+}) {
+  const [accepted, setAccepted] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const activate = useMutation({
+    mutationFn: async (body: unknown) =>
+      apiRequest(`/api/public/passes/${token}/activate`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => onDone(),
+  });
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const parsed = passActivationSchema.safeParse({
+      privacyAccepted: accepted,
+      phone: phone.trim() || null,
+    });
+    if (!parsed.success) {
+      setErrors(issuesToErrors(parsed.error.issues));
+      return;
+    }
+    setErrors({});
+    activate.mutate(parsed.data);
+  };
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <p>
+        Hola, <strong>{guestName}</strong>. Tienes un lugar reservado. Revisa el
+        aviso y activa tu pase; la persona que registró tu lugar no lo acepta
+        por ti.
+      </p>
+      {activate.isError && (
+        <Notice>
+          {errorText(activate.error, 'No se pudo activar el pase.')}
+        </Notice>
+      )}
+      <Field
+        label="Celular (opcional)"
+        error={errors.phone}
+        hint="Solo para avisos de este evento."
+      >
+        <input
+          type="tel"
+          autoComplete="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+      </Field>
+      <label className="check-field privacy-check">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+        />
+        <span>
+          He leído y acepto el{' '}
+          <a href={privacyUrl} target="_blank" rel="noreferrer">
+            aviso de privacidad
+          </a>
+          . Se usa para administrar tu registro y acceso al evento.
+        </span>
+      </label>
+      {errors.privacyAccepted && (
+        <small className="field-error">{errors.privacyAccepted}</small>
+      )}
+      <div className="form-actions">
+        <button
+          className="button primary wide"
+          type="submit"
+          disabled={activate.isPending}
+        >
+          {activate.isPending ? 'Activando…' : 'Activar mi pase'}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 export function PassPage() {
   const { token = '' } = useParams();
+  const queryClient = useQueryClient();
   const pass = useQuery({
     queryKey: ['public-pass', token],
     queryFn: async () =>
@@ -29,12 +122,26 @@ export function PassPage() {
   }
 
   const data = pass.data;
+  const pending = data.status === 'pending_activation';
   return (
     <PublicLayout privacyUrl={data.privacyUrl}>
       <div className="pass">
         <p className="pass-event">{data.eventName}</p>
-        <h1>{data.guestName}</h1>
-        {data.qrDataUrl ? (
+        <h1>{pending ? 'Activa tu pase' : data.guestName}</h1>
+        {pending ? (
+          <div className="pass-activation">
+            <ActivationForm
+              token={token}
+              guestName={data.guestName}
+              privacyUrl={data.privacyUrl}
+              onDone={async () => {
+                await queryClient.invalidateQueries({
+                  queryKey: ['public-pass', token],
+                });
+              }}
+            />
+          </div>
+        ) : data.qrDataUrl ? (
           <img
             className="pass-qr"
             src={data.qrDataUrl}

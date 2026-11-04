@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { groupGuestInputSchema, publicGroupResponseSchema } from '@uka/shared';
+import {
+  groupGuestInputSchema,
+  publicGroupResponseSchema,
+  type PublicGroup,
+} from '@uka/shared';
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
 import { formatEventDate, issuesToErrors } from '../text.js';
 import { PublicLayout } from './PublicLayout.js';
+
+const EMPTY_SHOWN = 10;
+
+const seatLabel = (seat: number) => `Lugar ${String(seat).padStart(2, '0')}`;
 
 const emptyForm = {
   firstName: '',
@@ -15,17 +23,170 @@ const emptyForm = {
   organization: '',
 };
 
+/** Un formulario por lugar: se llenan poco a poco, y cada uno guarda por su cuenta. */
+function SeatForm({
+  seat,
+  group,
+  prefill,
+  token,
+  onSaved,
+}: {
+  seat: number;
+  group: PublicGroup;
+  prefill: boolean;
+  token: string;
+  onSaved: (data: PublicGroup, text: string) => void;
+}) {
+  const { buyer } = group;
+  const [form, setForm] = useState(
+    prefill
+      ? {
+          firstName: buyer.firstName,
+          lastName: buyer.lastName,
+          email: buyer.email ?? '',
+          phone: buyer.phone ?? '',
+          organization: buyer.organization ?? '',
+        }
+      : emptyForm,
+  );
+  const [accepted, setAccepted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
+
+  // Solo acepta aquí quien compró y se registra a sí mismo. Nadie acepta por otro.
+  const isSelf =
+    !group.delegateName &&
+    Boolean(buyer.email) &&
+    form.email.trim().toLowerCase() === buyer.email?.toLowerCase();
+
+  const save = useMutation({
+    mutationFn: async (body: unknown) =>
+      publicGroupResponseSchema.parse(
+        await apiRequest(`/api/public/groups/${token}/guests`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
+      ),
+    onSuccess: (data) =>
+      onSaved(
+        data,
+        isSelf
+          ? 'Registro guardado. Tu pase llegará por correo.'
+          : `${seatLabel(seat)} registrado. Le enviamos un correo para activar su pase.`,
+      ),
+    onError: (failure) =>
+      setError(errorText(failure, 'No se pudo registrar este lugar.')),
+  });
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setError('');
+    const parsed = groupGuestInputSchema.safeParse({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      phone: form.phone.trim() || null,
+      organization: form.organization.trim() || null,
+      seatNumber: seat,
+      authorized: accepted,
+    });
+    if (!parsed.success) {
+      setErrors(issuesToErrors(parsed.error.issues));
+      return;
+    }
+    if (isSelf && !accepted) {
+      setErrors({
+        authorized: 'Acepta el aviso de privacidad para continuar.',
+      });
+      return;
+    }
+    setErrors({});
+    save.mutate(parsed.data);
+  };
+
+  return (
+    <article className="seat">
+      <div className="seat-number">
+        {seatLabel(seat)}
+        {group.folioPrefix && (
+          <small>
+            {group.folioPrefix}-{String(seat).padStart(2, '0')}
+          </small>
+        )}
+      </div>
+      <form className="seat-body" onSubmit={submit} noValidate>
+        <Notice>{error}</Notice>
+        <div className="seat-fields">
+          <Field label="Nombre(s)" error={errors.firstName}>
+            <input
+              autoComplete="off"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            />
+          </Field>
+          <Field label="Apellidos" error={errors.lastName}>
+            <input
+              autoComplete="off"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            />
+          </Field>
+          <Field label="Correo electrónico" error={errors.email}>
+            <input
+              type="email"
+              autoComplete="off"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </Field>
+        </div>
+        {isSelf && (
+          <>
+            <label className="check-field privacy-check">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+              />
+              <span>
+                Acepto el{' '}
+                <a href={group.privacyUrl} target="_blank" rel="noreferrer">
+                  aviso de privacidad
+                </a>
+                .
+              </span>
+            </label>
+            {errors.authorized && (
+              <small className="field-error">{errors.authorized}</small>
+            )}
+          </>
+        )}
+        <div className="form-actions">
+          <button
+            className="button primary small"
+            type="submit"
+            disabled={save.isPending}
+          >
+            {save.isPending
+              ? 'Guardando…'
+              : isSelf
+                ? 'Registrarme'
+                : 'Registrar y enviar activación'}
+          </button>
+        </div>
+      </form>
+    </article>
+  );
+}
+
 export function GroupPage() {
   const { token = '' } = useParams();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(emptyForm);
-  const [authorized, setAuthorized] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showAll, setShowAll] = useState(false);
   const [notice, setNotice] = useState<{
     kind: 'ok' | 'error';
     text: string;
   }>();
-  const [prefilled, setPrefilled] = useState(false);
   const key = ['public-group', token];
 
   const group = useQuery({
@@ -34,30 +195,6 @@ export function GroupPage() {
       publicGroupResponseSchema.parse(
         await apiRequest(`/api/public/groups/${token}`),
       ),
-  });
-
-  const add = useMutation({
-    mutationFn: async (body: unknown) =>
-      publicGroupResponseSchema.parse(
-        await apiRequest(`/api/public/groups/${token}/guests`, {
-          method: 'POST',
-          body: JSON.stringify(body),
-        }),
-      ),
-    onSuccess: (data) => {
-      queryClient.setQueryData(key, data);
-      setForm(emptyForm);
-      setAuthorized(false);
-      setNotice({
-        kind: 'ok',
-        text: 'Registro guardado. El pase llegará por correo.',
-      });
-    },
-    onError: (error) =>
-      setNotice({
-        kind: 'error',
-        text: errorText(error, 'No se pudo registrar al invitado.'),
-      }),
   });
 
   const remove = useMutation({
@@ -71,33 +208,29 @@ export function GroupPage() {
       queryClient.setQueryData(key, data);
       setNotice({
         kind: 'ok',
-        text: 'Invitado eliminado. Su pase ya no es válido.',
+        text: 'Se anuló su pase y el lugar quedó libre.',
       });
     },
     onError: (error) =>
       setNotice({
         kind: 'error',
-        text: errorText(error, 'No se pudo eliminar al invitado.'),
+        text: errorText(error, 'No se pudo cambiar al invitado.'),
       }),
   });
 
-  // Quien compró suele ser el primer asistente: se le ahorra volver a capturar.
-  if (
-    group.data &&
-    !prefilled &&
-    group.data.source === 'reconciled' &&
-    group.data.guests.length === 0
-  ) {
-    const { buyer } = group.data;
-    setPrefilled(true);
-    setForm({
-      firstName: buyer.firstName,
-      lastName: buyer.lastName,
-      email: buyer.email ?? '',
-      phone: buyer.phone ?? '',
-      organization: buyer.organization ?? '',
-    });
-  }
+  const resend = useMutation({
+    mutationFn: async (id: string) =>
+      apiRequest(`/api/public/groups/${token}/guests/${id}/resend`, {
+        method: 'POST',
+      }),
+    onSuccess: () =>
+      setNotice({ kind: 'ok', text: 'El correo ya está en la cola de envío.' }),
+    onError: (error) =>
+      setNotice({
+        kind: 'error',
+        text: errorText(error, 'No se pudo reenviar el correo.'),
+      }),
+  });
 
   if (group.isPending) {
     return <Loading />;
@@ -115,49 +248,42 @@ export function GroupPage() {
   }
 
   const data = group.data;
-  const left = data.seats - data.guests.length;
-  const reconciled = data.source === 'reconciled';
   const single = data.seats === 1;
-  const isBuyer =
-    form.email.trim().toLowerCase() === data.buyer.email?.toLowerCase();
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    setNotice(undefined);
-    const parsed = groupGuestInputSchema.safeParse({
-      ...form,
-      organization: form.organization.trim() || null,
-      authorized,
-    });
-    if (!parsed.success) {
-      setErrors(issuesToErrors(parsed.error.issues));
-      return;
-    }
-    setErrors({});
-    add.mutate(parsed.data);
-  };
+  const seats = Array.from({ length: data.seats }, (_, index) => index + 1);
+  const bySeat = new Map(data.guests.map((guest) => [guest.seatNumber, guest]));
+  const empties = seats.filter((seat) => !bySeat.has(seat));
+  const visibleEmpty = new Set(
+    showAll ? empties : empties.slice(0, EMPTY_SHOWN),
+  );
+  const company = data.buyer.organization ?? data.contactName;
+  const greeting = data.delegateName ?? data.buyer.firstName;
 
   return (
-    <PublicLayout privacyUrl={data.privacyUrl}>
-      <h1>
-        {reconciled && single
-          ? 'Completa tu registro'
-          : reconciled
-            ? 'Registra a los asistentes'
-            : 'Registra a tus invitados'}
-      </h1>
-      {reconciled && (
-        <p className="notice ok" role="status">
-          Tu pago está confirmado. Al registrarte recibirás tu pase con código
-          QR.
-        </p>
-      )}
-      <p className="muted">
-        {data.eventName} · {formatEventDate(data.startsAt, data.timeZone, true)}
-        {data.venue ? ` · ${data.venue}` : ''}
-      </p>
+    <PublicLayout privacyUrl={data.privacyUrl} wide={!single}>
+      <div className="group-head">
+        <div>
+          <h1>
+            {single
+              ? 'Completa tu registro'
+              : `${company} · ${data.seats} lugares`}
+          </h1>
+          <p className="muted">
+            {data.eventName} ·{' '}
+            {formatEventDate(data.startsAt, data.timeZone, true)}
+            {data.venue ? ` · ${data.venue}` : ''}
+          </p>
+        </div>
+        <span className="badge neutral">
+          {data.guests.length} de {data.seats} registrados
+        </span>
+      </div>
       <p>
-        {data.contactName} · {data.ticketName} · Referencia {data.reference}
+        Hola, {greeting}.{' '}
+        {single
+          ? 'Tu pago está confirmado. Al registrarte recibirás tu pase con código QR.'
+          : 'Completa los datos de cada invitado cuando te sea conveniente; puedes volver a esta liga las veces que necesites.'}
+        {data.registrationDeadline &&
+          ` Fecha límite: ${new Date(data.registrationDeadline).toLocaleDateString('es-MX', { dateStyle: 'long' })}.`}
       </p>
       <div
         className="progress"
@@ -168,119 +294,107 @@ export function GroupPage() {
       >
         <i style={{ width: `${(data.guests.length / data.seats) * 100}%` }} />
       </div>
-      <p className="progress-label">
-        {data.guests.length} de {data.seats} lugares registrados
-      </p>
+      {!single && (
+        <p className="progress-label">
+          Cada invitado recibe un correo para aceptar el aviso de privacidad y
+          activar su pase. El QR solo contiene un código aleatorio.
+        </p>
+      )}
 
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
 
-      {data.guests.length > 0 && (
-        <ul className="plain-list guest-list">
-          {data.guests.map((guest) => (
-            <li key={guest.id}>
-              <span>
-                <strong>{guest.name}</strong>
-                <small>
-                  {guest.email} · {guest.folio}
-                </small>
-              </span>
-              {guest.checkedIn ? (
-                <span className="badge ok">Ingresó</span>
-              ) : (
-                <button
-                  className="link-button danger"
-                  type="button"
-                  disabled={remove.isPending}
-                  onClick={() => {
-                    if (window.confirm(`¿Quitar a ${guest.name}?`)) {
-                      setNotice(undefined);
-                      remove.mutate(guest.id);
-                    }
-                  }}
-                >
-                  Quitar
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {left > 0 ? (
-        <form onSubmit={submit} noValidate>
-          <h2 className="form-section">
-            {reconciled && data.guests.length === 0
-              ? 'Datos del asistente'
-              : 'Agregar invitado'}
-          </h2>
-          <div className="form-grid">
-            <Field label="Nombre" error={errors.firstName}>
-              <input
-                value={form.firstName}
-                onChange={(e) =>
-                  setForm({ ...form, firstName: e.target.value })
-                }
-              />
-            </Field>
-            <Field label="Apellidos" error={errors.lastName}>
-              <input
-                value={form.lastName}
-                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-              />
-            </Field>
-            <Field
-              label="Correo"
-              error={errors.email}
-              hint="Aquí recibirá su pase con código QR."
-            >
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </Field>
-            <Field label="Teléfono" error={errors.phone}>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
-            </Field>
-          </div>
-          <label className="check-field privacy-check">
-            <input
-              type="checkbox"
-              checked={authorized}
-              onChange={(e) => setAuthorized(e.target.checked)}
+      <div className="seats">
+        {seats.map((seat) => {
+          const guest = bySeat.get(seat);
+          if (guest) {
+            return (
+              <article className="seat" key={guest.id}>
+                <div className="seat-number">{seatLabel(seat)}</div>
+                <div className="seat-filled">
+                  <div>
+                    <strong>{guest.name}</strong>
+                    <small>{guest.email}</small>
+                    <small className="seat-status">
+                      {guest.folio} ·{' '}
+                      {guest.checkedIn
+                        ? 'Ingresó al evento'
+                        : guest.pendingActivation
+                          ? 'Activación pendiente'
+                          : 'Pase enviado'}
+                    </small>
+                  </div>
+                  {!guest.checkedIn && (
+                    <div className="seat-actions">
+                      <button
+                        className="button secondary small"
+                        type="button"
+                        disabled={resend.isPending}
+                        onClick={() => {
+                          setNotice(undefined);
+                          resend.mutate(guest.id);
+                        }}
+                      >
+                        Reenviar correo
+                      </button>
+                      <button
+                        className="button secondary small"
+                        type="button"
+                        disabled={remove.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `¿Anular el pase de ${guest.name} y liberar este lugar?`,
+                            )
+                          ) {
+                            setNotice(undefined);
+                            remove.mutate(guest.id);
+                          }
+                        }}
+                      >
+                        Cambiar invitado
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          }
+          if (!visibleEmpty.has(seat)) {
+            return null;
+          }
+          return (
+            <SeatForm
+              // Cambia de llave al guardar para que un lugar liberado vuelva vacío.
+              key={`${seat}-${data.guests.length}`}
+              seat={seat}
+              group={data}
+              prefill={
+                data.source === 'reconciled' &&
+                !data.delegateName &&
+                data.guests.length === 0 &&
+                seat === 1
+              }
+              token={token}
+              onSaved={(saved, text) => {
+                queryClient.setQueryData(key, saved);
+                setNotice({ kind: 'ok', text });
+              }}
             />
-            <span>
-              {isBuyer
-                ? 'Acepto el '
-                : 'Esta persona me autorizó a compartir sus datos y conoce el '}
-              <a href={data.privacyUrl} target="_blank" rel="noreferrer">
-                aviso de privacidad
-              </a>
-              .
-            </span>
-          </label>
-          {errors.authorized && (
-            <small className="field-error">{errors.authorized}</small>
-          )}
-          <div className="form-actions">
-            <button
-              className="button primary"
-              type="submit"
-              disabled={add.isPending}
-            >
-              {add.isPending
-                ? 'Guardando…'
-                : reconciled && data.guests.length === 0
-                  ? 'Registrarme'
-                  : 'Agregar invitado'}
-            </button>
-          </div>
-        </form>
-      ) : (
+          );
+        })}
+      </div>
+      {!showAll && empties.length > EMPTY_SHOWN && (
+        <div className="form-actions">
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => setShowAll(true)}
+          >
+            Ver los otros {empties.length - EMPTY_SHOWN} lugares
+          </button>
+        </div>
+      )}
+      {empties.length === 0 && (
         <Notice kind="ok">
           {single
             ? 'Listo, ya estás registrado. Revisa tu correo para ver tu pase.'

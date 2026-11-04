@@ -405,7 +405,14 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('check-in', () => {
     expect(response.status).toBe(200);
     const entry = response.body.entries[0];
     expect(Object.keys(entry).sort()).toEqual(
-      ['checkedInAt', 'folio', 'guestName', 'ticketName', 'tokenHash'].sort(),
+      [
+        'checkedInAt',
+        'folio',
+        'guestName',
+        'pendingActivation',
+        'ticketName',
+        'tokenHash',
+      ].sort(),
     );
     expect(JSON.stringify(response.body)).not.toContain(`@${domain}`);
     const revoked = response.body.entries.some(

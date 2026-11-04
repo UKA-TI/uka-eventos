@@ -19,6 +19,7 @@ import {
   requirePermission,
 } from '../auth/auth.js';
 import { eventCheckinRouter } from '../checkin/checkin.js';
+import { eventViewsRouter } from './event-views.js';
 import { ordersRouter } from '../orders/orders.js';
 import { formFieldsRouter, formFieldView } from './form-fields.js';
 import { ticketTypesRouter, ticketTypeView } from './ticket-types.js';
@@ -373,3 +374,4 @@ eventsRouter.use('/:eventId/tickets', ticketTypesRouter);
 eventsRouter.use('/:eventId/fields', formFieldsRouter);
 eventsRouter.use('/:eventId/orders', ordersRouter);
 eventsRouter.use('/:eventId/checkin', eventCheckinRouter);
+eventsRouter.use('/:eventId', eventViewsRouter);

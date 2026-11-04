@@ -16,6 +16,9 @@ import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
 import { EventCheckinTab } from './EventCheckinTab.js';
+import { EventDashboardTab } from './EventDashboardTab.js';
+import { EventGroupsTab } from './EventGroupsTab.js';
+import { EventGuestsTab } from './EventGuestsTab.js';
 import { EventFormFieldsTab } from './EventFormFieldsTab.js';
 import { EventGeneralForm } from './EventGeneralForm.js';
 import { EventModulesTab } from './EventModulesTab.js';
@@ -25,12 +28,15 @@ import { EventTicketsTab } from './EventTicketsTab.js';
 import { formatEventDate, issuesToErrors, slugify } from './text.js';
 
 const tabs = [
-  ['resumen', 'Resumen'],
-  ['registros', 'Registros'],
+  ['tablero', 'Tablero'],
+  ['invitados', 'Invitados'],
+  ['mesas', 'Mesas'],
+  ['registros', 'Compras'],
   ['checkin', 'Check-in'],
   ['boletos', 'Boletos'],
   ['formulario', 'Formulario'],
   ['modulos', 'Módulos'],
+  ['resumen', 'Datos'],
 ] as const;
 
 type Tab = (typeof tabs)[number][0];
@@ -160,10 +166,10 @@ export function EventDetailPage() {
   const queryClient = useQueryClient();
   const { can, csrfToken } = usePermissions();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() => {
+  const [chosenTab, setTab] = useState<Tab | null>(() => {
     // Otras pantallas pueden enlazar directo a una pestaña.
     const requested = searchParams.get('tab');
-    return tabs.find(([value]) => value === requested)?.[0] ?? 'resumen';
+    return tabs.find(([value]) => value === requested)?.[0] ?? null;
   });
   const [editing, setEditing] = useState(false);
   const [newEdition, setNewEdition] = useState(false);
@@ -239,6 +245,9 @@ export function EventDetailPage() {
   }
 
   const event = query.data;
+  // Un borrador aún no tiene actividad: abre en sus datos, no en un tablero vacío.
+  const tab: Tab =
+    chosenTab ?? (event.status === 'draft' ? 'resumen' : 'tablero');
   const canEdit = can('events.edit');
   const setStatus = (status: string) => {
     setNotice(undefined);
@@ -340,7 +349,11 @@ export function EventDetailPage() {
         <NewEditionForm event={event} onCancel={() => setNewEdition(false)} />
       )}
 
-      <div className="tabs" role="tablist" aria-label="Secciones del evento">
+      <div
+        className="tabs event-tabs"
+        role="tablist"
+        aria-label="Secciones del evento"
+      >
         {tabs
           .filter(
             ([value]) =>
@@ -350,7 +363,15 @@ export function EventDetailPage() {
                   'registrations.manage',
                   'payments.manage',
                 )) &&
-              (value !== 'checkin' || can('checkin.operate', 'checkin.manage')),
+              (value !== 'checkin' ||
+                can('checkin.operate', 'checkin.manage')) &&
+              ((value !== 'invitados' && value !== 'mesas') ||
+                can(
+                  'registrations.view',
+                  'registrations.manage',
+                  'payments.manage',
+                  'checkin.manage',
+                )),
           )
           .map(([value, label]) => (
             <button
@@ -389,6 +410,13 @@ export function EventDetailPage() {
             onEdit={canEdit ? () => setEditing(true) : undefined}
           />
         ))}
+      {tab === 'tablero' && (
+        <EventDashboardTab event={event} onOpenTab={(next) => setTab(next)} />
+      )}
+      {tab === 'invitados' && <EventGuestsTab event={event} />}
+      {tab === 'mesas' && (
+        <EventGroupsTab event={event} onChanged={() => refresh()} />
+      )}
       {tab === 'registros' && (
         <EventRegistrationsTab event={event} onChanged={() => refresh()} />
       )}

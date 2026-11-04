@@ -435,10 +435,11 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
       ...extra,
     });
     const url = `/api/public/groups/${token}/guests`;
+    // Quien compró y se registra a sí mismo debe aceptar el aviso.
     const denied = await request(app)
       .post(url)
       .set('Origin', origin)
-      .send(guest('sin', { authorized: false }));
+      .send(guest('empresa', { authorized: false }));
     expect(denied.status).toBe(400);
 
     const first = await request(app)

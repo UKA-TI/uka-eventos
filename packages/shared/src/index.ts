@@ -520,11 +520,14 @@ export const publicRegistrationSchema = orderInputSchema.extend({
 export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 
 export const groupGuestInputSchema = z.object({
-  ...personFields,
+  firstName: personFields.firstName,
+  lastName: personFields.lastName,
+  email: personFields.email,
+  phone: z.string().trim().max(32).nullable(),
   organization: z.string().trim().max(180).nullable(),
-  authorized: z.literal(true, {
-    error: 'Confirma que el invitado autorizó compartir sus datos.',
-  }),
+  seatNumber: z.number().int().min(1).optional(),
+  // Solo aplica a quien captura sus propios datos: nadie acepta el aviso por un tercero.
+  authorized: z.boolean(),
 });
 
 export type GroupGuestInput = z.infer<typeof groupGuestInputSchema>;
@@ -549,6 +552,29 @@ export const paymentInputSchema = z.object({
 
 export type PaymentInput = z.infer<typeof paymentInputSchema>;
 
+/** Quien compra una mesa suele delegar en su asistente el registro de los invitados. */
+const delegateFields = {
+  delegateName: z.string().trim().max(160).nullish(),
+  delegateEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Escribe un correo válido.')
+    .max(254)
+    .nullish(),
+  folioPrefix: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9-]{2,10}$/, 'Usa de 2 a 10 letras, números o guiones.')
+    .nullish(),
+  registrationDeadline: z.string().datetime({ offset: true }).nullish(),
+};
+
+export const orderDelegateSchema = z.object(delegateFields);
+
+export type OrderDelegateInput = z.infer<typeof orderDelegateSchema>;
+
 /** Compra hecha por otro medio: el pago ya se concilió y la persona se registra después. */
 export const reconciledOrderSchema = z.object({
   firstName: personFields.firstName,
@@ -570,6 +596,7 @@ export const reconciledOrderSchema = z.object({
   reference: z.string().trim().max(120).nullable(),
   notes: z.string().trim().max(500).nullable(),
   paidAt: z.string().datetime({ offset: true }),
+  ...delegateFields,
 });
 
 export type ReconciledOrderInput = z.infer<typeof reconciledOrderSchema>;
@@ -595,6 +622,10 @@ export const orderResponseSchema = z.object({
   source: z.string(),
   seats: z.number(),
   quantity: z.number(),
+  delegateName: z.string().nullable(),
+  delegateEmail: z.string().nullable(),
+  folioPrefix: z.string().nullable(),
+  registrationDeadline: z.string().nullable(),
   amountDue: z.number(),
   amountPaid: z.number(),
   createdAt: z.string(),
@@ -694,8 +725,20 @@ export type PublicRegistrationResult = z.infer<
   typeof publicRegistrationResultSchema
 >;
 
+export const passActivationSchema = z.object({
+  privacyAccepted: z.literal(true, {
+    error: 'Acepta el aviso de privacidad para activar tu pase.',
+  }),
+  phone: z
+    .string()
+    .trim()
+    .max(32)
+    .regex(/^[0-9+() .-]*$/, 'Escribe un teléfono válido.')
+    .nullable(),
+});
+
 export const publicPassResponseSchema = z.object({
-  status: z.enum(['active', 'revoked']),
+  status: z.enum(['active', 'revoked', 'pending_activation']),
   folio: z.string(),
   guestName: z.string(),
   eventName: z.string(),
@@ -717,6 +760,9 @@ export const publicGroupResponseSchema = z.object({
   venue: z.string().nullable(),
   ticketName: z.string(),
   contactName: z.string(),
+  delegateName: z.string().nullable(),
+  folioPrefix: z.string().nullable(),
+  registrationDeadline: z.string().nullable(),
   source: z.string(),
   buyer: z.object({
     firstName: z.string(),
@@ -731,9 +777,11 @@ export const publicGroupResponseSchema = z.object({
     z.object({
       id: z.string(),
       folio: z.string(),
+      seatNumber: z.number().nullable(),
       name: z.string(),
       email: z.string().nullable(),
       checkedIn: z.boolean(),
+      pendingActivation: z.boolean(),
     }),
   ),
 });
@@ -784,6 +832,7 @@ export const checkinResultSchema = z.discriminatedUnion('status', [
     operatorName: z.string().nullable(),
   }),
   z.object({ status: z.literal('revoked'), ...checkinGuestFields }),
+  z.object({ status: z.literal('pending_activation'), ...checkinGuestFields }),
   z.object({ status: z.literal('unknown') }),
 ]);
 
@@ -802,6 +851,7 @@ export const offlineListSchema = z.object({
       tokenHash: z.string(),
       ...checkinGuestFields,
       checkedInAt: z.string().nullable(),
+      pendingActivation: z.boolean().optional(),
     }),
   ),
 });
@@ -1222,3 +1272,86 @@ export const reportEventSchema = z.object({
 export type ReportEvent = z.infer<typeof reportEventSchema>;
 
 export const reportEventsResponseSchema = z.array(reportEventSchema);
+
+// ---------------------------------------------------------------------------
+// Vistas por evento: tablero, invitados y mesas
+// ---------------------------------------------------------------------------
+
+export const eventDashboardSchema = z.object({
+  updatedAt: z.string(),
+  capacity: z.number().nullable(),
+  seatsSold: z.number(),
+  seatsToRegister: z.number(),
+  registered: z.number(),
+  pendingActivation: z.number(),
+  checkedIn: z.number(),
+  lastPeriodCheckins: z.number(),
+  pendingArrival: z.number(),
+  incidentsOpen: z.number(),
+  incidentsResolved: z.number(),
+  bucketMinutes: z.number(),
+  timeline: z.array(
+    z.object({ start: z.string(), label: z.string(), count: z.number() }),
+  ),
+  accessPoints: z.array(
+    z.object({ id: z.string(), name: z.string(), count: z.number() }),
+  ),
+});
+
+export type EventDashboard = z.infer<typeof eventDashboardSchema>;
+
+export const guestStatusOptions = [
+  { key: 'checked_in', label: 'Ingresado', tone: 'ok' },
+  { key: 'pending', label: 'Pendiente', tone: 'warn' },
+  { key: 'activation', label: 'Sin activar', tone: 'neutral' },
+  { key: 'payment', label: 'Pago pendiente', tone: 'neutral' },
+  { key: 'incident', label: 'Incidencia', tone: 'bad' },
+] as const;
+
+export const guestListResponseSchema = z.object({
+  guests: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().nullable(),
+      folio: z.string(),
+      group: z.string().nullable(),
+      organization: z.string().nullable(),
+      ticketName: z.string(),
+      status: z.enum([
+        'checked_in',
+        'pending',
+        'activation',
+        'payment',
+        'incident',
+      ]),
+      checkedInAt: z.string().nullable(),
+      accessPointName: z.string().nullable(),
+      operatorName: z.string().nullable(),
+    }),
+  ),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  allGuests: z.number(),
+});
+
+export const eventGroupsResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    reference: z.string(),
+    company: z.string(),
+    buyerName: z.string(),
+    buyerEmail: z.string().nullable(),
+    delegateName: z.string().nullable(),
+    delegateEmail: z.string().nullable(),
+    folioPrefix: z.string().nullable(),
+    registrationDeadline: z.string().nullable(),
+    seats: z.number(),
+    registered: z.number(),
+    activated: z.number(),
+    groupUrl: z.string().nullable(),
+  }),
+);
+
+export type EventGroup = z.infer<typeof eventGroupsResponseSchema>[number];

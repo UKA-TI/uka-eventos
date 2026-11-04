@@ -1,6 +1,7 @@
 import {
   PRIVACY_NOTICE_VERSION,
   type GroupGuestInput,
+  type OrderDelegateInput,
   type OrderInput,
   type PaymentInput,
   type ReconciledOrderInput,
@@ -71,14 +72,21 @@ function buildAnswers(
   });
 }
 
-async function issuePass(tx: Tx, registrationId: string) {
+/** Un pase sin activar existe, pero no muestra QR hasta que su dueño acepte el aviso. */
+const LIVE_PASS = { in: ['active', 'pending_activation'] };
+
+async function issuePass(
+  tx: Tx,
+  registrationId: string,
+  status: 'active' | 'pending_activation' = 'active',
+) {
   const id = newRecordId();
   await tx.pass.create({
     data: {
       id,
       registrationId,
       tokenHash: hashToken(passToken(id)),
-      status: 'active',
+      status,
     },
   });
   return id;
@@ -99,7 +107,7 @@ async function confirmOrder(tx: Tx, orderId: string) {
       buyer: true,
       registrations: {
         where: { status: { not: 'cancelled' } },
-        include: { guest: true },
+        include: { guest: true, consents: { select: { id: true } } },
       },
     },
   });
@@ -118,22 +126,30 @@ async function confirmOrder(tx: Tx, orderId: string) {
       where: { id: registration.id },
       data: { status: 'confirmed' },
     });
-    const passId = await issuePass(tx, registration.id);
+    // Al recuperar un pago, quien nunca aceptó el aviso sigue sin haberlo aceptado.
+    const needsActivation =
+      usesPrivateLink(order) && registration.consents.length === 0;
+    const passId = await issuePass(
+      tx,
+      registration.id,
+      needsActivation ? 'pending_activation' : 'active',
+    );
     if (registration.guest.email) {
       await enqueueEmail(tx, {
         eventId: order.eventId,
-        kind: 'pass',
+        kind: needsActivation ? 'pass_activation' : 'pass',
         refId: passId,
         toEmail: registration.guest.email,
       });
     }
   }
-  if (usesPrivateLink(order) && order.buyer.email) {
+  const recipient = order.delegateEmail ?? order.buyer.email;
+  if (usesPrivateLink(order) && recipient) {
     await enqueueEmail(tx, {
       eventId: order.eventId,
       kind: privateLinkEmail(order),
       refId: order.id,
-      toEmail: order.buyer.email,
+      toEmail: recipient,
     });
   }
 }
@@ -155,7 +171,7 @@ async function revokePasses(tx: Tx, orderId: string, status: string) {
     );
   }
   await tx.pass.updateMany({
-    where: { registrationId: { in: ids }, status: 'active' },
+    where: { registrationId: { in: ids }, status: LIVE_PASS },
     data: { status: 'revoked', revokedAt: new Date() },
   });
   await tx.registration.updateMany({
@@ -279,6 +295,12 @@ export async function createReconciledOrder(params: {
         amountDue: input.amount,
         source: 'reconciled',
         answers: [],
+        delegateName: input.delegateName || null,
+        delegateEmail: input.delegateEmail || null,
+        folioPrefix: input.folioPrefix || null,
+        registrationDeadline: input.registrationDeadline
+          ? new Date(input.registrationDeadline)
+          : null,
       },
     });
     if (input.amount > 0) {
@@ -316,7 +338,8 @@ export async function resendPrivateLink(eventId: string, orderId: string) {
     if (!order || order.status !== 'confirmed' || !order.groupTokenHash) {
       throw new AppError(404, 'Este pedido no tiene una liga activa.');
     }
-    if (!order.buyer.email) {
+    const recipient = order.delegateEmail ?? order.buyer.email;
+    if (!recipient) {
       throw new AppError(409, 'Este pedido no tiene correo.');
     }
     if (order._count.registrations >= order.seats) {
@@ -326,7 +349,159 @@ export async function resendPrivateLink(eventId: string, orderId: string) {
       eventId,
       kind: privateLinkEmail(order),
       refId: order.id,
-      toEmail: order.buyer.email,
+      toEmail: recipient,
+    });
+  }, TX_OPTIONS);
+}
+
+/** Cambia a quién le toca registrar a los invitados y le envía la liga. */
+export async function assignDelegate(
+  eventId: string,
+  orderId: string,
+  input: OrderDelegateInput,
+) {
+  return prisma.$transaction(async (tx) => {
+    await lockOrder(tx, orderId);
+    const order = await tx.order.findFirst({
+      where: { id: orderId, eventId },
+    });
+    if (!order || order.status === 'cancelled') {
+      throw new AppError(404, 'El pedido no existe.');
+    }
+    if (!usesPrivateLink(order)) {
+      throw new AppError(
+        409,
+        'Este pedido es de un solo lugar y no usa liga de registro.',
+      );
+    }
+    const updated = await tx.order.update({
+      where: { id: order.id },
+      data: {
+        delegateName: input.delegateName || null,
+        delegateEmail: input.delegateEmail || null,
+        folioPrefix: input.folioPrefix || null,
+        registrationDeadline: input.registrationDeadline
+          ? new Date(input.registrationDeadline)
+          : null,
+      },
+    });
+    if (
+      input.delegateEmail &&
+      input.delegateEmail !== order.delegateEmail &&
+      order.status === 'confirmed'
+    ) {
+      await enqueueEmail(tx, {
+        eventId,
+        kind: privateLinkEmail(order),
+        refId: order.id,
+        toEmail: input.delegateEmail,
+      });
+    }
+    return updated;
+  }, TX_OPTIONS);
+}
+
+/** Folio de la mesa, como SORIANA-03. Si el lugar cambió de invitado, SORIANA-03-2. */
+async function tableFolio(
+  tx: Tx,
+  eventId: string,
+  prefix: string,
+  seatNumber: number,
+) {
+  const base = `${prefix}-${String(seatNumber).padStart(2, '0')}`;
+  for (let attempt = 1; attempt < 100; attempt += 1) {
+    const folio = attempt === 1 ? base : `${base}-${attempt}`;
+    const used = await tx.registration.findFirst({
+      where: { eventId, folio },
+      select: { id: true },
+    });
+    if (!used) {
+      return folio;
+    }
+  }
+  throw new AppError(409, 'Este lugar ya cambió demasiadas veces de invitado.');
+}
+
+/** El invitado acepta el aviso por sí mismo. Solo entonces existe su QR. */
+export async function activatePass(
+  token: string,
+  phone: string | null,
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const pass = await tx.pass.findUnique({
+      where: { tokenHash: hashToken(token) },
+      include: { registration: { include: { guest: true } } },
+    });
+    if (!pass) {
+      throw new AppError(404, 'Este pase no existe.');
+    }
+    if (pass.status === 'active') {
+      return;
+    }
+    if (pass.status !== 'pending_activation') {
+      throw new AppError(409, 'Este pase ya no es válido.');
+    }
+    const claim = await tx.pass.updateMany({
+      where: { id: pass.id, status: 'pending_activation' },
+      data: { status: 'active' },
+    });
+    if (claim.count === 0) {
+      return;
+    }
+    const { registration } = pass;
+    await tx.consent.create({
+      data: {
+        registrationId: registration.id,
+        purpose: 'event_registration',
+        noticeVersion: PRIVACY_NOTICE_VERSION,
+        granted: true,
+        consentedAt: new Date(),
+      },
+    });
+    if (phone) {
+      await tx.guest.update({
+        where: { id: registration.guestId },
+        data: { phone },
+      });
+      if (registration.guest.contactId) {
+        await tx.contact.updateMany({
+          where: { id: registration.guest.contactId, phone: null },
+          data: { phone },
+        });
+      }
+    }
+    if (registration.guest.email) {
+      await enqueueEmail(tx, {
+        eventId: registration.eventId,
+        kind: 'pass',
+        refId: pass.id,
+        toEmail: registration.guest.email,
+      });
+    }
+  }, TX_OPTIONS);
+}
+
+/** Reenvío desde la liga de la mesa: solo al correo de ese mismo invitado. */
+export async function resendGroupGuest(token: string, registrationId: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await loadGroup(tx, token);
+    const registration = await tx.registration.findFirst({
+      where: {
+        id: registrationId,
+        orderId: order.id,
+        status: { not: 'cancelled' },
+      },
+      include: { guest: true, passes: { where: { status: LIVE_PASS } } },
+    });
+    const pass = registration?.passes[0];
+    if (!registration || !pass || !registration.guest.email) {
+      throw new AppError(404, 'Este invitado no tiene un pase vigente.');
+    }
+    await enqueueEmail(tx, {
+      eventId: order.eventId,
+      kind: pass.status === 'active' ? 'pass' : 'pass_activation',
+      refId: pass.id,
+      toEmail: registration.guest.email,
     });
   }, TX_OPTIONS);
 }
@@ -594,11 +769,45 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
       throw new AppError(409, 'Ya se registraron todos los lugares.');
     }
     const used = new Set(taken.map((item) => item.seatNumber));
-    let seatNumber = 1;
-    while (used.has(seatNumber)) {
-      seatNumber += 1;
+    let seatNumber = input.seatNumber ?? 1;
+    if (input.seatNumber) {
+      if (input.seatNumber > found.seats || used.has(input.seatNumber)) {
+        throw new AppError(
+          409,
+          'Ese lugar ya fue ocupado. Actualiza la página.',
+        );
+      }
+    } else {
+      while (used.has(seatNumber)) {
+        seatNumber += 1;
+      }
     }
-    const folio = await issueFolioWithin(tx, found.eventId);
+    const repeated = await tx.registration.findFirst({
+      where: {
+        eventId: found.eventId,
+        status: { not: 'cancelled' },
+        guest: { email: input.email },
+      },
+      select: { id: true },
+    });
+    if (repeated) {
+      throw new AppError(
+        409,
+        'Ese correo ya tiene un lugar activo en este evento.',
+      );
+    }
+    // Solo quien compró y registra por sí mismo acepta aquí el aviso. Lo que captura
+    // una asistente, o cualquier dato de un tercero, lo activa el propio invitado.
+    const isSelf = !found.delegateEmail && buyer.email === input.email;
+    if (isSelf && !input.authorized) {
+      throw new AppError(
+        400,
+        'Acepta el aviso de privacidad para registrarte.',
+      );
+    }
+    const folio = found.folioPrefix
+      ? await tableFolio(tx, found.eventId, found.folioPrefix, seatNumber)
+      : await issueFolioWithin(tx, found.eventId);
     const contactId = await linkContact(tx, input);
     const guest = await tx.guest.create({
       data: {
@@ -620,23 +829,25 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
         status: 'confirmed',
       },
     });
-    await tx.consent.create({
-      data: {
-        registrationId: registration.id,
-        // Quien captura sus propios datos consiente; a un tercero solo lo autoriza.
-        purpose:
-          buyer.email === input.email
-            ? 'event_registration'
-            : 'group_capture_authorized',
-        noticeVersion: PRIVACY_NOTICE_VERSION,
-        granted: true,
-        consentedAt: new Date(),
-      },
-    });
-    const passId = await issuePass(tx, registration.id);
+    if (isSelf) {
+      await tx.consent.create({
+        data: {
+          registrationId: registration.id,
+          purpose: 'event_registration',
+          noticeVersion: PRIVACY_NOTICE_VERSION,
+          granted: true,
+          consentedAt: new Date(),
+        },
+      });
+    }
+    const passId = await issuePass(
+      tx,
+      registration.id,
+      isSelf ? 'active' : 'pending_activation',
+    );
     await enqueueEmail(tx, {
       eventId: found.eventId,
-      kind: 'pass',
+      kind: isSelf ? 'pass' : 'pass_activation',
       refId: passId,
       toEmail: input.email,
     });
@@ -662,7 +873,7 @@ export async function removeGroupGuest(token: string, registrationId: string) {
       throw new AppError(409, 'Este invitado ya ingresó al evento.');
     }
     await tx.pass.updateMany({
-      where: { registrationId: registration.id, status: 'active' },
+      where: { registrationId: registration.id, status: LIVE_PASS },
       data: { status: 'revoked', revokedAt: new Date() },
     });
     // Libera el asiento para que otra persona pueda ocuparlo.
@@ -677,7 +888,7 @@ export async function resendPass(eventId: string, registrationId: string) {
   return prisma.$transaction(async (tx) => {
     const registration = await tx.registration.findFirst({
       where: { id: registrationId, eventId },
-      include: { guest: true, passes: { where: { status: 'active' } } },
+      include: { guest: true, passes: { where: { status: LIVE_PASS } } },
     });
     const pass = registration?.passes[0];
     if (!registration || !pass) {
@@ -688,7 +899,7 @@ export async function resendPass(eventId: string, registrationId: string) {
     }
     await enqueueEmail(tx, {
       eventId,
-      kind: 'pass',
+      kind: pass.status === 'active' ? 'pass' : 'pass_activation',
       refId: pass.id,
       toEmail: registration.guest.email,
     });

@@ -248,7 +248,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('reconciled purchases', () => {
     expect((await addGuest(orderId, guest('otra'))).status).toBe(409);
   });
 
-  it('splits several tickets in seats and marks third parties as authorized', async () => {
+  it('splits several tickets in seats and leaves third parties to activate', async () => {
     const created = await reconcile(
       purchase('beto', { quantity: 2, amount: 11000 }),
     );
@@ -263,9 +263,11 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('reconciled purchases', () => {
     expect((await addGuest(orderId, guest('invitada'))).status).toBe(201);
     const registration = await prisma.registration.findFirstOrThrow({
       where: { orderId, guest: { email: `invitada@${domain}` } },
-      include: { consents: true },
+      include: { consents: true, passes: true },
     });
-    expect(registration.consents[0]?.purpose).toBe('group_capture_authorized');
+    // La compradora no acepta el aviso por su invitada: lo activa ella misma.
+    expect(registration.consents).toHaveLength(0);
+    expect(registration.passes[0]?.status).toBe('pending_activation');
   });
 
   it('multiplies seats for table tickets and shows how many are left to register', async () => {

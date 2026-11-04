@@ -139,6 +139,47 @@ ${button(passUrl(pass.id), 'Ver mi pase')}`,
   };
 }
 
+/** A la asistente no le toca aceptar por nadie: cada invitado activa su propio pase. */
+async function renderPassActivation(
+  refId: string,
+): Promise<EmailContent | null> {
+  const pass = await prisma.pass.findUnique({
+    where: { id: refId },
+    include: {
+      registration: {
+        include: {
+          guest: true,
+          event: true,
+          order: { include: { buyer: true } },
+        },
+      },
+    },
+  });
+  if (!pass || pass.status !== 'pending_activation') {
+    return null;
+  }
+  const { registration } = pass;
+  const { event, guest, order } = registration;
+  const host =
+    order.buyer.organization ??
+    `${order.buyer.firstName} ${order.buyer.lastName}`;
+  return {
+    subject: `Tienes un lugar reservado para ${event.name}`,
+    html: layout(
+      `Tienes un lugar reservado, ${guest.firstName}`,
+      `<p style="margin:0 0 14px">${escapeHtml(host)} reservó un lugar para ti. Confirma tus datos y acepta el aviso de privacidad para activar tu pase con código QR.</p>
+${details([
+  ['Evento', event.name],
+  ['Fecha', formatDate(event.startsAt, event.timeZone)],
+  ['Sede', event.venue ?? 'Por confirmar'],
+  ['Folio', registration.folio],
+])}
+${button(passUrl(pass.id), 'Confirmar y activar mi pase')}
+<p style="margin:0;color:#6b6b6b;font-size:13px">La liga es personal. Si no reconoces este registro, puedes ignorar este mensaje.</p>`,
+    ),
+  };
+}
+
 async function renderOrderPending(refId: string): Promise<EmailContent | null> {
   const order = await prisma.order.findUnique({
     where: { id: refId },
@@ -187,11 +228,30 @@ async function renderGroupLink(refId: string): Promise<EmailContent | null> {
     subject: `Registra a tus invitados para ${order.event.name}`,
     html: layout(
       'Registra a tus invitados',
-      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. Tu compra de ${order.seats} lugares está confirmada. Captura a cada invitado con esta liga privada, cuando te sea conveniente; cada persona recibirá su propio pase.</p>
+      `<p style="margin:0 0 14px">${delegateIntro(order)} Captura a cada invitado con esta liga privada, cuando te sea conveniente; cada persona recibirá un correo para activar su pase.</p>
 ${button(groupUrl(order.id), 'Registrar invitados')}
 <p style="margin:0;color:#6b6b6b;font-size:13px">No compartas esta liga fuera de tu equipo: permite agregar y quitar invitados.</p>`,
     ),
   };
+}
+
+function delegateIntro(order: {
+  seats: number;
+  delegateName: string | null;
+  buyer: {
+    firstName: string;
+    lastName: string;
+    organization: string | null;
+  };
+}): string {
+  const buyer = `${order.buyer.firstName} ${order.buyer.lastName}`;
+  if (order.delegateName) {
+    const from = order.buyer.organization
+      ? `${buyer} (${order.buyer.organization})`
+      : buyer;
+    return `Hola, ${escapeHtml(order.delegateName)}. ${escapeHtml(from)} compró ${order.seats} lugares y te encargó registrar a los invitados.`;
+  }
+  return `Hola, ${escapeHtml(order.buyer.firstName)}. Tu compra de ${order.seats} lugares está confirmada.`;
 }
 
 async function renderRegistrationInvite(
@@ -213,7 +273,11 @@ async function renderRegistrationInvite(
     subject: `Completa tu registro para ${order.event.name}`,
     html: layout(
       'Tu compra está confirmada',
-      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. Confirmamos tu pago. ${
+      `<p style="margin:0 0 14px">${
+        order.delegateName
+          ? delegateIntro(order)
+          : `Hola, ${escapeHtml(order.buyer.firstName)}. Confirmamos tu pago.`
+      } ${
         several
           ? `Registra a las ${order.seats} personas que asistirán: cada una recibirá su propio pase con código QR.`
           : 'Completa tu registro para recibir tu pase con código QR.'
@@ -364,6 +428,8 @@ function renderContent(
       return renderOrderPending(refId);
     case 'group_link':
       return renderGroupLink(refId);
+    case 'pass_activation':
+      return renderPassActivation(refId);
     case 'registration_invite':
       return renderRegistrationInvite(refId);
     case 'campaign':

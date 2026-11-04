@@ -42,6 +42,10 @@ export function ReconciledOrderForm({
     reference: '',
     notes: '',
     paidAt: todayInput(),
+    delegateName: '',
+    delegateEmail: '',
+    folioPrefix: '',
+    registrationDeadline: '',
   });
   const [amountEdited, setAmountEdited] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,6 +87,12 @@ export function ReconciledOrderForm({
       notes: form.notes.trim() || null,
       // Mediodía local: la fecha elegida no cambia al convertirla a UTC.
       paidAt: new Date(`${form.paidAt}T12:00:00`).toISOString(),
+      delegateName: form.delegateName.trim() || null,
+      delegateEmail: form.delegateEmail.trim() || null,
+      folioPrefix: form.folioPrefix.trim() || null,
+      registrationDeadline: form.registrationDeadline
+        ? new Date(`${form.registrationDeadline}T12:00:00`).toISOString()
+        : null,
     });
     if (!parsed.success) {
       setErrors(issuesToErrors(parsed.error.issues));
@@ -209,6 +219,33 @@ export function ReconciledOrderForm({
             {text('notes')}
           </Field>
         </div>
+      </div>
+      <h3 className="form-section">¿Quién registrará a los invitados?</h3>
+      <p className="form-note">
+        Si lo hará su asistente, escribe sus datos: a ese correo le llegará la
+        liga privada en lugar de al comprador. Déjalo vacío si se registra el
+        comprador.
+      </p>
+      <div className="form-grid">
+        <Field label="Asistente o contacto" error={errors.delegateName}>
+          {text('delegateName')}
+        </Field>
+        <Field label="Correo del contacto" error={errors.delegateEmail}>
+          {text('delegateEmail', 'email')}
+        </Field>
+        <Field
+          label="Prefijo de folio (opcional)"
+          error={errors.folioPrefix}
+          hint="Por ejemplo SORIANA: los folios serán SORIANA-01, SORIANA-02."
+        >
+          {text('folioPrefix')}
+        </Field>
+        <Field
+          label="Fecha límite (opcional)"
+          error={errors.registrationDeadline}
+        >
+          {text('registrationDeadline', 'date')}
+        </Field>
       </div>
       <div className="form-actions">
         <button

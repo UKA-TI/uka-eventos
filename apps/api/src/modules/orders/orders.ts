@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  orderDelegateSchema,
   orderInputSchema,
   paymentInputSchema,
   reconciledOrderSchema,
@@ -13,6 +14,7 @@ import { currentUser, requireCsrf, requirePermission } from '../auth/auth.js';
 import { mailConfigured } from '../mail/queue.js';
 import { groupUrl, passUrl } from '../passes/tokens.js';
 import {
+  assignDelegate,
   cancelOrder,
   createOrder,
   createReconciledOrder,
@@ -181,6 +183,10 @@ ordersRouter.get(
         source: order.source,
         seats: order.seats,
         quantity: order.quantity,
+        delegateName: order.delegateName,
+        delegateEmail: order.delegateEmail,
+        folioPrefix: order.folioPrefix,
+        registrationDeadline: order.registrationDeadline,
         amountDue: order.amountDue.toNumber(),
         amountPaid: order.payments
           .filter((payment) => !payment.voidedAt)
@@ -284,6 +290,29 @@ ordersRouter.post(
       },
     });
     response.status(201).json({ id: order.id, reference: order.reference });
+  }),
+);
+
+ordersRouter.put(
+  '/:orderId/delegate',
+  requirePermission('registrations.manage', 'payments.manage'),
+  requireCsrf,
+  asyncHandler(async (request, response) => {
+    const { eventId, orderId } = request.params as {
+      eventId: string;
+      orderId: string;
+    };
+    const input = orderDelegateSchema.parse(request.body);
+    await assignDelegate(eventId, orderId, input);
+    await recordAudit({
+      userId: currentUser(request).id,
+      action: 'order.delegate',
+      entityType: 'order',
+      entityId: orderId,
+      eventId,
+      details: { folioPrefix: input.folioPrefix ?? null },
+    });
+    response.status(204).end();
   }),
 );
 

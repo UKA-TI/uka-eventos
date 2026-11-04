@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import {
   groupGuestInputSchema,
   isEventModuleKey,
+  passActivationSchema,
   PRIVACY_NOTICE_URL,
   publicRegistrationSchema,
 } from '@uka/shared';
@@ -20,9 +21,11 @@ import {
   passUrl,
 } from '../passes/tokens.js';
 import {
+  activatePass,
   addGroupGuest,
   createOrder,
   removeGroupGuest,
+  resendGroupGuest,
 } from '../orders/order-service.js';
 
 const allowedOrigins = new Set(
@@ -240,7 +243,11 @@ publicRouter.get(
     const { registration } = pass;
     const active = pass.status === 'active';
     response.json({
-      status: active ? 'active' : 'revoked',
+      status: active
+        ? 'active'
+        : pass.status === 'pending_activation'
+          ? 'pending_activation'
+          : 'revoked',
       folio: registration.folio,
       guestName: `${registration.guest.firstName} ${registration.guest.lastName}`,
       eventName: registration.event.name,
@@ -260,6 +267,17 @@ publicRouter.get(
   }),
 );
 
+publicRouter.post(
+  '/passes/:token/activate',
+  requireSameSite,
+  writeLimit,
+  asyncHandler(async (request, response) => {
+    const { phone } = passActivationSchema.parse(request.body);
+    await activatePass(request.params.token ?? '', phone || null);
+    response.status(204).end();
+  }),
+);
+
 async function loadGroupView(token: string) {
   const order = await prisma.order.findUnique({
     where: { groupTokenHash: hashToken(token) },
@@ -272,7 +290,10 @@ async function loadGroupView(token: string) {
         orderBy: { seatNumber: 'asc' },
         include: {
           guest: true,
-          passes: { include: { checkin: { select: { id: true } } } },
+          passes: {
+            where: { status: { not: 'revoked' } },
+            include: { checkin: { select: { id: true } } },
+          },
         },
       },
     },
@@ -288,6 +309,9 @@ async function loadGroupView(token: string) {
     venue: order.event.venue,
     ticketName: order.ticketType.name,
     contactName: `${order.buyer.firstName} ${order.buyer.lastName}`,
+    delegateName: order.delegateName,
+    folioPrefix: order.folioPrefix,
+    registrationDeadline: order.registrationDeadline,
     source: order.source,
     buyer: {
       firstName: order.buyer.firstName,
@@ -300,10 +324,14 @@ async function loadGroupView(token: string) {
     privacyUrl: PRIVACY_NOTICE_URL,
     guests: order.registrations.map((registration) => ({
       id: registration.id,
+      seatNumber: registration.seatNumber,
       folio: registration.folio,
       name: `${registration.guest.firstName} ${registration.guest.lastName}`,
       email: registration.guest.email,
       checkedIn: registration.passes.some((pass) => pass.checkin),
+      pendingActivation: registration.passes.some(
+        (pass) => pass.status === 'pending_activation',
+      ),
     })),
   };
 }
@@ -323,6 +351,19 @@ publicRouter.post(
     const token = request.params.token ?? '';
     await addGroupGuest(token, groupGuestInputSchema.parse(request.body));
     response.status(201).json(await loadGroupView(token));
+  }),
+);
+
+publicRouter.post(
+  '/groups/:token/guests/:registrationId/resend',
+  requireSameSite,
+  writeLimit,
+  asyncHandler(async (request, response) => {
+    await resendGroupGuest(
+      request.params.token ?? '',
+      request.params.registrationId ?? '',
+    );
+    response.status(202).json({ queued: true });
   }),
 );
 

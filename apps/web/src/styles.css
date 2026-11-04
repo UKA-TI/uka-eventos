@@ -989,7 +989,7 @@ code {
 .filters select {
   flex: 0 1 auto;
   width: auto;
-  max-width: 220px;
+  max-width: 260px;
 }
 
 /* --------------------------------------------------------------------------
@@ -1959,6 +1959,320 @@ span.row-actions {
 }
 
 /* --------------------------------------------------------------------------
+   Tablero, invitados y mesas del evento
+   -------------------------------------------------------------------------- */
+.dash-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+  color: var(--tenue);
+  font-size: 0.84rem;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.kpi {
+  align-content: start;
+}
+
+.kpi strong {
+  font-size: 2rem;
+}
+
+.kpi small {
+  color: var(--tenue);
+  font-size: 0.78rem;
+}
+
+.text-alert {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.meter {
+  height: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--linea);
+}
+
+.meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--azul);
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.dash-side {
+  display: grid;
+  gap: 12px;
+}
+
+.dash-side .chart {
+  margin-bottom: 0;
+}
+
+.dash-rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 16px 22px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--blanco);
+  box-shadow: var(--sombra-1);
+  color: var(--tenue);
+  font-size: 0.86rem;
+}
+
+.dash-rate b {
+  color: var(--tinta);
+  font-size: 2.2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.timeline-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 200px;
+  padding-top: 20px;
+  color: var(--tenue);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.timeline-plot {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.timeline-col {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 4px;
+}
+
+.timeline-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 200px;
+  padding-top: 20px;
+  border-bottom: 1px solid var(--borde-campo);
+}
+
+.timeline-track i {
+  position: relative;
+  width: min(70%, 24px);
+  min-height: 1px;
+  border-radius: 4px 4px 0 0;
+  background: var(--azul);
+}
+
+.timeline-col.is-active .timeline-track i {
+  background: var(--azul-oscuro);
+}
+
+.timeline-col.is-active {
+  background: var(--fondo-suave);
+}
+
+.timeline-peak {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 2px;
+  transform: translateX(-50%);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-label {
+  display: block;
+  min-height: 1.4em;
+  padding-top: 6px;
+  color: var(--tenue);
+  font-size: 0.7rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.timeline-tip {
+  right: auto;
+  bottom: calc(100% - 40px);
+  left: 50%;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.guests-table td:last-child {
+  min-width: 130px;
+  white-space: normal;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar.soft {
+  background: var(--azul-claro);
+  color: var(--azul-oscuro);
+}
+
+.folio {
+  color: var(--azul-oscuro);
+}
+
+.table-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--tenue);
+  font-size: 0.84rem;
+}
+
+.small-progress {
+  width: 140px;
+  height: 6px;
+}
+
+a.link-button {
+  text-decoration: none;
+}
+
+.public-card.wide {
+  width: min(100%, 980px);
+}
+
+.group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.seats {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.seat {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--fondo-suave);
+}
+
+.seat-number {
+  color: var(--azul-oscuro);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.seat-number small {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.72rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.seat-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.seat-body .form-actions {
+  margin-top: 10px;
+}
+
+.seat-filled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.seat-filled > div:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.seat-filled small {
+  color: var(--tenue);
+  overflow-wrap: anywhere;
+}
+
+.seat-filled .seat-status {
+  color: var(--azul-oscuro);
+  font-weight: 600;
+}
+
+.seat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pass-activation {
+  margin: 8px 0 16px;
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
    Pantallas chicas
    -------------------------------------------------------------------------- */
 @media (max-width: 860px) {
@@ -2009,6 +2323,15 @@ span.row-actions {
 
   .content {
     padding-top: 20px;
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seat {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   /* El escáner ocupa lo que deja libre la barra del menú. */
