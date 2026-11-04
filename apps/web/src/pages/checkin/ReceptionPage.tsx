@@ -1,9 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { checkinEventsSchema, incidentInputSchema } from '@uka/shared';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../../api.js';
-import { sessionKey, useSession } from '../../auth/session.js';
+import { sessionKey, usePermissions, useSession } from '../../auth/session.js';
 import {
   checkinStore,
   isConnectionError,
@@ -17,6 +24,23 @@ import { formatEventDate } from '../text.js';
 
 const RESULT_MS = 3500;
 const SAME_CODE_MS = 6000;
+
+/**
+ * Con sesión, Recepción conserva el menú. Sin conexión no hay sesión que validar.
+ * Recibe el dato en lugar de consultarlo: sin internet, montar otro lector de la
+ * sesión la vuelve a pedir, regresa la pantalla a "cargando" y se repite sin fin.
+ */
+function ReceptionFrame({
+  hasSession,
+  children,
+  bare = false,
+}: {
+  hasSession: boolean;
+  children: ReactNode;
+  bare?: boolean;
+}) {
+  return hasSession ? <Shell bare={bare}>{children}</Shell> : <>{children}</>;
+}
 
 function useOperator() {
   const session = useSession();
@@ -197,6 +221,8 @@ export function ReceptionHomePage() {
 
 export function ReceptionStationPage() {
   const { eventId = '' } = useParams();
+  const session = useSession();
+  const { can } = usePermissions();
   const operator = useOperator();
   const events = useQuery({
     queryKey: ['checkin-events'],
@@ -226,7 +252,9 @@ export function ReceptionStationPage() {
   );
   if (!event) {
     return events.isPending ? (
-      <Loading />
+      <ReceptionFrame hasSession={Boolean(session.data?.user)}>
+        <Loading />
+      </ReceptionFrame>
     ) : (
       <Navigate to="/recepcion" replace />
     );
@@ -234,6 +262,53 @@ export function ReceptionStationPage() {
   const door = event.accessPoints.find((point) => point.id === doorId);
 
   if (!door) {
+    const content = (
+      <>
+        {event.accessPoints.length === 0 && (
+          <p className="notice warn" role="status">
+            Este evento aún no tiene puntos de acceso.{' '}
+            {can('checkin.manage') ? (
+              <Link to={`/eventos/${event.id}?tab=checkin`}>
+                Agregar puntos de acceso
+              </Link>
+            ) : (
+              'Pide a un administrador que los agregue.'
+            )}
+          </p>
+        )}
+        <div className="station-list">
+          {event.accessPoints.map((point) => (
+            <button
+              key={point.id}
+              type="button"
+              className="station-option"
+              onClick={() => {
+                checkinStore.saveDoor(eventId, point.id);
+                setDoorId(point.id);
+              }}
+            >
+              <strong>{point.name}</strong>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+    if (session.data?.user) {
+      return (
+        <Shell>
+          <section className="reception-home">
+            <Link className="back-link" to="/recepcion">
+              Recepción
+            </Link>
+            <PageHeading
+              title="¿En qué punto de acceso estás?"
+              description={event.name}
+            />
+            {content}
+          </section>
+        </Shell>
+      );
+    }
     return (
       <div className="station-home">
         <header className="station-bar">
@@ -242,42 +317,24 @@ export function ReceptionStationPage() {
         </header>
         <main className="station-content">
           <h1>¿En qué punto de acceso estás?</h1>
-          {event.accessPoints.length === 0 && (
-            <Notice>
-              Este evento no tiene puntos de acceso. Pide a un administrador que
-              los agregue en la pestaña Check-in del evento.
-            </Notice>
-          )}
-          <div className="station-list">
-            {event.accessPoints.map((point) => (
-              <button
-                key={point.id}
-                type="button"
-                className="station-option"
-                onClick={() => {
-                  checkinStore.saveDoor(eventId, point.id);
-                  setDoorId(point.id);
-                }}
-              >
-                <strong>{point.name}</strong>
-              </button>
-            ))}
-          </div>
+          {content}
         </main>
       </div>
     );
   }
 
   return (
-    <Station
-      eventId={eventId}
-      eventName={event.name}
-      timeZone={event.timeZone}
-      doorId={door.id}
-      doorName={door.name}
-      csrfToken={operator.csrfToken}
-      onChangeDoor={() => setDoorId('')}
-    />
+    <ReceptionFrame hasSession={Boolean(session.data?.user)} bare>
+      <Station
+        eventId={eventId}
+        eventName={event.name}
+        timeZone={event.timeZone}
+        doorId={door.id}
+        doorName={door.name}
+        csrfToken={operator.csrfToken}
+        onChangeDoor={() => setDoorId('')}
+      />
+    </ReceptionFrame>
   );
 }
 
@@ -405,7 +462,7 @@ function Station({
             {doorName} · cambiar
           </button>
         </div>
-        <Link to="/recepcion">Salir</Link>
+        <Link to="/recepcion">Cambiar de evento</Link>
       </header>
 
       <div

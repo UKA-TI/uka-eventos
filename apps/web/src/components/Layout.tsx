@@ -37,7 +37,14 @@ export function Layout() {
 }
 
 /** Menú principal y marco de la aplicación, para quien ya tiene una sesión. */
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({
+  children,
+  bare = false,
+}: {
+  children: ReactNode;
+  /** Sin márgenes: para pantallas que usan todo el espacio, como el escáner. */
+  bare?: boolean;
+}) {
   const session = useSession();
   const { can, csrfToken } = usePermissions();
   const queryClient = useQueryClient();
@@ -200,7 +207,7 @@ export function Shell({ children }: { children: ReactNode }) {
             Menú
           </button>
         </header>
-        <main className="content">
+        <main className={bare ? 'content-bare' : 'content'}>
           <Notice>{notice}</Notice>
           {children}
         </main>

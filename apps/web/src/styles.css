@@ -1814,6 +1814,12 @@ span.row-actions {
     padding-top: 20px;
   }
 
+  /* El escáner ocupa lo que deja libre la barra del menú. */
+  .content-bare .station {
+    min-height: calc(100vh - 53px);
+    min-height: calc(100dvh - 53px);
+  }
+
   .filters select {
     flex: 1 1 140px;
     max-width: none;

@@ -5,7 +5,12 @@ import {
   type EventDetail,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
@@ -154,7 +159,12 @@ export function EventDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can, csrfToken } = usePermissions();
-  const [tab, setTab] = useState<Tab>('resumen');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => {
+    // Otras pantallas pueden enlazar directo a una pestaña.
+    const requested = searchParams.get('tab');
+    return tabs.find(([value]) => value === requested)?.[0] ?? 'resumen';
+  });
   const [editing, setEditing] = useState(false);
   const [newEdition, setNewEdition] = useState(false);
   const [notice, setNotice] = useState<{
