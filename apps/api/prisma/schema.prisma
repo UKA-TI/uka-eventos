@@ -61,36 +61,39 @@ model EventFormField {
 }
 
 model Event {
-  id                  String           @id @default(cuid()) @db.VarChar(30)
-  seriesId            String           @map("series_id") @db.VarChar(30)
-  editionYear         Int              @map("edition_year") @db.UnsignedSmallInt
+  id                  String              @id @default(cuid()) @db.VarChar(30)
+  seriesId            String              @map("series_id") @db.VarChar(30)
+  editionYear         Int                 @map("edition_year") @db.UnsignedSmallInt
   modules             Json
-  slug                String           @unique @db.VarChar(100)
-  name                String           @db.VarChar(180)
-  description         String?          @db.Text
-  status              String           @default("draft") @db.VarChar(24)
-  startsAt            DateTime?        @map("starts_at") @db.DateTime(3)
-  endsAt              DateTime?        @map("ends_at") @db.DateTime(3)
-  timeZone            String           @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
-  venue               String?          @db.VarChar(180)
-  programStartsAt     DateTime?        @map("program_starts_at") @db.DateTime(3)
-  mapUrl              String?          @map("map_url") @db.VarChar(500)
-  reminderSentAt      DateTime?        @map("reminder_sent_at") @db.DateTime(3)
-  paymentInstructions String?          @map("payment_instructions") @db.Text
-  capacity            Int?             @db.UnsignedInt
-  folioPrefix         String?          @map("folio_prefix") @db.VarChar(3)
-  currency            String           @default("MXN") @db.Char(3)
-  companionLimit      Int              @default(0) @map("companion_limit") @db.UnsignedInt
-  createdAt           DateTime         @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt           DateTime         @updatedAt @map("updated_at") @db.DateTime(3)
-  series              EventSeries      @relation(fields: [seriesId], references: [id])
+  slug                String              @unique @db.VarChar(100)
+  name                String              @db.VarChar(180)
+  description         String?             @db.Text
+  status              String              @default("draft") @db.VarChar(24)
+  startsAt            DateTime?           @map("starts_at") @db.DateTime(3)
+  endsAt              DateTime?           @map("ends_at") @db.DateTime(3)
+  timeZone            String              @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
+  venue               String?             @db.VarChar(180)
+  programStartsAt     DateTime?           @map("program_starts_at") @db.DateTime(3)
+  mapUrl              String?             @map("map_url") @db.VarChar(500)
+  reminderSentAt      DateTime?           @map("reminder_sent_at") @db.DateTime(3)
+  seatingPublishedAt  DateTime?           @map("seating_published_at") @db.DateTime(3)
+  paymentInstructions String?             @map("payment_instructions") @db.Text
+  capacity            Int?                @db.UnsignedInt
+  folioPrefix         String?             @map("folio_prefix") @db.VarChar(3)
+  currency            String              @default("MXN") @db.Char(3)
+  companionLimit      Int                 @default(0) @map("companion_limit") @db.UnsignedInt
+  createdAt           DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  series              EventSeries         @relation(fields: [seriesId], references: [id])
   ticketTypes         TicketType[]
   formFields          EventFormField[]
   counters            EventCounter[]
   orders              Order[]
   emailMessages       EmailMessage[]
   incidents           Incident[]
-  tables              Table[]
+  tables              EventTable[]
+  seatingPreferences  SeatingPreference[]
+  plan                EventPlan?
   registrations       Registration[]
   checkins            Checkin[]
   accessPoints        AccessPoint[]
@@ -104,33 +107,34 @@ model Event {
 }
 
 model Order {
-  id                   String         @id @default(cuid()) @db.VarChar(30)
-  eventId              String         @map("event_id") @db.VarChar(30)
-  ticketTypeId         String         @map("ticket_type_id") @db.VarChar(30)
-  buyerGuestId         String         @map("buyer_guest_id") @db.VarChar(30)
-  createdById          String?        @map("created_by_id") @db.VarChar(30)
-  reference            String         @db.VarChar(16)
-  seats                Int            @db.UnsignedInt
-  quantity             Int            @default(1) @db.UnsignedInt
-  amountDue            Decimal        @map("amount_due") @db.Decimal(10, 2)
-  status               String         @default("pending_payment") @db.VarChar(24)
-  source               String         @db.VarChar(16)
+  id                   String            @id @default(cuid()) @db.VarChar(30)
+  eventId              String            @map("event_id") @db.VarChar(30)
+  ticketTypeId         String            @map("ticket_type_id") @db.VarChar(30)
+  buyerGuestId         String            @map("buyer_guest_id") @db.VarChar(30)
+  createdById          String?           @map("created_by_id") @db.VarChar(30)
+  reference            String            @db.VarChar(16)
+  seats                Int               @db.UnsignedInt
+  quantity             Int               @default(1) @db.UnsignedInt
+  amountDue            Decimal           @map("amount_due") @db.Decimal(10, 2)
+  status               String            @default("pending_payment") @db.VarChar(24)
+  source               String            @db.VarChar(16)
   answers              Json
-  groupTokenHash       String?        @unique @map("group_token_hash") @db.Char(64)
-  delegateName         String?        @map("delegate_name") @db.VarChar(160)
-  delegateEmail        String?        @map("delegate_email") @db.VarChar(254)
-  registrationDeadline DateTime?      @map("registration_deadline") @db.DateTime(3)
-  notes                String?        @db.VarChar(255)
-  confirmedAt          DateTime?      @map("confirmed_at") @db.DateTime(3)
-  cancelledAt          DateTime?      @map("cancelled_at") @db.DateTime(3)
-  createdAt            DateTime       @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt            DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
-  event                Event          @relation(fields: [eventId], references: [id])
-  ticketType           TicketType     @relation(fields: [ticketTypeId], references: [id])
-  buyer                Guest          @relation("OrderBuyer", fields: [buyerGuestId], references: [id])
-  createdBy            User?          @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  groupTokenHash       String?           @unique @map("group_token_hash") @db.Char(64)
+  delegateName         String?           @map("delegate_name") @db.VarChar(160)
+  delegateEmail        String?           @map("delegate_email") @db.VarChar(254)
+  registrationDeadline DateTime?         @map("registration_deadline") @db.DateTime(3)
+  notes                String?           @db.VarChar(255)
+  confirmedAt          DateTime?         @map("confirmed_at") @db.DateTime(3)
+  cancelledAt          DateTime?         @map("cancelled_at") @db.DateTime(3)
+  createdAt            DateTime          @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.DateTime(3)
+  event                Event             @relation(fields: [eventId], references: [id])
+  ticketType           TicketType        @relation(fields: [ticketTypeId], references: [id])
+  buyer                Guest             @relation("OrderBuyer", fields: [buyerGuestId], references: [id])
+  createdBy            User?             @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
   registrations        Registration[]
   payments             Payment[]
+  allocations          TableAllocation[]
 
   @@unique([eventId, reference])
   @@index([eventId, status])
@@ -185,19 +189,61 @@ model EmailMessage {
   @@map("email_messages")
 }
 
-model Table {
-  id            String         @id @default(cuid()) @db.VarChar(30)
-  eventId       String         @map("event_id") @db.VarChar(30)
-  name          String         @db.VarChar(100)
-  capacity      Int            @db.UnsignedInt
-  createdAt     DateTime       @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
-  event         Event          @relation(fields: [eventId], references: [id])
-  registrations Registration[]
+model EventTable {
+  id            String            @id @default(cuid()) @db.VarChar(30)
+  eventId       String            @map("event_id") @db.VarChar(30)
+  name          String            @db.VarChar(100)
+  capacity      Int               @db.UnsignedInt
+  zone          String?           @db.VarChar(60)
+  x             Float             @default(10)
+  y             Float             @default(10)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.DateTime(3)
+  event         Event             @relation(fields: [eventId], references: [id])
+  registrations Registration[]    @relation("DraftTable")
+  published     Registration[]    @relation("PublishedTable")
+  allocations   TableAllocation[]
 
   @@unique([eventId, name])
   @@index([eventId])
   @@map("event_tables")
+}
+
+model TableAllocation {
+  id        String     @id @default(cuid()) @db.VarChar(30)
+  eventId   String     @map("event_id") @db.VarChar(30)
+  orderId   String     @map("order_id") @db.VarChar(30)
+  tableId   String     @map("table_id") @db.VarChar(30)
+  seats     Int        @db.UnsignedInt
+  locked    Boolean    @default(false)
+  createdAt DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  order     Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  table     EventTable @relation(fields: [tableId], references: [id])
+
+  @@unique([orderId, tableId])
+  @@index([eventId, locked])
+  @@index([tableId])
+  @@map("table_allocations")
+}
+
+model SeatingPreference {
+  eventId  String @map("event_id") @db.VarChar(30)
+  groupKey String @map("group_key") @db.VarChar(60)
+  zone     String @db.VarChar(60)
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, groupKey])
+  @@map("seating_preferences")
+}
+
+model EventPlan {
+  eventId   String   @id @map("event_id") @db.VarChar(30)
+  data      Bytes    @db.MediumBlob
+  mimeType  String   @map("mime_type") @db.VarChar(20)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_plans")
 }
 
 model Guest {
@@ -221,23 +267,25 @@ model Guest {
 }
 
 model Registration {
-  id           String    @id @default(cuid()) @db.VarChar(30)
-  eventId      String    @map("event_id") @db.VarChar(30)
-  guestId      String    @map("guest_id") @db.VarChar(30)
-  orderId      String    @map("order_id") @db.VarChar(30)
-  tableId      String?   @map("table_id") @db.VarChar(30)
-  seatNumber   Int?      @map("seat_number") @db.UnsignedInt
-  folio        String    @db.VarChar(16)
-  status       String    @default("pending") @db.VarChar(24)
-  registeredAt DateTime  @default(now()) @map("registered_at") @db.DateTime(3)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
-  event        Event     @relation(fields: [eventId], references: [id])
-  guest        Guest     @relation(fields: [guestId], references: [id])
-  order        Order     @relation(fields: [orderId], references: [id])
-  table        Table?    @relation(fields: [tableId], references: [id])
-  passes       Pass[]
-  consents     Consent[]
+  id               String      @id @default(cuid()) @db.VarChar(30)
+  eventId          String      @map("event_id") @db.VarChar(30)
+  guestId          String      @map("guest_id") @db.VarChar(30)
+  orderId          String      @map("order_id") @db.VarChar(30)
+  tableId          String?     @map("table_id") @db.VarChar(30)
+  seatNumber       Int?        @map("seat_number") @db.UnsignedInt
+  folio            String      @db.VarChar(16)
+  status           String      @default("pending") @db.VarChar(24)
+  registeredAt     DateTime    @default(now()) @map("registered_at") @db.DateTime(3)
+  createdAt        DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
+  event            Event       @relation(fields: [eventId], references: [id])
+  guest            Guest       @relation(fields: [guestId], references: [id])
+  order            Order       @relation(fields: [orderId], references: [id])
+  table            EventTable? @relation("DraftTable", fields: [tableId], references: [id])
+  publishedTableId String?     @map("published_table_id") @db.VarChar(30)
+  publishedTable   EventTable? @relation("PublishedTable", fields: [publishedTableId], references: [id])
+  passes           Pass[]
+  consents         Consent[]
 
   @@unique([eventId, folio])
   @@unique([orderId, seatNumber])

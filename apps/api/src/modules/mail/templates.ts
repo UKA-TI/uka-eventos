@@ -239,7 +239,13 @@ async function renderEventReminder(
     where: { id: refId },
     include: {
       checkin: { select: { id: true } },
-      registration: { include: { guest: true, event: true } },
+      registration: {
+        include: {
+          guest: true,
+          event: true,
+          publishedTable: { select: { name: true } },
+        },
+      },
     },
   });
   if (!pass || pass.status !== 'active' || pass.checkin) {
@@ -252,6 +258,7 @@ async function renderEventReminder(
     html: layout(
       'Tu evento está muy cerca',
       `<p style="margin:0 0 14px">Hola, ${escapeHtml(guest.firstName)}. Te recordamos tu asistencia. Ten a la mano tu pase con código QR para entrar más rápido.</p>
+${registration.publishedTable ? tableBanner(registration.publishedTable.name) : ''}
 ${details([
   ['Evento', event.name],
   ['Fecha', formatDate(event.startsAt, event.timeZone)],
@@ -264,7 +271,15 @@ ${passActions(pass.id, registration.folio, event)}`,
   };
 }
 
-async function renderPass(refId: string): Promise<EmailContent | null> {
+/** La mesa se ve de lejos: es lo primero que busca quien abre el correo en la entrada. */
+function tableBanner(name: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px"><tr><td align="center" bgcolor="#e8f3fb" style="padding:14px;border-radius:8px;background:#e8f3fb;color:#06385f"><div style="font-size:13px;font-weight:bold">Tu mesa</div><div style="font-size:30px;font-weight:bold;line-height:1.2">${escapeHtml(name)}</div></td></tr></table>`;
+}
+
+async function renderPass(
+  refId: string,
+  seatNotice = false,
+): Promise<EmailContent | null> {
   const pass = await prisma.pass.findUnique({
     where: { id: refId },
     include: {
@@ -272,6 +287,7 @@ async function renderPass(refId: string): Promise<EmailContent | null> {
         include: {
           guest: true,
           event: true,
+          publishedTable: { select: { name: true } },
           order: { include: { ticketType: { select: { name: true } } } },
         },
       },
@@ -282,13 +298,17 @@ async function renderPass(refId: string): Promise<EmailContent | null> {
   }
   const { registration } = pass;
   const { event, guest } = registration;
+  const tableName = registration.publishedTable?.name ?? null;
   const png = await QRCode.toBuffer(passToken(pass.id), {
     errorCorrectionLevel: 'M',
     margin: 2,
     width: 320,
   });
   return {
-    subject: `Tu pase para ${event.name} (${registration.folio})`,
+    subject:
+      seatNotice && tableName
+        ? `Tu mesa para ${event.name}: ${tableName}`
+        : `Tu pase para ${event.name} (${registration.folio})`,
     inlineImages: [
       {
         contentId: 'pase-qr',
@@ -297,8 +317,9 @@ async function renderPass(refId: string): Promise<EmailContent | null> {
       },
     ],
     html: layout(
-      'Tu pase está listo',
-      `<p style="margin:0 0 14px">Hola, ${escapeHtml(guest.firstName)}. Presenta este código QR en la entrada. Es personal: no lo compartas.</p>
+      seatNotice ? 'Tu lugar está listo' : 'Tu pase está listo',
+      `<p style="margin:0 0 14px">Hola, ${escapeHtml(guest.firstName)}. ${seatNotice ? 'Ya tenemos tu mesa. Presenta tu código QR en la entrada y te indicaremos dónde sentarte.' : 'Presenta este código QR en la entrada. Es personal: no lo compartas.'}</p>
+${tableName ? tableBanner(tableName) : ''}
 ${details([
   ['Evento', event.name],
   ['Fecha', formatDate(event.startsAt, event.timeZone)],
@@ -324,6 +345,7 @@ async function renderPassActivation(
         include: {
           guest: true,
           event: true,
+          publishedTable: { select: { name: true } },
           order: { include: { buyer: true } },
         },
       },
@@ -346,6 +368,9 @@ ${details([
   ['Evento', event.name],
   ['Fecha', formatDate(event.startsAt, event.timeZone)],
   ['Sede', event.venue ?? 'Por confirmar'],
+  ...(registration.publishedTable
+    ? ([['Mesa', registration.publishedTable.name]] as [string, string][])
+    : []),
   ['Folio', registration.folio],
 ])}
 ${button(passUrl(pass.id), 'Confirmar y activar mi pase')}
@@ -598,6 +623,8 @@ function renderContent(
   switch (kind) {
     case 'pass':
       return renderPass(refId);
+    case 'seat_notice':
+      return renderPass(refId, true);
     case 'order_pending':
       return renderOrderPending(refId);
     case 'group_link':

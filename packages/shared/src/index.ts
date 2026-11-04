@@ -65,6 +65,14 @@ export const permissionCatalog = [
     ],
   },
   {
+    key: 'seating',
+    label: 'Acomodo de mesas',
+    actions: [
+      { code: 'seating.view', label: 'Ver' },
+      { code: 'seating.manage', label: 'Acomodar y publicar' },
+    ],
+  },
+  {
     key: 'reports',
     label: 'Reportes',
     actions: [
@@ -754,6 +762,7 @@ export const recoverPassSchema = z.object({
 
 export const publicPassResponseSchema = z.object({
   status: z.enum(['active', 'revoked', 'pending_activation']),
+  tableName: z.string().nullable(),
   folio: z.string(),
   guestName: z.string(),
   eventName: z.string(),
@@ -833,6 +842,7 @@ const checkinGuestFields = {
   guestName: z.string(),
   folio: z.string(),
   ticketName: z.string(),
+  tableName: z.string().nullable().optional(),
 };
 
 export const checkinResultSchema = z.discriminatedUnion('status', [
@@ -1356,6 +1366,7 @@ export const guestListResponseSchema = z.object({
       email: z.string().nullable(),
       folio: z.string(),
       group: z.string().nullable(),
+      tableName: z.string().nullable(),
       organization: z.string().nullable(),
       ticketName: z.string(),
       status: z.enum([
@@ -1394,3 +1405,130 @@ export const eventGroupsResponseSchema = z.array(
 );
 
 export type EventGroup = z.infer<typeof eventGroupsResponseSchema>[number];
+
+// ---------------------------------------------------------------------------
+// Acomodo de mesas
+// ---------------------------------------------------------------------------
+
+const seatingZone = z.string().trim().max(60).nullable();
+
+export const seatingAddTablesSchema = z.object({
+  count: z
+    .number('Escribe cuántas mesas.')
+    .int('Escribe un número entero.')
+    .min(1, 'Debe ser al menos 1.')
+    .max(200, 'Son demasiadas mesas de una vez.'),
+  capacity: z
+    .number('Escribe el cupo.')
+    .int('Escribe un número entero.')
+    .min(1, 'Debe ser al menos 1.')
+    .max(100, 'El cupo es demasiado alto.'),
+  zone: seatingZone,
+});
+
+export const seatingTableSchema = z.object({
+  name: z.string().trim().min(1, 'Escribe el nombre.').max(100),
+  capacity: z.number().int().min(1).max(100),
+  zone: seatingZone,
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+});
+
+export const seatingZoneSchema = z.object({
+  groupKey: z.string().min(1).max(60),
+  zone: seatingZone,
+});
+
+export const seatingMoveGroupSchema = z.object({
+  orderIds: z.array(z.string().max(30)).min(1).max(500),
+  tableId: z.string().max(30).nullable(),
+});
+
+export const seatingMovePersonSchema = z.object({
+  registrationId: z.string().max(30),
+  tableId: z.string().max(30).nullable(),
+});
+
+export const seatingLockSchema = z.object({ locked: z.boolean() });
+
+export const seatingViewSchema = z.object({
+  publishedAt: z.string().nullable(),
+  pendingChanges: z.number(),
+  registeredPeople: z.number(),
+  unpaidSeats: z.number(),
+  planVersion: z.number().nullable(),
+  tables: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      capacity: z.number(),
+      zone: z.string().nullable(),
+      x: z.number(),
+      y: z.number(),
+      occupied: z.number(),
+      people: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          folio: z.string(),
+          group: z.string(),
+        }),
+      ),
+    }),
+  ),
+  groups: z.array(
+    z.object({
+      key: z.string(),
+      label: z.string(),
+      zone: z.string().nullable(),
+      seats: z.number(),
+      placedSeats: z.number(),
+      orders: z.array(
+        z.object({
+          id: z.string(),
+          reference: z.string(),
+          seats: z.number(),
+          buyerName: z.string(),
+          allocations: z.array(
+            z.object({
+              id: z.string(),
+              tableId: z.string(),
+              tableName: z.string(),
+              seats: z.number(),
+              locked: z.boolean(),
+            }),
+          ),
+          people: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              folio: z.string(),
+              tableId: z.string().nullable(),
+              pendingActivation: z.boolean(),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+export type SeatingView = z.infer<typeof seatingViewSchema>;
+
+export const seatingAutoResultSchema = z.object({
+  placed: z.number(),
+  unplacedSeats: z.number(),
+  warnings: z.array(
+    z.object({
+      groupKey: z.string(),
+      label: z.string(),
+      kind: z.enum(['no_fit', 'split', 'outside_zone']),
+      message: z.string(),
+    }),
+  ),
+});
+
+export const seatingPublishResultSchema = z.object({
+  notified: z.number(),
+  unassigned: z.number(),
+});

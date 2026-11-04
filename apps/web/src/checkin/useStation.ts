@@ -204,6 +204,7 @@ export function useStation(params: {
         guestName: entry.guestName,
         folio: entry.folio,
         ticketName: entry.ticketName,
+        tableName: entry.tableName ?? null,
       };
       if (entry.pendingActivation && !manualReason) {
         return {

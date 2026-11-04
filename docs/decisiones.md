@@ -196,13 +196,28 @@ Para quien llega sin registro. Requiere permiso de recepción o de registros, de
 bitácora, no genera cobro y **no respeta el cupo a propósito**, porque es una decisión de quien
 autoriza. Su correo es opcional.
 
+## Acomodo de mesas
+
+- **El plano es una imagen PNG o JPG** guardada en la base de datos. Las mesas se guardan en
+  porcentaje del plano, así que no se mueven si la pantalla cambia de tamaño.
+- **Una compra aparta todos sus lugares,** aunque aún no se registren los invitados: una mesa de
+  10 con 4 registrados ocupa 10. Quien se registra después toma uno de esos lugares.
+- **El grupo es la empresa o, si no tiene, la compra.** Compras de la misma empresa en momentos
+  distintos quedan juntas.
+- **El acomodo automático nunca separa un grupo que cabría en una mesa:** avisa y lo deja sin mesa.
+  Solo divide a un grupo más grande que cualquier mesa, en mesas cercanas, y también avisa.
+- **Lo movido a mano queda fijo** y un nuevo acomodo automático no lo toca.
+- **Nada se ve hasta publicar.** Publicar avisa solo a quienes les cambió la mesa, con su pase. Quien
+  aún no activa su pase recibe la invitación a activarlo, ya con su mesa.
+- **Solo se acomoda lo pagado.** Una compra cancelada o con el pago anulado libera sus lugares.
+
 ## Pendiente frente al mockup
 
 Revisado contra `uka-eventos-mockup-gala.html`.
 
 - Wallet: requiere cuenta de Apple Developer y cuenta de emisor de Google.
 - WhatsApp: para una etapa futura.
-- Módulos con interruptor pero sin pantalla: acompañantes y mesas físicas.
+- Módulo con interruptor pero sin pantalla: acompañantes.
 - Pantallas de bitácora, consentimientos y operadores.
 - Recepción: linterna y captura de folio con teclado.
 - Las preguntas personalizadas del evento en la liga de la asistente.

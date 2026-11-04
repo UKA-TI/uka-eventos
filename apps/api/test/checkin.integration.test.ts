@@ -410,6 +410,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('check-in', () => {
         'folio',
         'guestName',
         'pendingActivation',
+        'tableName',
         'ticketName',
         'tokenHash',
       ].sort(),

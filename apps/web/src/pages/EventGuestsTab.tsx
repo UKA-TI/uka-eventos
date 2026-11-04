@@ -137,6 +137,7 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                   <th>Invitado</th>
                   <th>Folio</th>
                   <th>Empresa / mesa</th>
+                  <th>Mesa</th>
                   <th>Organización</th>
                   <th>Estado</th>
                   <th>Hora</th>
@@ -165,6 +166,7 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                         <strong className="folio">{guest.folio}</strong>
                       </td>
                       <td>{guest.group ?? '—'}</td>
+                      <td>{guest.tableName ?? '—'}</td>
                       <td>{guest.organization ?? '—'}</td>
                       <td>
                         <span className={`badge ${state.tone}`}>

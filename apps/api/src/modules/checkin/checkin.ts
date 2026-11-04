@@ -29,6 +29,7 @@ const passInclude = {
     include: {
       guest: { select: { firstName: true, lastName: true } },
       order: { include: { ticketType: { select: { name: true } } } },
+      publishedTable: { select: { name: true } },
     },
   },
   checkin: {
@@ -51,6 +52,7 @@ function guestView(pass: LoadedPass) {
     guestName: `${registration.guest.firstName} ${registration.guest.lastName}`,
     folio: registration.folio,
     ticketName: registration.order.ticketType.name,
+    tableName: registration.publishedTable?.name ?? null,
   };
 }
 

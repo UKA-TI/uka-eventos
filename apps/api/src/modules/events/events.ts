@@ -19,6 +19,7 @@ import {
   requirePermission,
 } from '../auth/auth.js';
 import { eventCheckinRouter } from '../checkin/checkin.js';
+import { seatingRouter } from '../seating/seating.js';
 import { eventViewsRouter } from './event-views.js';
 import { ordersRouter } from '../orders/orders.js';
 import { formFieldsRouter, formFieldView } from './form-fields.js';
@@ -362,6 +363,8 @@ eventsRouter.delete(
     }
     await prisma.$transaction([
       prisma.eventCounter.deleteMany({ where: { eventId: current.id } }),
+      prisma.eventTable.deleteMany({ where: { eventId: current.id } }),
+      prisma.accessPoint.deleteMany({ where: { eventId: current.id } }),
       prisma.event.delete({ where: { id: current.id } }),
     ]);
     await recordAudit({
@@ -379,4 +382,5 @@ eventsRouter.use('/:eventId/tickets', ticketTypesRouter);
 eventsRouter.use('/:eventId/fields', formFieldsRouter);
 eventsRouter.use('/:eventId/orders', ordersRouter);
 eventsRouter.use('/:eventId/checkin', eventCheckinRouter);
+eventsRouter.use('/:eventId/seating', seatingRouter);
 eventsRouter.use('/:eventId', eventViewsRouter);

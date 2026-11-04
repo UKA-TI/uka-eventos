@@ -101,6 +101,12 @@ function ResultOverlay({
       {result.status !== 'unknown' && (
         <>
           <span className="scan-name">{result.guestName}</span>
+          {result.tableName && (
+            <span className="scan-table">
+              <small>Su mesa</small>
+              {result.tableName}
+            </span>
+          )}
           <span>
             {result.ticketName} · {result.folio}
           </span>
@@ -550,6 +556,7 @@ function Station({
                   <strong>{entry.guestName}</strong>
                   <small>
                     {entry.ticketName} · {entry.folio}
+                    {entry.tableName ? ` · ${entry.tableName}` : ''}
                     {entry.pendingActivation && !entry.checkedInAt
                       ? ' · Sin activar'
                       : ''}

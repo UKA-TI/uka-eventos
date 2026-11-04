@@ -231,6 +231,7 @@ eventViewsRouter.get(
         take: PAGE_SIZE,
         include: {
           guest: true,
+          publishedTable: { select: { name: true } },
           order: {
             include: {
               buyer: true,
@@ -278,6 +279,7 @@ eventViewsRouter.get(
           email: registration.guest.email,
           folio: registration.folio,
           group: groupLabel(registration.order),
+          tableName: registration.publishedTable?.name ?? null,
           organization: registration.guest.organization,
           ticketName: registration.order.ticketType.name,
           status: state,

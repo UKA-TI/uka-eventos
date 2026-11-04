@@ -19,6 +19,7 @@ import { EventCheckinTab } from './EventCheckinTab.js';
 import { EventDashboardTab } from './EventDashboardTab.js';
 import { EventGroupsTab } from './EventGroupsTab.js';
 import { EventGuestsTab } from './EventGuestsTab.js';
+import { EventSeatingTab } from './EventSeatingTab.js';
 import { EventFormFieldsTab } from './EventFormFieldsTab.js';
 import { EventGeneralForm } from './EventGeneralForm.js';
 import { EventModulesTab } from './EventModulesTab.js';
@@ -31,6 +32,7 @@ const tabs = [
   ['tablero', 'Tablero'],
   ['invitados', 'Invitados'],
   ['mesas', 'Mesas'],
+  ['acomodo', 'Acomodo'],
   ['registros', 'Compras'],
   ['checkin', 'Check-in'],
   ['boletos', 'Boletos'],
@@ -365,6 +367,9 @@ export function EventDetailPage() {
                 )) &&
               (value !== 'checkin' ||
                 can('checkin.operate', 'checkin.manage')) &&
+              (value !== 'acomodo' ||
+                (event.modules.includes('tables') &&
+                  can('seating.view', 'seating.manage'))) &&
               ((value !== 'invitados' && value !== 'mesas') ||
                 can(
                   'registrations.view',
@@ -414,6 +419,7 @@ export function EventDetailPage() {
         <EventDashboardTab event={event} onOpenTab={(next) => setTab(next)} />
       )}
       {tab === 'invitados' && <EventGuestsTab event={event} />}
+      {tab === 'acomodo' && <EventSeatingTab event={event} />}
       {tab === 'mesas' && (
         <EventGroupsTab event={event} onChanged={() => refresh()} />
       )}

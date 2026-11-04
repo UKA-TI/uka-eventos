@@ -147,6 +147,12 @@ export function PassPage() {
       <div className="pass">
         <p className="pass-event">{data.eventName}</p>
         <h1>{pending ? 'Activa tu pase' : data.guestName}</h1>
+        {!pending && data.tableName && (
+          <div className="pass-table">
+            <small>Tu mesa</small>
+            <b>{data.tableName}</b>
+          </div>
+        )}
         {pending ? (
           <div className="pass-activation">
             <ActivationForm

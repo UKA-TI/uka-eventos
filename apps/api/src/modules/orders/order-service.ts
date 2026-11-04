@@ -13,6 +13,7 @@ import { AppError } from '../../errors.js';
 import { issueFolioWithin } from '../folios/prisma-folio-database.js';
 import { linkContact } from '../contacts/contact-link.js';
 import { enqueueEmail } from '../mail/queue.js';
+import { releaseOrderSeats, seatNewGuest } from '../seating/seating-service.js';
 import {
   groupToken,
   hashToken,
@@ -789,6 +790,7 @@ export async function voidPayment(params: {
     const stillPaid = moneyEquals(remaining, order.amountDue.toNumber());
     if (order.status === 'confirmed' && !stillPaid) {
       await revokePasses(tx, order.id, 'pending');
+      await releaseOrderSeats(tx, order.id);
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -817,6 +819,7 @@ export async function cancelOrder(eventId: string, orderId: string) {
       throw new AppError(409, 'Este pedido ya estaba cancelado.');
     }
     await revokePasses(tx, order.id, 'cancelled');
+    await releaseOrderSeats(tx, order.id);
     return tx.order.update({
       where: { id: order.id },
       data: {
@@ -913,6 +916,7 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
         status: 'confirmed',
       },
     });
+    await seatNewGuest(tx, found.id, registration.id);
     if (isSelf) {
       await tx.consent.create({
         data: {
@@ -963,7 +967,12 @@ export async function removeGroupGuest(token: string, registrationId: string) {
     // Libera el asiento para que otra persona pueda ocuparlo.
     await tx.registration.update({
       where: { id: registration.id },
-      data: { status: 'cancelled', seatNumber: null },
+      data: {
+        status: 'cancelled',
+        seatNumber: null,
+        tableId: null,
+        publishedTableId: null,
+      },
     });
   }, TX_OPTIONS);
 }

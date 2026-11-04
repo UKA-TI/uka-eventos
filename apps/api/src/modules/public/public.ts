@@ -250,6 +250,7 @@ publicRouter.get(
           include: {
             guest: true,
             event: true,
+            publishedTable: { select: { name: true } },
             order: { include: { ticketType: { select: { name: true } } } },
           },
         },
@@ -261,6 +262,7 @@ publicRouter.get(
     const { registration } = pass;
     const active = pass.status === 'active';
     response.json({
+      tableName: registration.publishedTable?.name ?? null,
       status: active
         ? 'active'
         : pass.status === 'pending_activation'
@@ -297,6 +299,7 @@ async function loadPassForFile(token: string) {
         include: {
           guest: true,
           event: true,
+          publishedTable: { select: { name: true } },
           order: { include: { ticketType: { select: { name: true } } } },
         },
       },

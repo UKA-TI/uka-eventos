@@ -142,6 +142,7 @@ reportsRouter.get(
           orderBy: { seatNumber: 'asc' },
           include: {
             guest: true,
+            publishedTable: { select: { name: true } },
             passes: {
               include: {
                 checkin: {
@@ -191,6 +192,7 @@ reportsRouter.get(
           registration.guest.phone,
           registration.guest.organization,
           registrationStatusLabels[registration.status] ?? registration.status,
+          registration.publishedTable?.name ?? '',
           checkin ? 'Sí' : 'No',
           checkin?.checkedInAt.toLocaleString('es-MX', {
             timeZone: event.timeZone,
@@ -217,6 +219,7 @@ reportsRouter.get(
         '',
         '',
         'Por registrar',
+        '',
         'No',
         '',
         '',
@@ -246,6 +249,7 @@ reportsRouter.get(
           'Teléfono',
           'Empresa',
           'Estado',
+          'Mesa',
           'Asistió',
           'Hora de ingreso',
           'Punto de acceso',
