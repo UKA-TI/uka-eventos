@@ -20,6 +20,18 @@ export function EventSummaryTab({
         : 'Sin definir',
     ],
     ['Sede', event.venue ?? 'Sin definir'],
+    ...(event.programStartsAt
+      ? ([
+          [
+            'Programa',
+            new Date(event.programStartsAt).toLocaleTimeString('es-MX', {
+              timeZone: event.timeZone,
+              timeStyle: 'short',
+            }),
+          ],
+        ] as [string, string][])
+      : []),
+    ['Mapa', event.mapUrl ?? 'Sin liga'],
     ['Aforo', event.capacity?.toLocaleString('es-MX') ?? 'Sin definir'],
     ['Prefijo de folio', event.folioPrefix ?? 'Sin definir'],
     ['Dirección pública', event.slug],

@@ -409,9 +409,9 @@ export function CampaignPage() {
           {data.status === 'draft' && (
             <p className="muted">
               Guarda los cambios antes de revisar. Se enviará a{' '}
-              <strong>{people(data.audience)}</strong> con correo y sin baja;
-              tardará {estimate(data.audience)}. Los pases y avisos de pago
-              siempre salen primero.
+              <strong>{people(data.audience)}</strong> que aceptan
+              comunicaciones; tardará {estimate(data.audience)}. Los pases y
+              avisos de pago siempre salen primero.
             </p>
           )}
           <div className="form-actions">

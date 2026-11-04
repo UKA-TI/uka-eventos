@@ -7,7 +7,7 @@ import {
   type PublicRegistrationResult,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
 import { formatEventDate, formatMoney, issuesToErrors } from '../text.js';
@@ -80,6 +80,7 @@ export function PublicRegisterPage() {
   });
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [website, setWebsite] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -141,6 +142,7 @@ export function PublicRegisterPage() {
       organization: form.organization.trim() || null,
       answers,
       privacyAccepted,
+      marketingConsent,
       website,
     });
     if (!parsed.success) {
@@ -158,10 +160,23 @@ export function PublicRegisterPage() {
       <p className="muted">
         {formatEventDate(data.startsAt, data.timeZone, true)}
         {data.venue ? ` · ${data.venue}` : ''}
+        {data.programStartsAt &&
+          ` · Programa ${new Date(data.programStartsAt).toLocaleTimeString('es-MX', { timeZone: data.timeZone, timeStyle: 'short' })}`}
       </p>
+      {data.mapUrl && (
+        <p className="event-links">
+          <a href={data.mapUrl} target="_blank" rel="noreferrer">
+            Cómo llegar
+          </a>
+        </p>
+      )}
       {data.description && (
         <p className="event-description">{data.description}</p>
       )}
+      <p className="form-note">
+        ¿Ya te registraste?{' '}
+        <Link to={`/recuperar/${slug}`}>Recuperar mi pase</Link>
+      </p>
 
       {data.tickets.length > 0 && available.length === 0 ? (
         <Notice>Los boletos de este evento están agotados.</Notice>
@@ -337,6 +352,17 @@ export function PublicRegisterPage() {
           {errors.privacyAccepted && (
             <small className="field-error">{errors.privacyAccepted}</small>
           )}
+          <label className="check-field privacy-check">
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={(e) => setMarketingConsent(e.target.checked)}
+            />
+            <span>
+              Quiero recibir información sobre eventos y campañas de Un Kilo de
+              Ayuda (opcional). Puedo darme de baja en cualquier momento.
+            </span>
+          </label>
 
           {register.isError && (
             <Notice>

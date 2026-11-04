@@ -23,6 +23,7 @@ import { NewEventPage } from './pages/NewEventPage.js';
 import { GroupPage } from './pages/public/GroupPage.js';
 import { PassPage } from './pages/public/PassPage.js';
 import { PublicRegisterPage } from './pages/public/PublicRegisterPage.js';
+import { RecoverPassPage } from './pages/public/RecoverPassPage.js';
 import { UnsubscribePage } from './pages/public/UnsubscribePage.js';
 import { ReportsPage } from './pages/reports/ReportsPage.js';
 import { RolesPage } from './pages/RolesPage.js';
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/pase/:token" element={<PassPage />} />
       <Route path="/mesa/:token" element={<GroupPage />} />
       <Route path="/baja/:token" element={<UnsubscribePage />} />
+      <Route path="/recuperar/:slug" element={<RecoverPassPage />} />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route

@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { Router, type Request } from 'express';
 import {
   accessPointInputSchema,
+  authorizedGuestSchema,
   checkinBatchSchema,
   checkinItemSchema,
   incidentInputSchema,
@@ -15,6 +17,8 @@ import { recordAudit } from '../../audit.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
 import { currentUser, requireCsrf, requirePermission } from '../auth/auth.js';
+import { createAuthorizedGuest } from '../orders/order-service.js';
+import { hashToken, passToken } from '../passes/tokens.js';
 
 const TX_OPTIONS = { maxWait: 15_000, timeout: 30_000 };
 const canOperate = requirePermission('checkin.operate', 'checkin.manage');
@@ -395,6 +399,60 @@ eventCheckinRouter.post(
       details: { items: items.length },
     });
     response.json({ results });
+  }),
+);
+
+eventCheckinRouter.post(
+  '/authorized',
+  requirePermission('checkin.manage', 'registrations.manage'),
+  requireCsrf,
+  asyncHandler(async (request, response) => {
+    const eventId = eventIdOf(request);
+    const input = authorizedGuestSchema.parse(request.body);
+    const user = currentUser(request);
+    if (input.accessPointId) {
+      const point = await prisma.accessPoint.findFirst({
+        where: { id: input.accessPointId, eventId },
+        select: { id: true },
+      });
+      if (!point) {
+        throw new AppError(
+          400,
+          'El punto de acceso no pertenece a este evento.',
+        );
+      }
+    }
+    const created = await createAuthorizedGuest({
+      eventId,
+      input,
+      userId: user.id,
+    });
+    await recordAudit({
+      userId: user.id,
+      action: 'order.authorized',
+      entityType: 'order',
+      entityId: created.orderId,
+      eventId,
+      details: { folio: created.folio, reason: input.reason },
+    });
+    const admitted = input.accessPointId
+      ? await processItem({
+          eventId,
+          operatorId: user.id,
+          source: 'online',
+          item: {
+            clientId: randomUUID(),
+            tokenHash: hashToken(passToken(created.passId)),
+            accessPointId: input.accessPointId,
+            scannedAt: new Date().toISOString(),
+            manualReason: `Alta autorizada: ${input.reason}`,
+          },
+        })
+      : null;
+    response.status(201).json({
+      folio: created.folio,
+      admitted: admitted?.status === 'ok',
+    });
   }),
 );
 

@@ -138,10 +138,13 @@ Revisar esta limitación antes de agregar colaboradores.
 - **El correo identifica a la persona.** Cada registro se une al contacto con ese correo. Como
   quien se registra no demuestra ser dueño de la dirección, solo se completan datos vacíos: nunca
   se sobrescribe lo capturado por el equipo ni se revierte una baja.
-- **Baja en lugar de suscripción previa.** El aviso de privacidad (versión del 1 de enero de 2023)
-  contempla fines promocionales como finalidad secundaria y el derecho de oposición, pero no
-  menciona invitaciones a eventos de forma expresa. **Pendiente de revisión legal:** confirmar si
-  este esquema es suficiente o si el aviso debe mencionarlas.
+- **Las comunicaciones piden permiso, como en un CRM profesional.** Es una casilla opcional, sin
+  marcar de inicio y separada del aviso del evento, al registrarse o al activar el pase. Se guardan
+  fecha, origen y versión del aviso, y solo a quien dio permiso le llegan comunicaciones. Cada una
+  lleva su liga de baja. Pases y avisos de pago no dependen de esto.
+- **Una casilla pública no revierte una baja:** quien llena el formulario no ha demostrado ser dueño
+  del correo. Sí la revierte activar el pase desde la liga personal, o que el equipo registre el
+  permiso a mano, lo que queda en la bitácora.
 - **Un contacto con historia no se borra.** Se conservan sus registros y se le da de baja. Las
   solicitudes ARCO de cancelación todavía se atienden a mano por privacidad@unkilodeayuda.org.mx.
 - **Un donativo no se borra.** Se anula con motivo para que los totales sean auditables.
@@ -180,22 +183,27 @@ Revisar esta limitación antes de agregar colaboradores.
 - **La asistente captura, pero no acepta por nadie.** Cada invitado recibe un correo, acepta el aviso
   de privacidad y solo entonces existe su QR. Solo quien compró y se registra a sí mismo acepta en la
   liga, y únicamente si no hay asistente.
-- **Un correo, un lugar por evento** en la liga privada, y folios de mesa como `SORIANA-01`. Si un
-  lugar cambia de invitado, el folio nuevo es `SORIANA-01-2`: el anterior queda anulado.
+- **Un correo, un lugar por evento** en la liga privada.
+- **Todos los folios son consecutivos con el prefijo del evento,** también los de una mesa. Si un
+  lugar cambia de invitado, el nuevo recibe el siguiente folio y el anterior queda anulado.
 - **Sin activar, recepción da ingreso a mano** con motivo. La persona entra, pero no se registra un
   consentimiento que no dio.
 - **La fecha límite es informativa:** se muestra y se marca como vencida, pero no bloquea la captura.
 
+## Alta autorizada
+
+Para quien llega sin registro. Requiere permiso de recepción o de registros, deja motivo en la
+bitácora, no genera cobro y **no respeta el cupo a propósito**, porque es una decisión de quien
+autoriza. Su correo es opcional.
+
 ## Pendiente frente al mockup
 
-Revisado contra `uka-eventos-mockup-gala.html`. Wallet quedó fuera por decisión previa.
+Revisado contra `uka-eventos-mockup-gala.html`.
 
-- Alta autorizada en la puerta, con pase inmediato.
-- Pase: descargar PDF, agregar a calendario, liga al mapa y recuperar el pase por correo.
-- Recordatorio automático antes del evento.
-- Consentimiento opcional para comunicaciones y canal de WhatsApp.
-- Evento: horarios de recepción y programa, liga al mapa y datos en el registro público.
+- Wallet: requiere cuenta de Apple Developer y cuenta de emisor de Google.
+- WhatsApp: para una etapa futura.
 - Módulos con interruptor pero sin pantalla: acompañantes y mesas físicas.
 - Pantallas de bitácora, consentimientos y operadores.
 - Recepción: linterna y captura de folio con teclado.
-- Tema de gala por evento y landing.
+- Las preguntas personalizadas del evento en la liga de la asistente.
+- Landing de la Gala, importador de Excel y publicación en GoDaddy.

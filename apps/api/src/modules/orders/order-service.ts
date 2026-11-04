@@ -1,6 +1,7 @@
 import {
   PRIVACY_NOTICE_VERSION,
   type GroupGuestInput,
+  type AuthorizedGuestInput,
   type OrderDelegateInput,
   type OrderInput,
   type PaymentInput,
@@ -297,7 +298,6 @@ export async function createReconciledOrder(params: {
         answers: [],
         delegateName: input.delegateName || null,
         delegateEmail: input.delegateEmail || null,
-        folioPrefix: input.folioPrefix || null,
         registrationDeadline: input.registrationDeadline
           ? new Date(input.registrationDeadline)
           : null,
@@ -318,6 +318,97 @@ export async function createReconciledOrder(params: {
     }
     await confirmOrder(tx, order.id);
     return order;
+  }, TX_OPTIONS);
+}
+
+/**
+ * Alta en la puerta. No respeta el cupo a propósito: es una decisión de quien autoriza,
+ * con su motivo en la bitácora. Vale de inmediato y no genera cobro.
+ */
+export async function createAuthorizedGuest(params: {
+  eventId: string;
+  input: AuthorizedGuestInput;
+  userId: string;
+}) {
+  const { eventId, input, userId } = params;
+  return prisma.$transaction(async (tx) => {
+    await lockEvent(tx, eventId);
+    const event = await tx.event.findUnique({ where: { id: eventId } });
+    if (!event || event.status !== 'active') {
+      throw new AppError(409, 'Este evento no está activo.');
+    }
+    const ticket = await tx.ticketType.findFirst({
+      where: { id: input.ticketTypeId, eventId },
+    });
+    if (!ticket) {
+      throw new AppError(400, 'Este boleto no existe.');
+    }
+    if (input.email) {
+      const repeated = await tx.registration.findFirst({
+        where: {
+          eventId,
+          status: { not: 'cancelled' },
+          guest: { email: input.email },
+        },
+        select: { folio: true },
+      });
+      if (repeated) {
+        throw new AppError(
+          409,
+          `Ese correo ya tiene el folio ${repeated.folio} en este evento.`,
+        );
+      }
+    }
+    const folio = await nextReference(tx, eventId);
+    const contactId = input.email
+      ? await linkContact(tx, { ...input, email: input.email })
+      : null;
+    const guest = await tx.guest.create({
+      data: {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        organization: input.organization,
+        contactId,
+      },
+    });
+    const order = await tx.order.create({
+      data: {
+        eventId,
+        ticketTypeId: ticket.id,
+        buyerGuestId: guest.id,
+        createdById: userId,
+        reference: folio,
+        seats: 1,
+        amountDue: 0,
+        status: 'confirmed',
+        confirmedAt: new Date(),
+        source: 'authorized',
+        answers: [],
+        notes: input.reason,
+      },
+    });
+    const registration = await tx.registration.create({
+      data: {
+        eventId,
+        guestId: guest.id,
+        orderId: order.id,
+        seatNumber: 1,
+        folio,
+        status: 'confirmed',
+      },
+    });
+    const passId = await issuePass(tx, registration.id);
+    if (input.email) {
+      await enqueueEmail(tx, {
+        eventId,
+        kind: 'pass',
+        refId: passId,
+        toEmail: input.email,
+      });
+    }
+    return { orderId: order.id, passId, folio };
   }, TX_OPTIONS);
 }
 
@@ -379,7 +470,6 @@ export async function assignDelegate(
       data: {
         delegateName: input.delegateName || null,
         delegateEmail: input.delegateEmail || null,
-        folioPrefix: input.folioPrefix || null,
         registrationDeadline: input.registrationDeadline
           ? new Date(input.registrationDeadline)
           : null,
@@ -401,31 +491,11 @@ export async function assignDelegate(
   }, TX_OPTIONS);
 }
 
-/** Folio de la mesa, como SORIANA-03. Si el lugar cambió de invitado, SORIANA-03-2. */
-async function tableFolio(
-  tx: Tx,
-  eventId: string,
-  prefix: string,
-  seatNumber: number,
-) {
-  const base = `${prefix}-${String(seatNumber).padStart(2, '0')}`;
-  for (let attempt = 1; attempt < 100; attempt += 1) {
-    const folio = attempt === 1 ? base : `${base}-${attempt}`;
-    const used = await tx.registration.findFirst({
-      where: { eventId, folio },
-      select: { id: true },
-    });
-    if (!used) {
-      return folio;
-    }
-  }
-  throw new AppError(409, 'Este lugar ya cambió demasiadas veces de invitado.');
-}
-
 /** El invitado acepta el aviso por sí mismo. Solo entonces existe su QR. */
 export async function activatePass(
   token: string,
   phone: string | null,
+  marketingConsent = false,
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const pass = await tx.pass.findUnique({
@@ -470,6 +540,19 @@ export async function activatePass(
         });
       }
     }
+    // Llegó por la liga personal de su correo: aquí sí vale aunque antes se diera de baja.
+    if (marketingConsent && registration.guest.contactId) {
+      await tx.contact.update({
+        where: { id: registration.guest.contactId },
+        data: {
+          marketingConsentAt: new Date(),
+          marketingConsentSource: 'activation',
+          marketingNoticeVersion: PRIVACY_NOTICE_VERSION,
+          optedOutAt: null,
+          optOutSource: null,
+        },
+      });
+    }
     if (registration.guest.email) {
       await enqueueEmail(tx, {
         eventId: registration.eventId,
@@ -512,6 +595,7 @@ export async function createOrder(params: {
   source: 'public' | 'staff';
   createdById?: string;
   privacyAccepted: boolean;
+  marketingConsent?: boolean;
 }) {
   const { eventId, input, source, createdById, privacyAccepted } = params;
   const now = new Date();
@@ -552,7 +636,9 @@ export async function createOrder(params: {
 
     const answers = buildAnswers(event.formFields, input.answers);
     const reference = await nextReference(tx, eventId);
-    const contactId = await linkContact(tx, input);
+    const contactId = await linkContact(tx, input, {
+      marketingConsent: params.marketingConsent,
+    });
     const guest = await tx.guest.create({
       data: {
         firstName: input.firstName,
@@ -805,9 +891,7 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
         'Acepta el aviso de privacidad para registrarte.',
       );
     }
-    const folio = found.folioPrefix
-      ? await tableFolio(tx, found.eventId, found.folioPrefix, seatNumber)
-      : await issueFolioWithin(tx, found.eventId);
+    const folio = await issueFolioWithin(tx, found.eventId);
     const contactId = await linkContact(tx, input);
     const guest = await tx.guest.create({
       data: {

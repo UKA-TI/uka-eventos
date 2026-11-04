@@ -4,6 +4,7 @@ import {
   contactInputSchema,
   contactNoteInputSchema,
   isEventModuleKey,
+  PRIVACY_NOTICE_VERSION,
   segmentFiltersSchema,
   segmentInputSchema,
 } from '@uka/shared';
@@ -71,6 +72,8 @@ function contactView(contact: ContactRow) {
     source: contact.source,
     optedOutAt: contact.optedOutAt,
     optOutSource: contact.optOutSource,
+    marketingConsentAt: contact.marketingConsentAt,
+    marketingConsentSource: contact.marketingConsentSource,
     participations: contact._count.guests,
     createdAt: contact.createdAt,
   };
@@ -446,8 +449,14 @@ contactsRouter.post(
   asyncHandler(async (request, response) => {
     const contactId = String(request.params.id);
     const { count } = await prisma.contact.updateMany({
-      where: { id: contactId, optedOutAt: { not: null } },
-      data: { optedOutAt: null, optOutSource: null },
+      where: { id: contactId },
+      data: {
+        optedOutAt: null,
+        optOutSource: null,
+        marketingConsentAt: new Date(),
+        marketingConsentSource: 'staff',
+        marketingNoticeVersion: PRIVACY_NOTICE_VERSION,
+      },
     });
     if (count > 0) {
       await recordAudit({

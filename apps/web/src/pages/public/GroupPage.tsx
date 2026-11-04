@@ -106,14 +106,7 @@ function SeatForm({
 
   return (
     <article className="seat">
-      <div className="seat-number">
-        {seatLabel(seat)}
-        {group.folioPrefix && (
-          <small>
-            {group.folioPrefix}-{String(seat).padStart(2, '0')}
-          </small>
-        )}
-      </div>
+      <div className="seat-number">{seatLabel(seat)}</div>
       <form className="seat-body" onSubmit={submit} noValidate>
         <Notice>{error}</Notice>
         <div className="seat-fields">

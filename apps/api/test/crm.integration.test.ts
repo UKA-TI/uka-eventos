@@ -437,6 +437,13 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('CRM', () => {
   });
 
   it('sends a campaign once, to the right people, and honors an unsubscribe', async () => {
+    // Solo les llega a quienes dieron permiso.
+    await prisma.contact.updateMany({
+      where: {
+        email: { in: [`ana@${domain}`, `beto@${domain}`, `mesa@${domain}`] },
+      },
+      data: { marketingConsentAt: new Date(), marketingConsentSource: 'staff' },
+    });
     const segment = await admin.post('/api/segments').send({
       name: `Segmento ${run}`,
       description: null,
@@ -585,7 +592,11 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('CRM', () => {
   it('lets passes through first and keeps a daily reserve for them', async () => {
     await prisma.contact.updateMany({
       where: { email: { endsWith: `@${domain}` } },
-      data: { optedOutAt: null, optOutSource: null },
+      data: {
+        optedOutAt: null,
+        optOutSource: null,
+        marketingConsentAt: new Date(),
+      },
     });
     const draft = await admin.post('/api/campaigns').send({
       name: `Masiva ${run}`,

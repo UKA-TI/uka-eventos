@@ -30,7 +30,6 @@ function DelegateForm({
   const [form, setForm] = useState({
     delegateName: group.delegateName ?? '',
     delegateEmail: group.delegateEmail ?? '',
-    folioPrefix: group.folioPrefix ?? '',
     registrationDeadline: group.registrationDeadline?.slice(0, 10) ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,7 +52,6 @@ function DelegateForm({
     const parsed = orderDelegateSchema.safeParse({
       delegateName: form.delegateName.trim() || null,
       delegateEmail: form.delegateEmail.trim() || null,
-      folioPrefix: form.folioPrefix.trim() || null,
       registrationDeadline: form.registrationDeadline
         ? new Date(`${form.registrationDeadline}T12:00:00`).toISOString()
         : null,
@@ -87,16 +85,6 @@ function DelegateForm({
             onChange={(e) =>
               setForm({ ...form, delegateEmail: e.target.value })
             }
-          />
-        </Field>
-        <Field
-          label="Prefijo de folio"
-          error={errors.folioPrefix}
-          hint="Los nuevos invitados tendrán folios como SORIANA-01."
-        >
-          <input
-            value={form.folioPrefix}
-            onChange={(e) => setForm({ ...form, folioPrefix: e.target.value })}
           />
         </Field>
         <Field label="Fecha límite" error={errors.registrationDeadline}>
@@ -247,10 +235,7 @@ export function EventGroupsTab({
                     <tr>
                       <td>
                         <strong>{group.company}</strong>
-                        <small className="cell-note">
-                          {group.reference}
-                          {group.folioPrefix ? ` · ${group.folioPrefix}` : ''}
-                        </small>
+                        <small className="cell-note">{group.reference}</small>
                       </td>
                       <td>
                         {group.delegateName ?? group.buyerName}

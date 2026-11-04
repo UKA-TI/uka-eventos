@@ -111,8 +111,8 @@ function FilterBar({
           .map(({ key, label }) => ({ value: key, label })),
       )}
       {select('donor', 'Donantes', [{ value: 'true', label: 'Solo donantes' }])}
-      {select('reachable', 'Correo', [
-        { value: 'true', label: 'Se les puede escribir' },
+      {select('reachable', 'Comunicaciones', [
+        { value: 'true', label: 'Aceptan comunicaciones' },
       ])}
     </div>
   );
@@ -301,7 +301,7 @@ export function ContactsPage() {
         <p className="table-note">
           {data.total.toLocaleString('es-MX')}{' '}
           {data.total === 1 ? 'contacto' : 'contactos'} ·{' '}
-          {data.reachable.toLocaleString('es-MX')} con correo y sin baja
+          {data.reachable.toLocaleString('es-MX')} aceptan comunicaciones
           {can('reports.export') && data.total > 0 && (
             <>
               {' · '}

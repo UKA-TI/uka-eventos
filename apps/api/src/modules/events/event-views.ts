@@ -184,7 +184,6 @@ function statusWhere(
 const groupLabel = (order: {
   seats: number;
   source: string;
-  folioPrefix: string | null;
   buyer: {
     firstName: string;
     lastName: string;
@@ -336,7 +335,6 @@ eventViewsRouter.get(
         buyerEmail: order.buyer.email,
         delegateName: order.delegateName,
         delegateEmail: order.delegateEmail,
-        folioPrefix: order.folioPrefix,
         registrationDeadline: order.registrationDeadline,
         seats: order.seats,
         registered: order.registrations.length,

@@ -65,7 +65,7 @@ export function SegmentsPage() {
                 <tr>
                   <th>Segmento</th>
                   <th>Contactos</th>
-                  <th>Con correo y sin baja</th>
+                  <th>Aceptan comunicaciones</th>
                   <th aria-label="Acciones" />
                 </tr>
               </thead>

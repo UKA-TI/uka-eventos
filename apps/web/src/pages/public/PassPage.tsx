@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { passActivationSchema, publicPassResponseSchema } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
 import { formatEventDate, issuesToErrors } from '../text.js';
@@ -20,6 +20,7 @@ function ActivationForm({
 }) {
   const [accepted, setAccepted] = useState(false);
   const [phone, setPhone] = useState('');
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const activate = useMutation({
     mutationFn: async (body: unknown) =>
@@ -35,6 +36,7 @@ function ActivationForm({
     const parsed = passActivationSchema.safeParse({
       privacyAccepted: accepted,
       phone: phone.trim() || null,
+      marketingConsent,
     });
     if (!parsed.success) {
       setErrors(issuesToErrors(parsed.error.issues));
@@ -85,6 +87,18 @@ function ActivationForm({
       {errors.privacyAccepted && (
         <small className="field-error">{errors.privacyAccepted}</small>
       )}
+      <label className="check-field privacy-check">
+        <input
+          type="checkbox"
+          checked={marketingConsent}
+          onChange={(e) => setMarketingConsent(e.target.checked)}
+        />
+        <span>
+          Quiero recibir información sobre eventos y campañas de Un Kilo de
+          Ayuda (opcional). No condiciona tu pase; puedes darte de baja cuando
+          quieras.
+        </span>
+      </label>
       <div className="form-actions">
         <button
           className="button primary wide"
@@ -153,6 +167,50 @@ export function PassPage() {
             eventos@unkilodeayuda.org.mx.
           </p>
         )}
+        {data.qrDataUrl && (
+          <div className="pass-tools">
+            <a
+              className="button primary"
+              href={`/api/public/passes/${token}/pass.pdf`}
+            >
+              Descargar PDF
+            </a>
+            {data.calendar && (
+              <details className="menu">
+                <summary className="button secondary">Calendario</summary>
+                <div className="menu-list">
+                  <a
+                    href={data.calendar.google}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Google Calendar
+                  </a>
+                  <a
+                    href={data.calendar.outlook}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Outlook
+                  </a>
+                  <a href={`/api/public/passes/${token}/event.ics`}>
+                    Apple Calendar u otro (.ics)
+                  </a>
+                </div>
+              </details>
+            )}
+            {data.mapUrl && (
+              <a
+                className="button secondary"
+                href={data.mapUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Cómo llegar
+              </a>
+            )}
+          </div>
+        )}
         <dl className="data-list public-data">
           <div>
             <dt>Folio</dt>
@@ -170,12 +228,27 @@ export function PassPage() {
             <dt>Sede</dt>
             <dd>{data.venue ?? 'Por confirmar'}</dd>
           </div>
+          {data.programStartsAt && (
+            <div>
+              <dt>Programa</dt>
+              <dd>
+                {new Date(data.programStartsAt).toLocaleTimeString('es-MX', {
+                  timeZone: data.timeZone,
+                  timeStyle: 'short',
+                })}
+              </dd>
+            </div>
+          )}
         </dl>
         {data.qrDataUrl && (
           <p className="muted pass-note">
             Presenta este código en la entrada. Es personal: no lo compartas.
           </p>
         )}
+        <p className="muted pass-note">
+          ¿Perdiste este correo?{' '}
+          <Link to={`/recuperar/${data.eventSlug}`}>Recuperar mi pase</Link>
+        </p>
       </div>
     </PublicLayout>
   );

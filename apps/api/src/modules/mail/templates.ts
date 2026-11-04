@@ -9,6 +9,7 @@ import {
   registrationUrl,
   unsubscribeUrl,
 } from '../passes/tokens.js';
+import { calendarLinks, passIcsUrl, passPdfUrl } from '../passes/pass-links.js';
 
 export interface InlineImage {
   contentId: string;
@@ -91,6 +92,84 @@ function button(url: string, label: string): string {
   return `<p style="margin:18px 0"><a href="${url}" style="display:inline-block;padding:11px 18px;background:#0077C9;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></p>`;
 }
 
+const link = (url: string, text: string) =>
+  `<a href="${escapeHtml(url)}" style="color:#0077C9">${escapeHtml(text)}</a>`;
+
+function programRow(event: {
+  programStartsAt: Date | null;
+  timeZone: string;
+}): [string, string][] {
+  return event.programStartsAt
+    ? [
+        [
+          'Programa',
+          event.programStartsAt.toLocaleTimeString('es-MX', {
+            timeZone: event.timeZone,
+            timeStyle: 'short',
+          }),
+        ],
+      ]
+    : [];
+}
+
+/** Las mismas opciones que la página del pase, para quien solo abre el correo. */
+function passTools(
+  passId: string,
+  folio: string,
+  event: {
+    name: string;
+    startsAt: Date | null;
+    endsAt: Date | null;
+    venue: string | null;
+    mapUrl: string | null;
+  },
+): string {
+  const calendar = calendarLinks(event, folio);
+  const lines = [
+    `<p style="margin:0 0 6px">${link(passPdfUrl(passId), 'Descargar pase en PDF')}</p>`,
+    calendar
+      ? `<p style="margin:0 0 6px">Agregar al calendario: ${link(calendar.google, 'Google')} · ${link(calendar.outlook, 'Outlook')} · ${link(passIcsUrl(passId), 'Apple u otro (.ics)')}</p>`
+      : '',
+    event.mapUrl
+      ? `<p style="margin:0 0 6px">${link(event.mapUrl, 'Cómo llegar')}</p>`
+      : '',
+  ];
+  return lines.join('');
+}
+
+async function renderEventReminder(
+  refId: string,
+): Promise<EmailContent | null> {
+  const pass = await prisma.pass.findUnique({
+    where: { id: refId },
+    include: {
+      checkin: { select: { id: true } },
+      registration: { include: { guest: true, event: true } },
+    },
+  });
+  if (!pass || pass.status !== 'active' || pass.checkin) {
+    return null;
+  }
+  const { registration } = pass;
+  const { event, guest } = registration;
+  return {
+    subject: `Te esperamos: ${event.name}`,
+    html: layout(
+      'Tu evento está muy cerca',
+      `<p style="margin:0 0 14px">Hola, ${escapeHtml(guest.firstName)}. Te recordamos tu asistencia. Ten a la mano tu pase con código QR para entrar más rápido.</p>
+${details([
+  ['Evento', event.name],
+  ['Fecha', formatDate(event.startsAt, event.timeZone)],
+  ...programRow(event),
+  ['Sede', event.venue ?? 'Por confirmar'],
+  ['Folio', registration.folio],
+])}
+${button(passUrl(pass.id), 'Ver mi pase')}
+${passTools(pass.id, registration.folio, event)}`,
+    ),
+  };
+}
+
 async function renderPass(refId: string): Promise<EmailContent | null> {
   const pass = await prisma.pass.findUnique({
     where: { id: refId },
@@ -129,12 +208,14 @@ async function renderPass(refId: string): Promise<EmailContent | null> {
 ${details([
   ['Evento', event.name],
   ['Fecha', formatDate(event.startsAt, event.timeZone)],
+  ...programRow(event),
   ['Sede', event.venue ?? 'Por confirmar'],
   ['Boleto', registration.order.ticketType.name],
   ['Folio', registration.folio],
 ])}
 <p style="margin:0;text-align:center"><img src="cid:pase-qr" width="240" height="240" alt="Código QR de tu pase"></p>
-${button(passUrl(pass.id), 'Ver mi pase')}`,
+${button(passUrl(pass.id), 'Ver mi pase')}
+${passTools(pass.id, registration.folio, event)}`,
     ),
   };
 }
@@ -430,6 +511,8 @@ function renderContent(
       return renderGroupLink(refId);
     case 'pass_activation':
       return renderPassActivation(refId);
+    case 'event_reminder':
+      return renderEventReminder(refId);
     case 'registration_invite':
       return renderRegistrationInvite(refId);
     case 'campaign':

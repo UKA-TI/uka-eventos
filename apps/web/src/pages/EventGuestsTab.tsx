@@ -109,7 +109,6 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
           {groups.data?.map((group) => (
             <option key={group.id} value={group.id}>
               {group.company}
-              {group.folioPrefix ? ` · ${group.folioPrefix}` : ''}
             </option>
           ))}
         </select>

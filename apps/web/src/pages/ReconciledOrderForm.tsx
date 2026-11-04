@@ -44,7 +44,6 @@ export function ReconciledOrderForm({
     paidAt: todayInput(),
     delegateName: '',
     delegateEmail: '',
-    folioPrefix: '',
     registrationDeadline: '',
   });
   const [amountEdited, setAmountEdited] = useState(false);
@@ -89,7 +88,6 @@ export function ReconciledOrderForm({
       paidAt: new Date(`${form.paidAt}T12:00:00`).toISOString(),
       delegateName: form.delegateName.trim() || null,
       delegateEmail: form.delegateEmail.trim() || null,
-      folioPrefix: form.folioPrefix.trim() || null,
       registrationDeadline: form.registrationDeadline
         ? new Date(`${form.registrationDeadline}T12:00:00`).toISOString()
         : null,
@@ -232,13 +230,6 @@ export function ReconciledOrderForm({
         </Field>
         <Field label="Correo del contacto" error={errors.delegateEmail}>
           {text('delegateEmail', 'email')}
-        </Field>
-        <Field
-          label="Prefijo de folio (opcional)"
-          error={errors.folioPrefix}
-          hint="Por ejemplo SORIANA: los folios serán SORIANA-01, SORIANA-02."
-        >
-          {text('folioPrefix')}
         </Field>
         <Field
           label="Fecha límite (opcional)"

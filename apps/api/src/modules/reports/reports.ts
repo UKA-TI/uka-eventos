@@ -32,6 +32,7 @@ const orderSourceLabels: Record<string, string> = {
   public: 'Registro público',
   staff: 'Capturado por el equipo',
   reconciled: 'Compra conciliada',
+  authorized: 'Alta autorizada',
 };
 
 const methodLabel = (method: string) =>
@@ -315,6 +316,7 @@ reportsRouter.get(
           'Empresa',
           'Puesto',
           'Participaciones',
+          'Acepta comunicaciones',
           'Dado de baja',
           'Fecha de alta',
         ],
@@ -326,6 +328,7 @@ reportsRouter.get(
           contact.company?.name,
           contact.position,
           contact._count.guests,
+          contact.marketingConsentAt && !contact.optedOutAt ? 'Sí' : 'No',
           contact.optedOutAt ? 'Sí' : 'No',
           formatDate(contact.createdAt),
         ]),

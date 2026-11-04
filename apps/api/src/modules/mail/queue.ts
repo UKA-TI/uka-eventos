@@ -7,6 +7,7 @@ import {
   MailServiceError,
   type MailTransport,
 } from './graph-transport.js';
+import { queueEventReminders } from './reminders.js';
 import { renderEmail } from './templates.js';
 
 const MAX_ATTEMPTS = 5;
@@ -208,6 +209,7 @@ export function startMailWorker(logger: Logger): () => void {
     }
     running = true;
     try {
+      await queueEventReminders();
       const result = await processMailQueue(graphTransport, undefined, {
         skipReservedDomains: true,
       });

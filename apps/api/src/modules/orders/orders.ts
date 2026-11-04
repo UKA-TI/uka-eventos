@@ -185,7 +185,7 @@ ordersRouter.get(
         quantity: order.quantity,
         delegateName: order.delegateName,
         delegateEmail: order.delegateEmail,
-        folioPrefix: order.folioPrefix,
+        notes: order.notes,
         registrationDeadline: order.registrationDeadline,
         amountDue: order.amountDue.toNumber(),
         amountPaid: order.payments
@@ -310,7 +310,6 @@ ordersRouter.put(
       entityType: 'order',
       entityId: orderId,
       eventId,
-      details: { folioPrefix: input.folioPrefix ?? null },
     });
     response.status(204).end();
   }),

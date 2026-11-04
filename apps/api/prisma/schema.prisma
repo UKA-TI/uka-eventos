@@ -73,6 +73,9 @@ model Event {
   endsAt              DateTime?        @map("ends_at") @db.DateTime(3)
   timeZone            String           @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
   venue               String?          @db.VarChar(180)
+  programStartsAt     DateTime?        @map("program_starts_at") @db.DateTime(3)
+  mapUrl              String?          @map("map_url") @db.VarChar(500)
+  reminderSentAt      DateTime?        @map("reminder_sent_at") @db.DateTime(3)
   paymentInstructions String?          @map("payment_instructions") @db.Text
   capacity            Int?             @db.UnsignedInt
   folioPrefix         String?          @map("folio_prefix") @db.VarChar(3)
@@ -116,8 +119,8 @@ model Order {
   groupTokenHash       String?        @unique @map("group_token_hash") @db.Char(64)
   delegateName         String?        @map("delegate_name") @db.VarChar(160)
   delegateEmail        String?        @map("delegate_email") @db.VarChar(254)
-  folioPrefix          String?        @map("folio_prefix") @db.VarChar(10)
   registrationDeadline DateTime?      @map("registration_deadline") @db.DateTime(3)
+  notes                String?        @db.VarChar(255)
   confirmedAt          DateTime?      @map("confirmed_at") @db.DateTime(3)
   cancelledAt          DateTime?      @map("cancelled_at") @db.DateTime(3)
   createdAt            DateTime       @default(now()) @map("created_at") @db.DateTime(3)
@@ -130,7 +133,6 @@ model Order {
   payments             Payment[]
 
   @@unique([eventId, reference])
-  @@unique([eventId, folioPrefix])
   @@index([eventId, status])
   @@index([ticketTypeId, status])
   @@index([buyerGuestId])
@@ -447,23 +449,26 @@ model Company {
 }
 
 model Contact {
-  id           String              @id @default(cuid()) @db.VarChar(30)
-  firstName    String              @map("first_name") @db.VarChar(100)
-  lastName     String              @map("last_name") @db.VarChar(140)
-  email        String?             @unique @db.VarChar(254)
-  phone        String?             @db.VarChar(32)
-  position     String?             @db.VarChar(120)
-  companyId    String?             @map("company_id") @db.VarChar(30)
-  source       String              @default("manual") @db.VarChar(16)
-  optedOutAt   DateTime?           @map("opted_out_at") @db.DateTime(3)
-  optOutSource String?             @map("opt_out_source") @db.VarChar(16)
-  createdAt    DateTime            @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
-  company      Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  guests       Guest[]
-  notes        ContactNote[]
-  donations    Donation[]
-  recipients   CampaignRecipient[]
+  id                     String              @id @default(cuid()) @db.VarChar(30)
+  firstName              String              @map("first_name") @db.VarChar(100)
+  lastName               String              @map("last_name") @db.VarChar(140)
+  email                  String?             @unique @db.VarChar(254)
+  phone                  String?             @db.VarChar(32)
+  position               String?             @db.VarChar(120)
+  companyId              String?             @map("company_id") @db.VarChar(30)
+  source                 String              @default("manual") @db.VarChar(16)
+  optedOutAt             DateTime?           @map("opted_out_at") @db.DateTime(3)
+  optOutSource           String?             @map("opt_out_source") @db.VarChar(16)
+  marketingConsentAt     DateTime?           @map("marketing_consent_at") @db.DateTime(3)
+  marketingConsentSource String?             @map("marketing_consent_source") @db.VarChar(16)
+  marketingNoticeVersion String?             @map("marketing_notice_version") @db.VarChar(40)
+  createdAt              DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt              DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  company                Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  guests                 Guest[]
+  notes                  ContactNote[]
+  donations              Donation[]
+  recipients             CampaignRecipient[]
 
   @@index([lastName, firstName])
   @@index([companyId])

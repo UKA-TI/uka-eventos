@@ -83,8 +83,9 @@ export function contactWhere(
   };
 }
 
-/** A quién sí se le puede escribir: tiene correo y no ha pedido la baja. */
+/** A quién sí se le puede escribir: dio permiso, tiene correo y no ha pedido la baja. */
 export const reachableWhere: Prisma.ContactWhereInput = {
   email: { not: null },
   optedOutAt: null,
+  marketingConsentAt: { not: null },
 };

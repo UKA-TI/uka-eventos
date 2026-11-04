@@ -59,6 +59,10 @@ async function eventData(input: EventInput) {
     modules: [...new Set(input.modules)],
     startsAt: input.startsAt ? new Date(input.startsAt) : null,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
+    programStartsAt: input.programStartsAt
+      ? new Date(input.programStartsAt)
+      : null,
+    mapUrl: input.mapUrl ?? null,
   };
 }
 
@@ -300,6 +304,7 @@ eventsRouter.post(
         endsAt: input.endsAt ? new Date(input.endsAt) : null,
         timeZone: source.timeZone,
         venue: source.venue,
+        mapUrl: source.mapUrl,
         paymentInstructions: source.paymentInstructions,
         capacity: source.capacity,
         folioPrefix: source.folioPrefix,

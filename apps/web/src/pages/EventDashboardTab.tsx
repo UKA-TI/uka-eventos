@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventDashboardSchema, type EventDetail } from '@uka/shared';
 import { useState } from 'react';
 import { apiRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Loading, Notice } from '../components/ui.js';
+import { AuthorizedGuestForm } from './AuthorizedGuestForm.js';
 import { BarChart } from './reports/BarChart.js';
 
 const REFRESH_MS = 15_000;
@@ -99,6 +100,9 @@ export function EventDashboardTab({
   onOpenTab: (tab: 'mesas' | 'invitados') => void;
 }) {
   const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const [authorizing, setAuthorizing] = useState(false);
+  const [message, setMessage] = useState('');
   const dashboard = useQuery({
     queryKey: ['event-dashboard', event.id],
     refetchInterval: REFRESH_MS,
@@ -129,15 +133,54 @@ export function EventDashboardTab({
           {event.status === 'active' ? 'En vivo' : 'Evento cerrado'} ·
           Actualizado a las {updated}
         </span>
-        {can('reports.export') && (
-          <a
-            className="button secondary small"
-            href={`/api/reports/export/events/${event.id}/registrations.csv`}
-          >
-            Exportar CSV
-          </a>
-        )}
+        <div className="heading-actions">
+          {can('reports.export') && (
+            <a
+              className="button secondary small"
+              href={`/api/reports/export/events/${event.id}/registrations.csv`}
+            >
+              Exportar CSV
+            </a>
+          )}
+          {can('checkin.manage', 'registrations.manage') &&
+            event.status === 'active' &&
+            !authorizing && (
+              <button
+                className="button primary small"
+                type="button"
+                onClick={() => {
+                  setMessage('');
+                  setAuthorizing(true);
+                }}
+              >
+                Alta autorizada
+              </button>
+            )}
+        </div>
       </div>
+
+      {message && <Notice kind="ok">{message}</Notice>}
+      {authorizing && (
+        <AuthorizedGuestForm
+          event={event}
+          accessPoints={data.accessPoints}
+          onCancel={() => setAuthorizing(false)}
+          onDone={async (folio, admitted) => {
+            await queryClient.invalidateQueries({
+              queryKey: ['event-dashboard', event.id],
+            });
+            await queryClient.invalidateQueries({
+              queryKey: ['event-guests', event.id],
+            });
+            setAuthorizing(false);
+            setMessage(
+              admitted
+                ? `Alta ${folio} registrada; ya cuenta como ingreso.`
+                : `Alta ${folio} registrada. Búscala en recepción para darle ingreso.`,
+            );
+          }}
+        />
+      )}
 
       {data.seatsToRegister > 0 && (
         <p className="notice warn" role="status">

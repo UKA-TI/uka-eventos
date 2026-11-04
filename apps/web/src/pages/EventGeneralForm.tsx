@@ -33,6 +33,10 @@ function initialForm(event?: EventDetail) {
     endsAt: event?.endsAt ? toLocalDateTime(event.endsAt, event.timeZone) : '',
     timeZone: event?.timeZone ?? 'America/Mexico_City',
     venue: event?.venue ?? '',
+    programStartsAt: event?.programStartsAt
+      ? toLocalDateTime(event.programStartsAt, event.timeZone)
+      : '',
+    mapUrl: event?.mapUrl ?? '',
     paymentInstructions: event?.paymentInstructions ?? '',
     capacity: event?.capacity?.toString() ?? '',
     folioPrefix: event?.folioPrefix ?? '',
@@ -106,6 +110,10 @@ export function EventGeneralForm({
           : null,
         timeZone: form.timeZone,
         venue: form.venue.trim() || null,
+        programStartsAt: form.programStartsAt
+          ? dateTimeInZoneToIso(form.programStartsAt, form.timeZone)
+          : null,
+        mapUrl: form.mapUrl.trim() || null,
         paymentInstructions: form.paymentInstructions.trim() || null,
         capacity: form.capacity === '' ? null : Number(form.capacity),
         folioPrefix: form.folioPrefix.trim().toUpperCase() || null,
@@ -259,6 +267,27 @@ export function EventGeneralForm({
             type="datetime-local"
             value={form.endsAt}
             onChange={(e) => update('endsAt', e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Inicio del programa (opcional)"
+          error={errors.programStartsAt}
+          hint="El inicio del evento es la hora de recepción."
+        >
+          <input
+            type="datetime-local"
+            value={form.programStartsAt}
+            onChange={(e) => update('programStartsAt', e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Liga al mapa (opcional)"
+          error={errors.mapUrl}
+          hint="Aparece en el registro, el pase y los correos."
+        >
+          <input
+            value={form.mapUrl}
+            onChange={(e) => update('mapUrl', e.target.value)}
           />
         </Field>
         <Field label="Sede" error={errors.venue}>

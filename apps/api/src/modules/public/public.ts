@@ -7,12 +7,15 @@ import {
   passActivationSchema,
   PRIVACY_NOTICE_URL,
   publicRegistrationSchema,
+  recoverPassSchema,
 } from '@uka/shared';
 import { asyncHandler } from '../../async-handler.js';
 import { config } from '../../config.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
 import { formFieldView } from '../events/form-fields.js';
+import { calendarFile, calendarLinks } from '../passes/pass-links.js';
+import { passPdf } from '../passes/pass-pdf.js';
 import {
   contactIdFromUnsubscribeToken,
   groupUrl,
@@ -50,6 +53,18 @@ const writeLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Demasiados intentos. Espera unos minutos.' },
 });
+
+const recoverLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skip: () => config.NODE_ENV === 'test',
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos. Espera unos minutos.' },
+});
+
+/** Evita que alguien use este formulario para llenarle el correo a otra persona. */
+const RECOVER_REPEAT_MS = 5 * 60 * 1000;
 
 async function loadOpenEvent(slug: string) {
   const event = await prisma.event.findUnique({
@@ -162,6 +177,8 @@ publicRouter.get(
       endsAt: event.endsAt,
       timeZone: event.timeZone,
       venue: event.venue,
+      programStartsAt: event.programStartsAt,
+      mapUrl: event.mapUrl,
       currency: event.currency,
       privacyUrl: PRIVACY_NOTICE_URL,
       tickets: event.ticketTypes
@@ -205,6 +222,7 @@ publicRouter.post(
       input,
       source: 'public',
       privacyAccepted: true,
+      marketingConsent: input.marketingConsent === true,
     });
     const pass = order.registrations[0]?.passes[0];
     response.status(201).json({
@@ -255,6 +273,10 @@ publicRouter.get(
       timeZone: registration.event.timeZone,
       venue: registration.event.venue,
       ticketName: registration.order.ticketType.name,
+      programStartsAt: registration.event.programStartsAt,
+      mapUrl: registration.event.mapUrl,
+      eventSlug: registration.event.slug,
+      calendar: calendarLinks(registration.event, registration.folio),
       qrDataUrl: active
         ? await QRCode.toDataURL(passToken(pass.id), {
             errorCorrectionLevel: 'M',
@@ -267,13 +289,139 @@ publicRouter.get(
   }),
 );
 
+async function loadPassForFile(token: string) {
+  const pass = await prisma.pass.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: {
+      registration: {
+        include: {
+          guest: true,
+          event: true,
+          order: { include: { ticketType: { select: { name: true } } } },
+        },
+      },
+    },
+  });
+  // Sin activar o revocado no hay archivos: el PDF lleva el QR.
+  if (!pass || pass.status !== 'active') {
+    throw new AppError(404, 'Este pase no está disponible.');
+  }
+  return pass;
+}
+
+publicRouter.get(
+  '/passes/:token/pass.pdf',
+  asyncHandler(async (request, response) => {
+    const pass = await loadPassForFile(request.params.token ?? '');
+    const { registration } = pass;
+    const { event, guest } = registration;
+    const inZone = (date: Date, options: Intl.DateTimeFormatOptions) =>
+      date.toLocaleString('es-MX', { timeZone: event.timeZone, ...options });
+    const pdf = await passPdf({
+      id: pass.id,
+      guestName: `${guest.firstName} ${guest.lastName}`,
+      folio: registration.folio,
+      ticketName: registration.order.ticketType.name,
+      eventName: event.name,
+      when: event.startsAt
+        ? inZone(event.startsAt, { dateStyle: 'long', timeStyle: 'short' })
+        : 'Por confirmar',
+      program: event.programStartsAt
+        ? inZone(event.programStartsAt, { timeStyle: 'short' })
+        : null,
+      venue: event.venue,
+    });
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="pase-${registration.folio}.pdf"`,
+    );
+    response.setHeader('Cache-Control', 'no-store');
+    response.send(Buffer.from(pdf));
+  }),
+);
+
+publicRouter.get(
+  '/passes/:token/event.ics',
+  asyncHandler(async (request, response) => {
+    const pass = await loadPassForFile(request.params.token ?? '');
+    const file = calendarFile(
+      pass.registration.event,
+      pass.registration.folio,
+      pass.id,
+    );
+    if (!file) {
+      throw new AppError(404, 'Este evento aún no tiene fecha.');
+    }
+    response.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${pass.registration.event.slug}.ics"`,
+    );
+    response.send(file);
+  }),
+);
+
+/** Responde igual exista o no el correo: no debe revelar quién está registrado. */
+publicRouter.post(
+  '/events/:slug/recover-pass',
+  recoverLimit,
+  requireSameSite,
+  asyncHandler(async (request, response) => {
+    const { email } = recoverPassSchema.parse(request.body);
+    const event = await prisma.event.findUnique({
+      where: { slug: request.params.slug ?? '' },
+      select: { id: true, status: true },
+    });
+    if (event && event.status !== 'draft') {
+      const passes = await prisma.pass.findMany({
+        where: {
+          status: { in: ['active', 'pending_activation'] },
+          registration: {
+            eventId: event.id,
+            status: { not: 'cancelled' },
+            guest: { email },
+          },
+        },
+        take: 5,
+      });
+      const since = new Date(Date.now() - RECOVER_REPEAT_MS);
+      for (const pass of passes) {
+        const recent = await prisma.emailMessage.count({
+          where: {
+            refId: pass.id,
+            createdAt: { gte: since },
+          },
+        });
+        if (recent === 0) {
+          await prisma.emailMessage.create({
+            data: {
+              eventId: event.id,
+              kind: pass.status === 'active' ? 'pass' : 'pass_activation',
+              refId: pass.id,
+              toEmail: email,
+            },
+          });
+        }
+      }
+    }
+    response.status(202).json({ queued: true });
+  }),
+);
+
 publicRouter.post(
   '/passes/:token/activate',
   requireSameSite,
   writeLimit,
   asyncHandler(async (request, response) => {
-    const { phone } = passActivationSchema.parse(request.body);
-    await activatePass(request.params.token ?? '', phone || null);
+    const { phone, marketingConsent } = passActivationSchema.parse(
+      request.body,
+    );
+    await activatePass(
+      request.params.token ?? '',
+      phone || null,
+      marketingConsent,
+    );
     response.status(204).end();
   }),
 );
@@ -310,7 +458,6 @@ async function loadGroupView(token: string) {
     ticketName: order.ticketType.name,
     contactName: `${order.buyer.firstName} ${order.buyer.lastName}`,
     delegateName: order.delegateName,
-    folioPrefix: order.folioPrefix,
     registrationDeadline: order.registrationDeadline,
     source: order.source,
     buyer: {

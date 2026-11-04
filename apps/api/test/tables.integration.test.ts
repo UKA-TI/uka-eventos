@@ -206,7 +206,6 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
         paidAt: '2030-01-10T18:00:00.000Z',
         delegateName: 'Laura Asistente',
         delegateEmail: `laura@${domain}`,
-        folioPrefix: 'soriana',
         registrationDeadline: '2030-02-01T18:00:00.000Z',
       });
     expect(created.status).toBe(201);
@@ -222,36 +221,15 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
 
     const view = await request(app).get(groupPath());
     expect(view.body.delegateName).toBe('Laura Asistente');
-    expect(view.body.folioPrefix).toBe('SORIANA');
     expect(view.body.seats).toBe(3);
-  });
-
-  it('rejects a duplicated prefix in the same event', async () => {
-    const repeated = await admin
-      .post(`/api/events/${eventId}/orders/reconciled`)
-      .send({
-        firstName: 'Otra',
-        lastName: 'Empresa',
-        email: `otra@${domain}`,
-        phone: null,
-        organization: null,
-        ticketTypeId: tableTicket,
-        quantity: 1,
-        amount: 1000,
-        method: 'transfer',
-        reference: `SPEI2-${run}`,
-        notes: null,
-        paidAt: '2030-01-10T18:00:00.000Z',
-        folioPrefix: 'SORIANA',
-      });
-    expect(repeated.status).toBe(409);
   });
 
   it('the assistant fills seats but never accepts the notice for a guest', async () => {
     const added = await addGuest('mariana', { seatNumber: 2 });
     expect(added.status).toBe(201);
     const registration = await registrationOf('mariana');
-    expect(registration.folio).toBe('SORIANA-02');
+    // Consecutivo del evento, igual que cualquier otro folio.
+    expect(registration.folio).toMatch(/^TBL\d{2}-\d{4}$/);
     expect(registration.seatNumber).toBe(2);
     expect(registration.consents).toHaveLength(0);
     const pass = registration.passes[0]!;
@@ -345,7 +323,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
   it('reception sees unactivated guests and admits them only by hand', async () => {
     const list = await admin.get(`/api/events/${eventId}/checkin/offline-list`);
     const entry = list.body.entries.find(
-      (item: { folio: string }) => item.folio.endsWith('01') || false,
+      (item: { guestName: string }) => item.guestName === 'andres Invitado',
     );
     expect(entry.pendingActivation).toBe(true);
     expect(JSON.stringify(list.body)).not.toContain(`@${domain}`);
@@ -373,11 +351,10 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
     expect(again.body.status).toBe('duplicate');
   });
 
-  it('frees a seat with a new folio when the guest changes', async () => {
+  it('frees a seat and gives the new guest the next folio', async () => {
     const third = await addGuest('lucia', { seatNumber: 3 });
     expect(third.status).toBe(201);
     const lucia = await registrationOf('lucia');
-    expect(lucia.folio).toBe('SORIANA-03');
     const removed = await request(app)
       .delete(`${groupPath()}/guests/${lucia.id}`)
       .set('Origin', origin);
@@ -392,7 +369,9 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
 
     const replaced = await addGuest('pablo', { seatNumber: 3 });
     expect(replaced.status).toBe(201);
-    expect((await registrationOf('pablo')).folio).toBe('SORIANA-03-2');
+    const pablo = await registrationOf('pablo');
+    expect(pablo.seatNumber).toBe(3);
+    expect(pablo.folio).not.toBe(lucia.folio);
 
     const resend = await request(app)
       .post(
@@ -461,7 +440,6 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
     expect(byEmail('andres')).toMatchObject({
       status: 'incident',
       group: company,
-      folio: 'SORIANA-01',
       operatorName: 'admin',
       accessPointName: 'Fila A',
     });
@@ -475,7 +453,6 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
     expect(await count('status=pending')).toBe(1);
     expect(await count('status=activation')).toBe(1);
     expect(await count('q=mariana')).toBe(1);
-    expect(await count('q=SORIANA-03')).toBe(1);
     expect(await count(`orderId=${orderId}`)).toBe(3);
     expect(await count('orderId=otro')).toBe(0);
 
@@ -493,7 +470,6 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
     expect(response.body[0]).toMatchObject({
       company,
       delegateName: 'Laura Asistente',
-      folioPrefix: 'SORIANA',
       seats: 3,
       registered: 3,
       activated: 2,
@@ -508,7 +484,6 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('tables and event views', () => {
       .send({
         delegateName: 'Ana Nueva',
         delegateEmail: `ana.nueva@${domain}`,
-        folioPrefix: 'SORIANA',
         registrationDeadline: null,
       });
     expect(changed.status).toBe(204);

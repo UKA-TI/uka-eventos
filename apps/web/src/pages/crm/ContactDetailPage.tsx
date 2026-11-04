@@ -184,12 +184,17 @@ export function ContactDetailPage() {
         }
       />
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-      {data.optedOutAt && (
+      {data.optedOutAt ? (
         <p className="notice warn" role="status">
           Pidió no recibir comunicaciones el {shortDate(data.optedOutAt)}. Sigue
           recibiendo sus pases y avisos de pago.
         </p>
-      )}
+      ) : !data.marketingConsentAt ? (
+        <p className="notice warn" role="status">
+          Sin permiso para recibir comunicaciones. Sí recibe sus pases y avisos
+          de pago.
+        </p>
+      ) : null}
 
       {editing && options.data && (
         <form className="panel" onSubmit={submit} noValidate>
@@ -246,35 +251,46 @@ export function ContactDetailPage() {
         <div className="panel-heading">
           <h2>Datos de contacto</h2>
           {canManage && (
-            <button
-              className="link-button"
-              type="button"
-              disabled={act.isPending}
-              onClick={() => {
-                setNotice(undefined);
-                if (data.optedOutAt) {
-                  if (
-                    window.confirm(
-                      'Vuelve a activar las comunicaciones solo si esta persona lo pidió. ¿Continuar?',
-                    )
-                  ) {
+            <div className="row-actions">
+              {(data.optedOutAt || !data.marketingConsentAt) && (
+                <button
+                  className="link-button"
+                  type="button"
+                  disabled={act.isPending}
+                  onClick={() => {
+                    setNotice(undefined);
+                    if (
+                      window.confirm(
+                        'Regístralo solo si esta persona lo autorizó. Queda en la bitácora. ¿Continuar?',
+                      )
+                    ) {
+                      act.mutate({
+                        path: '/opt-in',
+                        success: 'Se registró el permiso de comunicaciones.',
+                      });
+                    }
+                  }}
+                >
+                  Registrar permiso
+                </button>
+              )}
+              {!data.optedOutAt && (
+                <button
+                  className="link-button"
+                  type="button"
+                  disabled={act.isPending}
+                  onClick={() => {
+                    setNotice(undefined);
                     act.mutate({
-                      path: '/opt-in',
-                      success: 'Comunicaciones activadas.',
+                      path: '/opt-out',
+                      success: 'Se registró la baja de comunicaciones.',
                     });
-                  }
-                } else {
-                  act.mutate({
-                    path: '/opt-out',
-                    success: 'Se registró la baja de comunicaciones.',
-                  });
-                }
-              }}
-            >
-              {data.optedOutAt
-                ? 'Reactivar comunicaciones'
-                : 'Registrar baja de comunicaciones'}
-            </button>
+                  }}
+                >
+                  Registrar baja
+                </button>
+              )}
+            </div>
           )}
         </div>
         <dl className="data-list">
@@ -285,6 +301,16 @@ export function ContactDetailPage() {
           <div>
             <dt>Teléfono</dt>
             <dd>{data.phone ?? 'Sin teléfono'}</dd>
+          </div>
+          <div>
+            <dt>Comunicaciones</dt>
+            <dd>
+              {data.optedOutAt
+                ? 'Dado de baja'
+                : data.marketingConsentAt
+                  ? `Con permiso desde ${shortDate(data.marketingConsentAt)}`
+                  : 'Sin permiso'}
+            </dd>
           </div>
           <div>
             <dt>Origen</dt>

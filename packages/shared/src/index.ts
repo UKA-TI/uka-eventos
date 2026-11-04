@@ -324,6 +324,13 @@ export const eventInputSchema = z.object({
   endsAt: nullableDateTime,
   timeZone: z.string().trim().min(1).max(64),
   venue: z.string().trim().max(180).nullable(),
+  programStartsAt: nullableDateTime.optional(),
+  mapUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .regex(/^https?:\/\/\S+$/, 'Escribe una liga completa, con https://.')
+    .nullish(),
   paymentInstructions: z.string().trim().max(5000).nullable(),
   capacity: z
     .number('Escribe un número.')
@@ -513,6 +520,8 @@ export const publicRegistrationSchema = orderInputSchema.extend({
   privacyAccepted: z.literal(true, {
     error: 'Debes aceptar el aviso de privacidad.',
   }),
+  // Opcional y sin marcar de inicio: es un permiso distinto al del evento.
+  marketingConsent: z.boolean().optional(),
   // Campo oculto: una persona nunca lo llena, un robot sí.
   website: z.string().max(200).optional(),
 });
@@ -561,12 +570,6 @@ const delegateFields = {
     .toLowerCase()
     .email('Escribe un correo válido.')
     .max(254)
-    .nullish(),
-  folioPrefix: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z0-9-]{2,10}$/, 'Usa de 2 a 10 letras, números o guiones.')
     .nullish(),
   registrationDeadline: z.string().datetime({ offset: true }).nullish(),
 };
@@ -624,8 +627,8 @@ export const orderResponseSchema = z.object({
   quantity: z.number(),
   delegateName: z.string().nullable(),
   delegateEmail: z.string().nullable(),
-  folioPrefix: z.string().nullable(),
   registrationDeadline: z.string().nullable(),
+  notes: z.string().nullable(),
   amountDue: z.number(),
   amountPaid: z.number(),
   createdAt: z.string(),
@@ -693,6 +696,8 @@ export const publicEventResponseSchema = z.object({
   endsAt: z.string().nullable(),
   timeZone: z.string(),
   venue: z.string().nullable(),
+  programStartsAt: z.string().nullable(),
+  mapUrl: z.string().nullable(),
   currency: z.string(),
   privacyUrl: z.string(),
   tickets: z.array(
@@ -735,6 +740,16 @@ export const passActivationSchema = z.object({
     .max(32)
     .regex(/^[0-9+() .-]*$/, 'Escribe un teléfono válido.')
     .nullable(),
+  marketingConsent: z.boolean().optional(),
+});
+
+export const recoverPassSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Escribe un correo válido.')
+    .max(254),
 });
 
 export const publicPassResponseSchema = z.object({
@@ -747,6 +762,10 @@ export const publicPassResponseSchema = z.object({
   venue: z.string().nullable(),
   ticketName: z.string(),
   qrDataUrl: z.string().nullable(),
+  programStartsAt: z.string().nullable(),
+  mapUrl: z.string().nullable(),
+  eventSlug: z.string(),
+  calendar: z.object({ google: z.string(), outlook: z.string() }).nullable(),
   privacyUrl: z.string(),
 });
 
@@ -761,7 +780,6 @@ export const publicGroupResponseSchema = z.object({
   ticketName: z.string(),
   contactName: z.string(),
   delegateName: z.string().nullable(),
-  folioPrefix: z.string().nullable(),
   registrationDeadline: z.string().nullable(),
   source: z.string(),
   buyer: z.object({
@@ -1010,6 +1028,8 @@ export const contactSummarySchema = z.object({
   source: z.string(),
   optedOutAt: z.string().nullable(),
   optOutSource: z.string().nullable(),
+  marketingConsentAt: z.string().nullable(),
+  marketingConsentSource: z.string().nullable(),
   participations: z.number(),
   createdAt: z.string(),
 });
@@ -1277,6 +1297,26 @@ export const reportEventsResponseSchema = z.array(reportEventSchema);
 // Vistas por evento: tablero, invitados y mesas
 // ---------------------------------------------------------------------------
 
+/** Alta en la puerta: alguien con autoridad decide que esta persona puede entrar. */
+export const authorizedGuestSchema = z.object({
+  firstName: personFields.firstName,
+  lastName: personFields.lastName,
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Escribe un correo válido.')
+    .max(254)
+    .nullable(),
+  phone: z.string().trim().max(32).nullable(),
+  organization: z.string().trim().max(180).nullable(),
+  ticketTypeId: z.string().min(1, 'Selecciona un boleto.').max(30),
+  reason: z.string().trim().min(3, 'Escribe el motivo.').max(200),
+  accessPointId: z.string().max(30).nullable(),
+});
+
+export type AuthorizedGuestInput = z.infer<typeof authorizedGuestSchema>;
+
 export const eventDashboardSchema = z.object({
   updatedAt: z.string(),
   capacity: z.number().nullable(),
@@ -1345,7 +1385,6 @@ export const eventGroupsResponseSchema = z.array(
     buyerEmail: z.string().nullable(),
     delegateName: z.string().nullable(),
     delegateEmail: z.string().nullable(),
-    folioPrefix: z.string().nullable(),
     registrationDeadline: z.string().nullable(),
     seats: z.number(),
     registered: z.number(),
