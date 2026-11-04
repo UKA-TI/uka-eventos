@@ -190,6 +190,12 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('check-in', () => {
     await prisma.guest.deleteMany({
       where: { email: { endsWith: `@${domain}` } },
     });
+    await prisma.contact.deleteMany({
+      where: { email: { endsWith: `@${domain}` } },
+    });
+    await prisma.company.deleteMany({
+      where: { name: { contains: run } },
+    });
     await prisma.eventCounter.deleteMany({
       where: { eventId: { in: events } },
     });

@@ -40,6 +40,31 @@ export const permissionCatalog = [
     ],
   },
   {
+    key: 'contacts',
+    label: 'Contactos y empresas',
+    actions: [
+      { code: 'contacts.view', label: 'Ver' },
+      { code: 'contacts.manage', label: 'Crear, editar y segmentar' },
+    ],
+  },
+  {
+    key: 'communications',
+    label: 'Comunicaciones',
+    actions: [
+      { code: 'communications.view', label: 'Ver' },
+      { code: 'communications.manage', label: 'Redactar y usar plantillas' },
+      { code: 'communications.send', label: 'Enviar a contactos' },
+    ],
+  },
+  {
+    key: 'donations',
+    label: 'Donativos',
+    actions: [
+      { code: 'donations.view', label: 'Ver' },
+      { code: 'donations.manage', label: 'Registrar y anular' },
+    ],
+  },
+  {
     key: 'users',
     label: 'Usuarios',
     actions: [
@@ -804,3 +829,318 @@ export const incidentListSchema = z.array(
 );
 
 export type IncidentRecord = z.infer<typeof incidentListSchema>[number];
+
+// ---------------------------------------------------------------------------
+// CRM: contactos, empresas, segmentos, comunicaciones y donativos
+// ---------------------------------------------------------------------------
+
+const optionalText = (max: number) => z.string().trim().max(max).nullable();
+
+export const contactInputSchema = z.object({
+  firstName: z.string().trim().min(1, 'Escribe el nombre.').max(100),
+  lastName: z.string().trim().min(1, 'Escribe los apellidos.').max(140),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Escribe un correo válido.')
+    .max(254)
+    .nullable(),
+  phone: optionalText(32),
+  position: optionalText(120),
+  companyId: z.string().max(30).nullable(),
+});
+
+export type ContactInput = z.infer<typeof contactInputSchema>;
+
+export const contactNoteInputSchema = z.object({
+  body: z.string().trim().min(1, 'Escribe la nota.').max(5000),
+});
+
+export const companyInputSchema = z.object({
+  name: z.string().trim().min(1, 'Escribe el nombre.').max(180),
+  website: optionalText(255),
+  notes: optionalText(5000),
+});
+
+export type CompanyInput = z.infer<typeof companyInputSchema>;
+
+export const participationOptions = [
+  { key: 'any', label: 'Sin importar' },
+  { key: 'registered', label: 'Se registró' },
+  { key: 'attended', label: 'Asistió' },
+  { key: 'not_attended', label: 'Se registró y no asistió' },
+] as const;
+
+export const segmentFiltersSchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  companyId: z.string().max(30).optional(),
+  eventType: z.string().trim().max(60).optional(),
+  seriesId: z.string().max(30).optional(),
+  eventId: z.string().max(30).optional(),
+  editionYear: z.number().int().min(2000).max(2100).optional(),
+  participation: z
+    .enum(['any', 'registered', 'attended', 'not_attended'])
+    .optional(),
+  donor: z.boolean().optional(),
+  reachable: z.boolean().optional(),
+});
+
+export type SegmentFilters = z.infer<typeof segmentFiltersSchema>;
+
+export const segmentInputSchema = z.object({
+  name: z.string().trim().min(2, 'Escribe el nombre del segmento.').max(120),
+  description: optionalText(255),
+  filters: segmentFiltersSchema,
+});
+
+export const segmentResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  filters: segmentFiltersSchema,
+  contacts: z.number(),
+  reachable: z.number(),
+  createdAt: z.string(),
+});
+
+export type SegmentRecord = z.infer<typeof segmentResponseSchema>;
+
+export const contactSummarySchema = z.object({
+  id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  position: z.string().nullable(),
+  company: z.object({ id: z.string(), name: z.string() }).nullable(),
+  source: z.string(),
+  optedOutAt: z.string().nullable(),
+  optOutSource: z.string().nullable(),
+  participations: z.number(),
+  createdAt: z.string(),
+});
+
+export type ContactSummary = z.infer<typeof contactSummarySchema>;
+
+export const contactListResponseSchema = z.object({
+  contacts: z.array(contactSummarySchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  reachable: z.number(),
+});
+
+export const donationMethodOptions = [
+  { key: 'transfer', label: 'Transferencia' },
+  { key: 'cash', label: 'Efectivo' },
+  { key: 'card', label: 'Tarjeta' },
+  { key: 'in_kind', label: 'En especie' },
+  { key: 'other', label: 'Otro' },
+] as const;
+
+export const donationInputSchema = z.object({
+  contactId: z.string().max(30).nullable(),
+  companyId: z.string().max(30).nullable(),
+  eventId: z.string().max(30).nullable(),
+  amount: z
+    .number('Escribe el monto.')
+    .positive('Debe ser mayor a cero.')
+    .max(9_999_999_999, 'El monto es demasiado alto.'),
+  method: z.enum(['transfer', 'cash', 'card', 'in_kind', 'other']),
+  reference: optionalText(120),
+  notes: optionalText(500),
+  receivedAt: z.string().datetime({ offset: true }),
+});
+
+export type DonationInput = z.infer<typeof donationInputSchema>;
+
+export const donationVoidSchema = z.object({
+  reason: z.string().trim().min(3, 'Escribe el motivo.').max(255),
+});
+
+export const donationResponseSchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  method: z.string(),
+  reference: z.string().nullable(),
+  notes: z.string().nullable(),
+  receivedAt: z.string(),
+  contact: z.object({ id: z.string(), name: z.string() }).nullable(),
+  company: z.object({ id: z.string(), name: z.string() }).nullable(),
+  event: z.object({ id: z.string(), name: z.string() }).nullable(),
+  recordedBy: z.string().nullable(),
+  voidedAt: z.string().nullable(),
+  voidReason: z.string().nullable(),
+});
+
+export type DonationRecord = z.infer<typeof donationResponseSchema>;
+
+export const donationListResponseSchema = z.object({
+  donations: z.array(donationResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  totalAmount: z.number(),
+  count: z.number(),
+});
+
+export const contactDetailResponseSchema = contactSummarySchema.extend({
+  history: z.array(
+    z.object({
+      id: z.string(),
+      eventId: z.string(),
+      eventName: z.string(),
+      editionYear: z.number(),
+      startsAt: z.string().nullable(),
+      ticketName: z.string(),
+      reference: z.string(),
+      status: z.string(),
+      role: z.enum(['attendee', 'buyer']),
+      attended: z.boolean(),
+    }),
+  ),
+  notes: z.array(
+    z.object({
+      id: z.string(),
+      body: z.string(),
+      author: z.string().nullable(),
+      createdAt: z.string(),
+    }),
+  ),
+  donations: z.array(donationResponseSchema),
+  messages: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.string(),
+      status: z.string(),
+      sentAt: z.string().nullable(),
+      createdAt: z.string(),
+    }),
+  ),
+});
+
+export type ContactDetail = z.infer<typeof contactDetailResponseSchema>;
+
+export const companyResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  website: z.string().nullable(),
+  notes: z.string().nullable(),
+  contacts: z.number(),
+  donated: z.number(),
+});
+
+export type CompanyRecord = z.infer<typeof companyResponseSchema>;
+
+export const crmOptionsResponseSchema = z.object({
+  companies: z.array(z.object({ id: z.string(), name: z.string() })),
+  series: z.array(z.object({ id: z.string(), name: z.string() })),
+  eventTypes: z.array(z.string()),
+  years: z.array(z.number()),
+  events: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      status: z.string(),
+      openForRegistration: z.boolean(),
+    }),
+  ),
+});
+
+export type CrmOptions = z.infer<typeof crmOptionsResponseSchema>;
+
+/** Variables que se pueden usar en el asunto y el texto de una comunicación. */
+export const mergeVariables = [
+  { key: 'nombre', label: 'Nombre del contacto' },
+  { key: 'apellidos', label: 'Apellidos del contacto' },
+  { key: 'evento', label: 'Nombre del evento elegido' },
+  { key: 'fecha', label: 'Fecha del evento elegido' },
+  { key: 'sede', label: 'Sede del evento elegido' },
+] as const;
+
+const knownVariables = new Set<string>(mergeVariables.map(({ key }) => key));
+
+function usesOnlyKnownVariables(text: string): boolean {
+  return [...text.matchAll(/\{\{\s*([^{}]*?)\s*\}\}/g)].every((match) =>
+    knownVariables.has(match[1] ?? ''),
+  );
+}
+
+const unknownVariable = 'Usa solo las variables disponibles, como {{nombre}}.';
+
+const emailSubject = z
+  .string()
+  .trim()
+  .min(2, 'Escribe el asunto.')
+  .max(180)
+  .refine(usesOnlyKnownVariables, unknownVariable);
+
+const emailBody = z
+  .string()
+  .trim()
+  .min(2, 'Escribe el mensaje.')
+  .max(20_000)
+  .refine(usesOnlyKnownVariables, unknownVariable);
+
+export const templateInputSchema = z.object({
+  name: z.string().trim().min(2, 'Escribe el nombre.').max(120),
+  subject: emailSubject,
+  body: emailBody,
+});
+
+export const templateResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  subject: z.string(),
+  body: z.string(),
+});
+
+export type TemplateRecord = z.infer<typeof templateResponseSchema>;
+
+export const campaignInputSchema = z.object({
+  name: z.string().trim().min(2, 'Escribe el nombre.').max(120),
+  subject: emailSubject,
+  body: emailBody,
+  eventId: z.string().max(30).nullable(),
+  segmentId: z.string().max(30).nullable(),
+});
+
+export type CampaignInput = z.infer<typeof campaignInputSchema>;
+
+export const campaignResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  subject: z.string(),
+  body: z.string(),
+  eventId: z.string().nullable(),
+  eventName: z.string().nullable(),
+  segmentId: z.string().nullable(),
+  segmentName: z.string().nullable(),
+  status: z.enum(['draft', 'queued', 'cancelled']),
+  queuedAt: z.string().nullable(),
+  cancelledAt: z.string().nullable(),
+  createdAt: z.string(),
+  sentBy: z.string().nullable(),
+  audience: z.number(),
+  stats: z.object({
+    pending: z.number(),
+    sent: z.number(),
+    failed: z.number(),
+    skipped: z.number(),
+  }),
+});
+
+export type CampaignRecord = z.infer<typeof campaignResponseSchema>;
+
+export const campaignPreviewResponseSchema = z.object({
+  subject: z.string(),
+  html: z.string(),
+});
+
+export const unsubscribeResponseSchema = z.object({
+  email: z.string(),
+  optedOut: z.boolean(),
+  privacyUrl: z.string(),
+});

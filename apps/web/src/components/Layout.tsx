@@ -77,6 +77,50 @@ export function Layout() {
               Recepción
             </NavLink>
           )}
+          {(can('contacts.view', 'contacts.manage') ||
+            can(
+              'communications.view',
+              'communications.manage',
+              'communications.send',
+            ) ||
+            can('donations.view', 'donations.manage')) && (
+            <small className="nav-heading">CRM</small>
+          )}
+          {can('contacts.view', 'contacts.manage') && (
+            <NavLink className={linkClass} to="/contactos">
+              Contactos
+            </NavLink>
+          )}
+          {can('contacts.view', 'contacts.manage') && (
+            <NavLink className={linkClass} to="/empresas">
+              Empresas
+            </NavLink>
+          )}
+          {can(
+            'contacts.view',
+            'contacts.manage',
+            'communications.view',
+            'communications.manage',
+            'communications.send',
+          ) && (
+            <NavLink className={linkClass} to="/segmentos">
+              Segmentos
+            </NavLink>
+          )}
+          {can(
+            'communications.view',
+            'communications.manage',
+            'communications.send',
+          ) && (
+            <NavLink className={linkClass} to="/comunicaciones">
+              Comunicaciones
+            </NavLink>
+          )}
+          {can('donations.view', 'donations.manage') && (
+            <NavLink className={linkClass} to="/donativos">
+              Donativos
+            </NavLink>
+          )}
           {(can('users.view', 'users.manage') ||
             can('roles.view', 'roles.manage')) && (
             <small className="nav-heading">Administración</small>

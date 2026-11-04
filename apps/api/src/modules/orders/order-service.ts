@@ -8,6 +8,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
 import { issueFolioWithin } from '../folios/prisma-folio-database.js';
+import { linkContact } from '../contacts/contact-link.js';
 import { enqueueEmail } from '../mail/queue.js';
 import {
   groupToken,
@@ -224,6 +225,7 @@ export async function createOrder(params: {
       create: { eventId, counterType: 'registration', currentValue: 0 },
     });
     const reference = await issueFolioWithin(tx, eventId);
+    const contactId = await linkContact(tx, input);
     const guest = await tx.guest.create({
       data: {
         firstName: input.firstName,
@@ -231,6 +233,7 @@ export async function createOrder(params: {
         email: input.email,
         phone: input.phone,
         organization: input.organization,
+        contactId,
       },
     });
     const order = await tx.order.create({
@@ -440,6 +443,7 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
       seatNumber += 1;
     }
     const folio = await issueFolioWithin(tx, found.eventId);
+    const contactId = await linkContact(tx, input);
     const guest = await tx.guest.create({
       data: {
         firstName: input.firstName,
@@ -447,6 +451,7 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
         email: input.email,
         phone: input.phone,
         organization: input.organization,
+        contactId,
       },
     });
     const registration = await tx.registration.create({

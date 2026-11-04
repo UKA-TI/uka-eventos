@@ -8,6 +8,13 @@ import {
   ReceptionHomePage,
   ReceptionStationPage,
 } from './pages/checkin/ReceptionPage.js';
+import { CampaignPage } from './pages/crm/CampaignPage.js';
+import { CommunicationsPage } from './pages/crm/CommunicationsPage.js';
+import { CompaniesPage } from './pages/crm/CompaniesPage.js';
+import { ContactDetailPage } from './pages/crm/ContactDetailPage.js';
+import { ContactsPage } from './pages/crm/ContactsPage.js';
+import { DonationsPage } from './pages/crm/DonationsPage.js';
+import { SegmentsPage } from './pages/crm/SegmentsPage.js';
 import { EventDetailPage } from './pages/EventDetailPage.js';
 import { EventsPage } from './pages/EventsPage.js';
 import { HomePage } from './pages/HomePage.js';
@@ -16,6 +23,7 @@ import { NewEventPage } from './pages/NewEventPage.js';
 import { GroupPage } from './pages/public/GroupPage.js';
 import { PassPage } from './pages/public/PassPage.js';
 import { PublicRegisterPage } from './pages/public/PublicRegisterPage.js';
+import { UnsubscribePage } from './pages/public/UnsubscribePage.js';
 import { RolesPage } from './pages/RolesPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
@@ -54,6 +62,7 @@ export default function App() {
       <Route path="/r/:slug" element={<PublicRegisterPage />} />
       <Route path="/pase/:token" element={<PassPage />} />
       <Route path="/mesa/:token" element={<GroupPage />} />
+      <Route path="/baja/:token" element={<UnsubscribePage />} />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route
@@ -85,6 +94,90 @@ export default function App() {
           element={
             <Guard any={['events.view', 'events.create', 'events.edit']}>
               <SeriesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="contactos"
+          element={
+            <Guard any={['contacts.view', 'contacts.manage']}>
+              <ContactsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="contactos/:id"
+          element={
+            <Guard any={['contacts.view', 'contacts.manage']}>
+              <ContactDetailPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="empresas"
+          element={
+            <Guard any={['contacts.view', 'contacts.manage']}>
+              <CompaniesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="segmentos"
+          element={
+            <Guard
+              any={[
+                'contacts.view',
+                'contacts.manage',
+                'communications.view',
+                'communications.manage',
+                'communications.send',
+              ]}
+            >
+              <SegmentsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="comunicaciones"
+          element={
+            <Guard
+              any={[
+                'communications.view',
+                'communications.manage',
+                'communications.send',
+              ]}
+            >
+              <CommunicationsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="comunicaciones/nueva"
+          element={
+            <Guard any={['communications.manage']}>
+              <CampaignPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="comunicaciones/:id"
+          element={
+            <Guard
+              any={[
+                'communications.view',
+                'communications.manage',
+                'communications.send',
+              ]}
+            >
+              <CampaignPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="donativos"
+          element={
+            <Guard any={['donations.view', 'donations.manage']}>
+              <DonationsPage />
             </Guard>
           }
         />

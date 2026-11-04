@@ -83,6 +83,21 @@ desde ahí.
 Las direcciones de dominios reservados para pruebas (`.test`, `.example`, `.invalid`,
 `.localhost`) nunca se envían.
 
+## Comunicaciones masivas
+
+Las invitaciones comparten los límites de Microsoft con los pases, así que la cola les da un
+trato distinto:
+
+- Pases y avisos de pago salen siempre primero, aunque haya una comunicación en curso.
+- Una comunicación solo puede usar el 80 % del límite diario; el resto queda reservado.
+- A 25 correos por minuto, 1,000 destinatarios tardan unos 40 minutos.
+- Si alguien se da de baja o se detiene el envío, lo que seguía en cola ya no sale.
+- Cada comunicación lleva una liga para darse de baja. Pide confirmar con un botón porque los
+  filtros de correo abren las ligas automáticamente. La baja no afecta pases ni avisos de pago.
+
+Microsoft Graph no permite agregar el encabezado `List-Unsubscribe`, así que la baja se ofrece
+solo con la liga dentro del mensaje.
+
 ## Límites de envío
 
 La cola envía hasta 25 correos por minuto y 8,000 al día, por debajo de los límites de

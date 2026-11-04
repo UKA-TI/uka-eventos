@@ -2,7 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { PRIVACY_NOTICE_URL } from '@uka/shared';
 import QRCode from 'qrcode';
 import { prisma } from '../../database.js';
-import { groupUrl, passToken, passUrl } from '../passes/tokens.js';
+import {
+  groupUrl,
+  passToken,
+  passUrl,
+  registrationUrl,
+  unsubscribeUrl,
+} from '../passes/tokens.js';
 
 export interface InlineImage {
   contentId: string;
@@ -59,7 +65,7 @@ function formatDate(date: Date | null, timeZone: string): string {
     : 'Por confirmar';
 }
 
-function layout(title: string, body: string): string {
+function layout(title: string, body: string, footer = ''): string {
   return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f5f6f8;font-family:Arial,sans-serif;color:#1c1c1c">
 <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-top:4px solid #FECE00;border-radius:8px">
 <tr><td style="padding:24px 28px">
@@ -67,7 +73,7 @@ ${LOGO_HEADER}
 <h1 style="margin:0 0 16px;font-size:21px">${escapeHtml(title)}</h1>
 ${body}
 <p style="margin:24px 0 0;padding-top:14px;border-top:1px solid #e2e4e8;color:#6b6b6b;font-size:12px">
-Consulta nuestro <a href="${PRIVACY_NOTICE_URL}" style="color:#0077C9">aviso de privacidad</a>.
+Consulta nuestro <a href="${PRIVACY_NOTICE_URL}" style="color:#0077C9">aviso de privacidad</a>.${footer}
 </p>
 </td></tr></table></body></html>`;
 }
@@ -188,6 +194,128 @@ ${button(groupUrl(order.id), 'Registrar invitados')}
   };
 }
 
+interface MergeValues {
+  nombre: string;
+  apellidos: string;
+  evento: string;
+  fecha: string;
+  sede: string;
+}
+
+function merge(text: string, values: MergeValues): string {
+  return text.replace(
+    /\{\{\s*(nombre|apellidos|evento|fecha|sede)\s*\}\}/g,
+    (_match, key: keyof MergeValues) => values[key],
+  );
+}
+
+/** El texto es del equipo pero los datos no: todo se escapa antes de dar formato. */
+function bodyToHtml(text: string): string {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => {
+      const html = escapeHtml(paragraph.trim()).replace(
+        /https?:\/\/[^\s<]+/g,
+        (url) => `<a href="${url}" style="color:#0077C9">${url}</a>`,
+      );
+      return `<p style="margin:0 0 14px;white-space:pre-line">${html}</p>`;
+    })
+    .join('\n');
+}
+
+function campaignContent(
+  campaign: {
+    subject: string;
+    body: string;
+    event: {
+      name: string;
+      slug: string;
+      status: string;
+      modules: unknown;
+      startsAt: Date | null;
+      timeZone: string;
+      venue: string | null;
+    } | null;
+  },
+  person: { firstName: string; lastName: string },
+  unsubscribe: string | null,
+): EmailContent {
+  const { event } = campaign;
+  const values: MergeValues = {
+    nombre: person.firstName,
+    apellidos: person.lastName,
+    evento: event?.name ?? '',
+    fecha: event ? formatDate(event.startsAt, event.timeZone) : '',
+    sede: event?.venue ?? '',
+  };
+  const subject = merge(campaign.subject, values);
+  const open =
+    event?.status === 'active' &&
+    Array.isArray(event.modules) &&
+    event.modules.includes('publicRegistration');
+  const footer = unsubscribe
+    ? ` Si ya no quieres recibir estas comunicaciones, <a href="${unsubscribe}" style="color:#0077C9">date de baja aquí</a>.`
+    : ' Aquí aparecerá la liga para darse de baja.';
+  return {
+    subject,
+    html: layout(
+      subject,
+      `${bodyToHtml(merge(campaign.body, values))}${open ? button(registrationUrl(event.slug), 'Quiero registrarme') : ''}`,
+      footer,
+    ),
+  };
+}
+
+const campaignEvent = {
+  select: {
+    name: true,
+    slug: true,
+    status: true,
+    modules: true,
+    startsAt: true,
+    timeZone: true,
+    venue: true,
+  },
+};
+
+async function renderCampaign(refId: string): Promise<EmailContent | null> {
+  const recipient = await prisma.campaignRecipient.findUnique({
+    where: { id: refId },
+    include: {
+      contact: true,
+      campaign: { include: { event: campaignEvent } },
+    },
+  });
+  // Se revisa al enviar: una baja o una cancelación detienen lo que siga en cola.
+  if (
+    !recipient ||
+    recipient.campaign.status !== 'queued' ||
+    recipient.contact.optedOutAt ||
+    !recipient.contact.email
+  ) {
+    return null;
+  }
+  return campaignContent(
+    recipient.campaign,
+    recipient.contact,
+    unsubscribeUrl(recipient.contact.id),
+  );
+}
+
+const SAMPLE_PERSON = { firstName: 'Nombre', lastName: 'Apellidos' };
+
+async function renderCampaignTest(refId: string): Promise<EmailContent | null> {
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: refId },
+    include: { event: campaignEvent },
+  });
+  if (!campaign) {
+    return null;
+  }
+  const content = campaignContent(campaign, SAMPLE_PERSON, null);
+  return { ...content, subject: `[Prueba] ${content.subject}` };
+}
+
 function renderContent(
   kind: string,
   refId: string,
@@ -199,9 +327,32 @@ function renderContent(
       return renderOrderPending(refId);
     case 'group_link':
       return renderGroupLink(refId);
+    case 'campaign':
+      return renderCampaign(refId);
+    case 'campaign_test':
+      return renderCampaignTest(refId);
     default:
       return Promise.resolve(null);
   }
+}
+
+/** Vista previa para la pantalla, con las imágenes dentro del propio HTML. */
+export async function renderCampaignPreview(
+  campaignId: string,
+): Promise<{ subject: string; html: string } | null> {
+  const email = await renderEmail('campaign_test', campaignId);
+  if (!email) {
+    return null;
+  }
+  const html = email.inlineImages.reduce(
+    (result, image) =>
+      result.replace(
+        `cid:${image.contentId}`,
+        `data:image/png;base64,${image.contentBase64}`,
+      ),
+    email.html,
+  );
+  return { subject: email.subject.replace(/^\[Prueba\] /, ''), html };
 }
 
 /** Devuelve null si el mensaje ya no aplica, por ejemplo si se canceló el pedido. */

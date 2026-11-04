@@ -92,6 +92,8 @@ model Event {
   checkins            Checkin[]
   accessPoints        AccessPoint[]
   auditLogs           AuditLog[]
+  campaigns           Campaign[]
+  donations           Donation[]
 
   @@index([status, startsAt])
   @@index([seriesId, editionYear])
@@ -152,6 +154,8 @@ model Payment {
 model EmailMessage {
   id            String    @id @default(cuid()) @db.VarChar(30)
   eventId       String?   @map("event_id") @db.VarChar(30)
+  campaignId    String?   @map("campaign_id") @db.VarChar(30)
+  priority      Int       @default(0) @db.UnsignedTinyInt
   kind          String    @db.VarChar(24)
   refId         String    @map("ref_id") @db.VarChar(30)
   toEmail       String    @map("to_email") @db.VarChar(254)
@@ -163,8 +167,10 @@ model EmailMessage {
   sentAt        DateTime? @map("sent_at") @db.DateTime(3)
   createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(3)
   event         Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
-  @@index([status, nextAttemptAt])
+  @@index([status, priority, nextAttemptAt])
+  @@index([campaignId, status])
   @@index([sentAt])
   @@index([eventId, status])
   @@index([kind, refId])
@@ -193,11 +199,14 @@ model Guest {
   email         String?        @db.VarChar(254)
   phone         String?        @db.VarChar(32)
   organization  String?        @db.VarChar(180)
+  contactId     String?        @map("contact_id") @db.VarChar(30)
   createdAt     DateTime       @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
+  contact       Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
   registrations Registration[]
   orders        Order[]        @relation("OrderBuyer")
 
+  @@index([contactId])
   @@index([email])
   @@index([lastName, firstName])
   @@map("guests")
@@ -324,6 +333,12 @@ model User {
   paymentsRecorded  Payment[]     @relation("PaymentRecorder")
   paymentsVoided    Payment[]     @relation("PaymentVoider")
   auditLogs         AuditLog[]
+  contactNotes      ContactNote[]
+  segments          Segment[]
+  campaignsCreated  Campaign[]    @relation("CampaignCreator")
+  campaignsSent     Campaign[]    @relation("CampaignSender")
+  donationsRecorded Donation[]    @relation("DonationRecorder")
+  donationsVoided   Donation[]    @relation("DonationVoider")
 
   @@unique([entraTid, entraOid])
   @@index([roleId])
@@ -410,4 +425,145 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+model Company {
+  id        String     @id @default(cuid()) @db.VarChar(30)
+  name      String     @unique @db.VarChar(180)
+  website   String?    @db.VarChar(255)
+  notes     String?    @db.Text
+  createdAt DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.DateTime(3)
+  contacts  Contact[]
+  donations Donation[]
+
+  @@map("companies")
+}
+
+model Contact {
+  id           String              @id @default(cuid()) @db.VarChar(30)
+  firstName    String              @map("first_name") @db.VarChar(100)
+  lastName     String              @map("last_name") @db.VarChar(140)
+  email        String?             @unique @db.VarChar(254)
+  phone        String?             @db.VarChar(32)
+  position     String?             @db.VarChar(120)
+  companyId    String?             @map("company_id") @db.VarChar(30)
+  source       String              @default("manual") @db.VarChar(16)
+  optedOutAt   DateTime?           @map("opted_out_at") @db.DateTime(3)
+  optOutSource String?             @map("opt_out_source") @db.VarChar(16)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  company      Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  guests       Guest[]
+  notes        ContactNote[]
+  donations    Donation[]
+  recipients   CampaignRecipient[]
+
+  @@index([lastName, firstName])
+  @@index([companyId])
+  @@map("contacts")
+}
+
+model ContactNote {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  contactId String   @map("contact_id") @db.VarChar(30)
+  authorId  String?  @map("author_id") @db.VarChar(30)
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([contactId, createdAt])
+  @@map("contact_notes")
+}
+
+model Segment {
+  id          String     @id @default(cuid()) @db.VarChar(30)
+  name        String     @unique @db.VarChar(120)
+  description String?    @db.VarChar(255)
+  filters     Json
+  createdById String?    @map("created_by_id") @db.VarChar(30)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.DateTime(3)
+  createdBy   User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  campaigns   Campaign[]
+
+  @@map("segments")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  name      String   @unique @db.VarChar(120)
+  subject   String   @db.VarChar(180)
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  @@map("email_templates")
+}
+
+model Campaign {
+  id          String              @id @default(cuid()) @db.VarChar(30)
+  name        String              @db.VarChar(120)
+  subject     String              @db.VarChar(180)
+  body        String              @db.Text
+  eventId     String?             @map("event_id") @db.VarChar(30)
+  segmentId   String?             @map("segment_id") @db.VarChar(30)
+  status      String              @default("draft") @db.VarChar(16)
+  createdById String?             @map("created_by_id") @db.VarChar(30)
+  sentById    String?             @map("sent_by_id") @db.VarChar(30)
+  queuedAt    DateTime?           @map("queued_at") @db.DateTime(3)
+  cancelledAt DateTime?           @map("cancelled_at") @db.DateTime(3)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
+  event       Event?              @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  segment     Segment?            @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  createdBy   User?               @relation("CampaignCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sentBy      User?               @relation("CampaignSender", fields: [sentById], references: [id], onDelete: SetNull)
+  recipients  CampaignRecipient[]
+  messages    EmailMessage[]
+
+  @@index([status, createdAt])
+  @@map("campaigns")
+}
+
+model CampaignRecipient {
+  id         String   @id @default(cuid()) @db.VarChar(30)
+  campaignId String   @map("campaign_id") @db.VarChar(30)
+  contactId  String   @map("contact_id") @db.VarChar(30)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@index([contactId])
+  @@map("campaign_recipients")
+}
+
+model Donation {
+  id           String    @id @default(cuid()) @db.VarChar(30)
+  contactId    String?   @map("contact_id") @db.VarChar(30)
+  companyId    String?   @map("company_id") @db.VarChar(30)
+  eventId      String?   @map("event_id") @db.VarChar(30)
+  amount       Decimal   @db.Decimal(12, 2)
+  currency     String    @default("MXN") @db.Char(3)
+  method       String    @db.VarChar(16)
+  reference    String?   @db.VarChar(120)
+  notes        String?   @db.VarChar(500)
+  receivedAt   DateTime  @map("received_at") @db.DateTime(3)
+  recordedById String?   @map("recorded_by_id") @db.VarChar(30)
+  voidedAt     DateTime? @map("voided_at") @db.DateTime(3)
+  voidedById   String?   @map("voided_by_id") @db.VarChar(30)
+  voidReason   String?   @map("void_reason") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  contact      Contact?  @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  company      Company?  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  event        Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  recordedBy   User?     @relation("DonationRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  voidedBy     User?     @relation("DonationVoider", fields: [voidedById], references: [id], onDelete: SetNull)
+
+  @@index([receivedAt])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([eventId])
+  @@map("donations")
 }

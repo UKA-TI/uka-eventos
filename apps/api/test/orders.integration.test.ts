@@ -198,6 +198,12 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
         },
       },
     });
+    await prisma.contact.deleteMany({
+      where: { email: { endsWith: `@${domain}` } },
+    });
+    await prisma.company.deleteMany({
+      where: { name: { contains: run } },
+    });
     await prisma.eventCounter.deleteMany({ where: { eventId } });
     await prisma.event.delete({ where: { id: eventId } });
     await prisma.eventSeries.delete({ where: { id: seriesId } });
@@ -398,7 +404,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
     const created = await register(
       slug,
       person('empresa', {
-        organization: 'Empresa Ejemplo',
+        organization: `Empresa ${run}`,
         ticketTypeId: tableTicket,
         answers: { [requiredField]: 'M' },
       }),

@@ -132,3 +132,18 @@ Decisiones del responsable del proyecto:
 El repositorio `UKA-TI/uka-eventos` es privado y el plan actual no permite proteger
 ramas. Se acordó trabajar por PR, con revisión manual y CI en verde antes de integrar.
 Revisar esta limitación antes de agregar colaboradores.
+
+## Contactos y comunicaciones
+
+- **El correo identifica a la persona.** Cada registro se une al contacto con ese correo. Como
+  quien se registra no demuestra ser dueño de la dirección, solo se completan datos vacíos: nunca
+  se sobrescribe lo capturado por el equipo ni se revierte una baja.
+- **Baja en lugar de suscripción previa.** El aviso de privacidad (versión del 1 de enero de 2023)
+  contempla fines promocionales como finalidad secundaria y el derecho de oposición, pero no
+  menciona invitaciones a eventos de forma expresa. **Pendiente de revisión legal:** confirmar si
+  este esquema es suficiente o si el aviso debe mencionarlas.
+- **Un contacto con historia no se borra.** Se conservan sus registros y se le da de baja. Las
+  solicitudes ARCO de cancelación todavía se atienden a mano por privacidad@unkilodeayuda.org.mx.
+- **Un donativo no se borra.** Se anula con motivo para que los totales sean auditables.
+- **Un segmento guarda filtros, no personas.** Se actualiza solo; al enviar, los destinatarios
+  quedan fijos en esa comunicación.

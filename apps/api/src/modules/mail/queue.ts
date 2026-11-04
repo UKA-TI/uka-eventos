@@ -14,6 +14,11 @@ const STALE_CLAIM_MS = 10 * 60 * 1000;
 const TICK_MS = 10_000;
 const SERVICE_RETRY_MS = 5 * 60 * 1000;
 
+/** Las comunicaciones masivas salen después de pases y avisos de pago. */
+export const CAMPAIGN_PRIORITY = 10;
+/** Parte del límite diario que una campaña nunca puede usar. */
+const TRANSACTIONAL_DAILY_RESERVE = 0.2;
+
 // Dominios reservados para pruebas (RFC 2606): nunca existen como destinatarios.
 const RESERVED_DOMAIN = /\.(test|example|invalid|localhost)$/i;
 
@@ -70,11 +75,25 @@ export async function processMailQueue(
     return result;
   }
 
-  const due = await prisma.emailMessage.findMany({
-    where: { status: 'pending', nextAttemptAt: { lte: new Date(now) } },
+  const dueNow = { status: 'pending', nextAttemptAt: { lte: new Date(now) } };
+  const transactional = await prisma.emailMessage.findMany({
+    where: { ...dueNow, priority: { lt: CAMPAIGN_PRIORITY } },
     orderBy: { createdAt: 'asc' },
     take: capacity,
   });
+  const campaignCapacity = Math.min(
+    capacity - transactional.length,
+    Math.floor(limits.perDay * (1 - TRANSACTIONAL_DAILY_RESERVE)) - lastDay,
+  );
+  const campaign =
+    campaignCapacity > 0
+      ? await prisma.emailMessage.findMany({
+          where: { ...dueNow, priority: { gte: CAMPAIGN_PRIORITY } },
+          orderBy: { createdAt: 'asc' },
+          take: campaignCapacity,
+        })
+      : [];
+  const due = [...transactional, ...campaign];
 
   for (const message of due) {
     const claim = await prisma.emailMessage.updateMany({

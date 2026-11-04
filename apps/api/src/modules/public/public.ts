@@ -12,7 +12,13 @@ import { config } from '../../config.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
 import { formFieldView } from '../events/form-fields.js';
-import { hashToken, groupUrl, passToken, passUrl } from '../passes/tokens.js';
+import {
+  contactIdFromUnsubscribeToken,
+  groupUrl,
+  hashToken,
+  passToken,
+  passUrl,
+} from '../passes/tokens.js';
 import {
   addGroupGuest,
   createOrder,
@@ -70,6 +76,54 @@ async function loadOpenEvent(slug: string) {
 }
 
 export const publicRouter = Router();
+
+function maskEmail(email: string): string {
+  const [local = '', domain = ''] = email.split('@');
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
+/** Solo muestra el correo oculto: quien tenga la liga no ve datos de la persona. */
+async function loadUnsubscribeContact(token: string) {
+  const contactId = contactIdFromUnsubscribeToken(token);
+  const contact = contactId
+    ? await prisma.contact.findUnique({ where: { id: contactId } })
+    : null;
+  if (!contact) {
+    throw new AppError(404, 'Esta liga no es válida.');
+  }
+  return contact;
+}
+
+publicRouter.get(
+  '/unsubscribe/:token',
+  asyncHandler(async (request, response) => {
+    const contact = await loadUnsubscribeContact(String(request.params.token));
+    response.json({
+      email: maskEmail(contact.email ?? ''),
+      optedOut: Boolean(contact.optedOutAt),
+      privacyUrl: PRIVACY_NOTICE_URL,
+    });
+  }),
+);
+
+/** Es POST con confirmación: los filtros de correo abren las ligas de los mensajes. */
+publicRouter.post(
+  '/unsubscribe/:token',
+  writeLimit,
+  requireSameSite,
+  asyncHandler(async (request, response) => {
+    const contact = await loadUnsubscribeContact(String(request.params.token));
+    await prisma.contact.updateMany({
+      where: { id: contact.id, optedOutAt: null },
+      data: { optedOutAt: new Date(), optOutSource: 'link' },
+    });
+    response.json({
+      email: maskEmail(contact.email ?? ''),
+      optedOut: true,
+      privacyUrl: PRIVACY_NOTICE_URL,
+    });
+  }),
+);
 
 publicRouter.get(
   '/events/:slug',
