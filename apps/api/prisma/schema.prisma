@@ -23,7 +23,6 @@ model Event {
   currency         String          @default("MXN") @db.Char(3)
   companionLimit   Int             @default(0) @map("companion_limit") @db.UnsignedInt
   registrationMode String          @default("individual") @map("registration_mode") @db.VarChar(32)
-  landingContent   Json?           @map("landing_content")
   createdAt        DateTime        @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt        DateTime        @updatedAt @map("updated_at") @db.DateTime(3)
   counters         EventCounter[]
@@ -165,40 +164,59 @@ model EventCounter {
 }
 
 model User {
-  id           String     @id @default(cuid()) @db.VarChar(30)
-  email        String     @unique @db.VarChar(254)
-  displayName  String     @map("display_name") @db.VarChar(180)
-  passwordHash String     @map("password_hash") @db.VarChar(255)
-  status       String     @default("active") @db.VarChar(24)
-  createdAt    DateTime   @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime   @updatedAt @map("updated_at") @db.DateTime(3)
-  roles        UserRole[]
-  checkins     Checkin[]  @relation("CheckinOperator")
-  auditLogs    AuditLog[]
+  id          String        @id @default(cuid()) @db.VarChar(30)
+  email       String        @unique @db.VarChar(254)
+  displayName String        @map("display_name") @db.VarChar(180)
+  status      String        @default("invited") @db.VarChar(24)
+  roleId      String        @map("role_id") @db.VarChar(30)
+  entraTid    String?       @map("entra_tid") @db.VarChar(64)
+  entraOid    String?       @map("entra_oid") @db.VarChar(64)
+  lastLoginAt DateTime?     @map("last_login_at") @db.DateTime(3)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.DateTime(3)
+  role        Role          @relation(fields: [roleId], references: [id])
+  sessions    AuthSession[]
+  checkins    Checkin[]     @relation("CheckinOperator")
+  auditLogs   AuditLog[]
 
+  @@unique([entraTid, entraOid])
+  @@index([roleId])
   @@map("users")
 }
 
+model AuthSession {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  userId    String   @map("user_id") @db.VarChar(30)
+  expiresAt DateTime @map("expires_at") @db.DateTime(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
 model Role {
-  id          String     @id @default(cuid()) @db.VarChar(30)
-  code        String     @unique @db.VarChar(32)
-  name        String     @db.VarChar(80)
-  description String?    @db.VarChar(255)
-  users       UserRole[]
+  id          String           @id @default(cuid()) @db.VarChar(30)
+  code        String           @unique @db.VarChar(40)
+  name        String           @unique @db.VarChar(80)
+  description String?          @db.VarChar(255)
+  isSystem    Boolean          @default(false) @map("is_system")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.DateTime(3)
+  users       User[]
+  permissions RolePermission[]
 
   @@map("roles")
 }
 
-model UserRole {
-  userId    String   @map("user_id") @db.VarChar(30)
-  roleId    String   @map("role_id") @db.VarChar(30)
-  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+model RolePermission {
+  roleId     String @map("role_id") @db.VarChar(30)
+  permission String @db.VarChar(64)
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@id([userId, roleId])
-  @@index([roleId])
-  @@map("user_roles")
+  @@id([roleId, permission])
+  @@map("role_permissions")
 }
 
 model AccessPoint {

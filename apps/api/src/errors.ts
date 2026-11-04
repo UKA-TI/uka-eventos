@@ -17,12 +17,29 @@ export function createErrorHandler(logger: Logger): ErrorRequestHandler {
   return (error, _request, response, _next) => {
     if (error instanceof ZodError) {
       response.status(400).json({
-        error: 'Invalid request',
+        error: 'Revisa los datos capturados.',
         details: error.issues.map(({ path, message }) => ({
           path: path.join('.'),
           message,
         })),
       });
+      return;
+    }
+
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    ) {
+      response
+        .status(409)
+        .json({ error: 'Ya existe un registro con ese mismo valor.' });
+      return;
+    }
+
+    if (error instanceof AppError && error.statusCode < 500) {
+      response.status(error.statusCode).json({ error: error.message });
       return;
     }
 

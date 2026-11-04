@@ -15,7 +15,6 @@ CREATE TABLE `events` (
     `currency` CHAR(3) NOT NULL DEFAULT 'MXN',
     `companion_limit` INTEGER UNSIGNED NOT NULL DEFAULT 0,
     `registration_mode` VARCHAR(32) NOT NULL DEFAULT 'individual',
-    `landing_content` JSON NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
@@ -145,34 +144,54 @@ CREATE TABLE `users` (
     `id` VARCHAR(30) NOT NULL,
     `email` VARCHAR(254) NOT NULL,
     `display_name` VARCHAR(180) NOT NULL,
-    `password_hash` VARCHAR(255) NOT NULL,
-    `status` VARCHAR(24) NOT NULL DEFAULT 'active',
+    `status` VARCHAR(24) NOT NULL DEFAULT 'invited',
+    `role_id` VARCHAR(30) NOT NULL,
+    `entra_tid` VARCHAR(64) NULL,
+    `entra_oid` VARCHAR(64) NULL,
+    `last_login_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `users_email_key`(`email`),
+    INDEX `users_role_id_idx`(`role_id`),
+    UNIQUE INDEX `users_entra_tid_entra_oid_key`(`entra_tid`, `entra_oid`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `auth_sessions` (
+    `id` VARCHAR(30) NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `user_id` VARCHAR(30) NOT NULL,
+    `expires_at` DATETIME(3) NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `auth_sessions_token_hash_key`(`token_hash`),
+    INDEX `auth_sessions_user_id_expires_at_idx`(`user_id`, `expires_at`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `roles` (
     `id` VARCHAR(30) NOT NULL,
-    `code` VARCHAR(32) NOT NULL,
+    `code` VARCHAR(40) NOT NULL,
     `name` VARCHAR(80) NOT NULL,
     `description` VARCHAR(255) NULL,
+    `is_system` BOOLEAN NOT NULL DEFAULT false,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `roles_code_key`(`code`),
+    UNIQUE INDEX `roles_name_key`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `user_roles` (
-    `user_id` VARCHAR(30) NOT NULL,
+CREATE TABLE `role_permissions` (
     `role_id` VARCHAR(30) NOT NULL,
-    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `permission` VARCHAR(64) NOT NULL,
 
-    INDEX `user_roles_role_id_idx`(`role_id`),
-    PRIMARY KEY (`user_id`, `role_id`)
+    PRIMARY KEY (`role_id`, `permission`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -259,10 +278,13 @@ ALTER TABLE `checkins` ADD CONSTRAINT `checkins_operator_user_id_fkey` FOREIGN K
 ALTER TABLE `event_counters` ADD CONSTRAINT `event_counters_event_id_fkey` FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `user_roles` ADD CONSTRAINT `user_roles_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `users` ADD CONSTRAINT `users_role_id_fkey` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `user_roles` ADD CONSTRAINT `user_roles_role_id_fkey` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `auth_sessions` ADD CONSTRAINT `auth_sessions_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `role_permissions` ADD CONSTRAINT `role_permissions_role_id_fkey` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `access_points` ADD CONSTRAINT `access_points_event_id_fkey` FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

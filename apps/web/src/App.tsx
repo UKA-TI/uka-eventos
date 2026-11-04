@@ -1,49 +1,72 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link, Route, Routes } from 'react-router-dom';
-import { healthResponseSchema } from '@uka/shared';
+import type { PermissionCode } from '@uka/shared';
+import type { ReactNode } from 'react';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { usePermissions, useSession } from './auth/session.js';
+import { Layout } from './components/Layout.js';
+import { Loading } from './components/ui.js';
+import { EventsPage } from './pages/EventsPage.js';
+import { HomePage } from './pages/HomePage.js';
+import { LoginPage } from './pages/LoginPage.js';
+import { RolesPage } from './pages/RolesPage.js';
+import { UsersPage } from './pages/UsersPage.js';
 
-async function checkApi() {
-  const response = await fetch('/api/health');
-  if (!response.ok) {
-    throw new Error(`API respondió HTTP ${response.status}`);
+function Guard({
+  any,
+  children,
+}: {
+  any: PermissionCode[];
+  children: ReactNode;
+}) {
+  const session = useSession();
+  const { can } = usePermissions();
+  if (session.isPending) {
+    return <Loading />;
   }
-
-  return healthResponseSchema.parse(await response.json());
+  return can(...any) ? children : <Navigate to="/" replace />;
 }
 
-function Home() {
-  const health = useQuery({ queryKey: ['api-health'], queryFn: checkApi });
-
+function NotFound() {
   return (
-    <main className="home">
-      <p className="eyebrow">Un Kilo de Ayuda</p>
-      <h1>UKA Eventos</h1>
-      <p>Plataforma de registro y operación de eventos.</p>
-      <p className="status" role="status">
-        API:{' '}
-        {health.isPending
-          ? 'comprobando…'
-          : health.isError
-            ? health.error.message
-            : 'conectada a MySQL'}
-      </p>
-    </main>
+    <div className="panel">
+      <h1>Página no encontrada</h1>
+      <p className="muted">La dirección que abriste no existe.</p>
+      <Link to="/">Volver al inicio</Link>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route
-        path="*"
-        element={
-          <main className="home">
-            <h1>No encontrado</h1>
-            <Link to="/">Volver al inicio</Link>
-          </main>
-        }
-      />
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route
+          path="eventos"
+          element={
+            <Guard any={['events.view', 'events.create', 'events.edit']}>
+              <EventsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="usuarios"
+          element={
+            <Guard any={['users.view', 'users.manage']}>
+              <UsersPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="perfiles"
+          element={
+            <Guard any={['roles.view', 'roles.manage']}>
+              <RolesPage />
+            </Guard>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
 }

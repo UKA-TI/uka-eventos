@@ -14,18 +14,19 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "test:folio-integration": "npm run db:generate && tsx test/folio.integration.ts",
-    "test:folio-coverage": "npm run db:generate && vitest run --coverage --coverage.include=src/modules/folios/folio-service.ts --coverage.lines=90 --coverage.functions=90 --coverage.branches=90 --coverage.statements=90"
+    "test:folio-coverage": "npm run db:generate && vitest run --coverage --coverage.include=src/modules/folios/folio-service.ts --coverage.lines=90 --coverage.functions=90 --coverage.branches=90 --coverage.statements=90",
+    "test:access-integration": "npm run db:generate && cross-env RUN_DB_TESTS=1 vitest run test/access.integration.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@uka/shared": "0.1.0",
-    "argon2": "^0.41.1",
     "cors": "2.8.5",
     "dotenv": "16.4.7",
     "express": "4.22.3",
     "express-rate-limit": "7.5.0",
     "helmet": "8.0.0",
+    "jose": "^6.2.15",
     "pino": "10.4.0",
     "pino-http": "11.0.0",
     "zod": "4.6.7"
@@ -35,6 +36,7 @@
     "@types/express": "4.17.21",
     "@types/supertest": "6.0.2",
     "@vitest/coverage-v8": "^4.1.12",
+    "cross-env": "^10.1.0",
     "prisma": "^7.10.1",
     "supertest": "7.1.4",
     "tsx": "4.23.15",
