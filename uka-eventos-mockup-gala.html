@@ -1,0 +1,1863 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UKA Eventos · Gala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Paleta de la invitación de gala: carbón, dorado y crema */
+    --oro:#D9A35B; --oro-claro:#F0C27A; --oro-osc:#A9773A; --crema:#F3EADB;
+    --carbon:#111113; --carbon-2:#18181B; --carbon-3:#222226; --sobre-oro:#1A1408;
+    --metal:linear-gradient(180deg,#F6D594 0%,#E0AC62 55%,#B98142 100%);
+    /* Los nombres de rol se conservan de la versión institucional */
+    --amarillo:#E8B86A;
+    --azul:#D9A35B;
+    --azul-900:#F3EADB; --azul-800:#E8B86A; --azul-700:#C08A45; --azul-200:#5A4A36; --azul-100:#3A3128; --azul-50:#24201B;
+    --amarillo-600:#D9A35B; --amarillo-200:#4A3D2B; --amarillo-100:#2E2820; --amarillo-50:#221E19; --amarillo-texto:#F0C27A;
+    /* Neutros */
+    --tinta:#F3EADB; --texto:#C9C0B2; --tenue:#968E82; --linea:#33333A; --fondo:#0E0E10; --sup:#1A1A1E;
+    /* Estados (solo para resultados de acceso) */
+    --ok:#5CC98A; --ok-50:#17301F; --aviso:#F0A35E; --aviso-50:#33261A; --error:#F08080; --error-50:#361C1C;
+    /* Sistema */
+    --r:12px; --r-lg:20px;
+    --sombra-2:0 14px 32px -10px rgba(0,0,0,.6),0 4px 10px -4px rgba(0,0,0,.4);
+    --sombra-3:0 40px 80px -28px rgba(0,0,0,.75),0 18px 36px -18px rgba(0,0,0,.5);
+    --fuente:"Montserrat",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --script:"Allura","Brush Script MT",cursive;
+    /* Patrón sutil inspirado en el fondo de la invitación */
+    --patron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' fill='none' stroke='%23D9A35B' stroke-opacity='.04' stroke-width='2'%3E%3Ctext x='18' y='60' font-family='Arial' font-weight='700' font-size='44' fill='%23D9A35B' fill-opacity='.035' stroke='none'%3E40%3C/text%3E%3Ccircle cx='170' cy='48' r='16'/%3E%3Cpath d='M150 150l14-24 14 24zM40 150h34v30H40zM120 196c10-12 30-12 40 0M30 110l10 10 18-18'/%3E%3Ctext x='130' y='120' font-family='Arial' font-size='14' fill='%23D9A35B' fill-opacity='.04' stroke='none'%3Ea%C3%B1os%3C/text%3E%3C/svg%3E");
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:var(--fuente);color:var(--tinta);background:var(--fondo);line-height:1.6;-webkit-font-smoothing:antialiased}
+  button,input,select{font:inherit;color:inherit}
+  img{max-width:100%}
+  a{color:var(--azul)}
+  h1,h2,h3,h4{letter-spacing:-.02em}
+  .ico{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ============ PRESENTACIÓN DEL MOCKUP ============ */
+  .shell{position:sticky;top:0;z-index:50;background:var(--sup);border-bottom:1px solid var(--linea)}
+  .shell::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:linear-gradient(90deg,var(--amarillo) 0 50%,var(--azul) 50% 100%)}
+  .shell-in{max-width:1320px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:24px}
+  .shell-marca{display:flex;align-items:center;gap:14px;flex:none}
+  .shell-marca img{height:40px;display:block}
+  .shell-marca div{padding-left:14px;border-left:1px solid var(--linea)}
+  .shell-marca b{display:block;font-size:14px;font-weight:800;line-height:1.2;color:var(--azul-900)}
+  .shell-marca small{font-size:12px;color:var(--tenue);font-weight:500}
+  .segmentos{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .segmentos::-webkit-scrollbar{display:none}
+  .segmentos button{flex:none;display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--texto);font-size:13px;font-weight:700;padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+  .segmentos button span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--azul-50);color:var(--azul);font-size:11px;font-weight:800}
+  .segmentos button:hover{background:var(--azul-50);color:var(--azul-900)}
+  .segmentos button[aria-selected=true]{background:var(--azul);color:#fff}
+  .segmentos button[aria-selected=true] span{background:var(--amarillo);color:var(--azul-900)}
+  .segmentos button:focus-visible{outline:3px solid var(--amarillo);outline-offset:1px}
+
+  .lienzo{max-width:1320px;margin:0 auto;padding:40px 24px 80px}
+  .pantalla{display:none}
+  .pantalla.activa{display:block;animation:entra .35s ease}
+  @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.pantalla.activa{animation:none}}
+  .ficha{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:24px}
+  .ficha .num{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--azul)}
+  .ficha .num::before{content:"";width:18px;height:4px;border-radius:4px;background:var(--amarillo)}
+  .ficha h1{font-weight:800;font-size:28px;line-height:1.2;margin:6px 0 6px;color:var(--azul-900)}
+  .ficha p{margin:0;color:var(--texto);max-width:640px;font-size:15px}
+  .ficha .tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--sup);border:1px solid var(--azul-100);color:var(--azul-800);white-space:nowrap}
+
+  /* Marco navegador */
+  .navegador{background:var(--sup);border-radius:14px;box-shadow:var(--sombra-3);overflow:hidden;border:1px solid rgba(4,58,99,.08)}
+  .nav-barra{display:flex;align-items:center;gap:16px;padding:10px 16px;background:#26262B;border-bottom:1px solid var(--linea)}
+  .puntos{display:flex;gap:6px;flex:none}
+  .puntos i{width:11px;height:11px;border-radius:50%}
+  .puntos i:nth-child(1){background:#FF5F57}.puntos i:nth-child(2){background:#FEBC2E}.puntos i:nth-child(3){background:#28C840}
+  .url{flex:1;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--sup);border:1px solid var(--linea);border-radius:8px;padding:5px 12px;font-size:12.5px;color:var(--tenue);min-width:0}
+  .url .ico{width:13px;height:13px;color:var(--ok)}
+  .url span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .url b{color:var(--tinta);font-weight:600}
+
+  /* Notas de diseño */
+  .notas{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
+  .nota{display:flex;gap:14px;padding:16px;background:var(--sup);border:1px solid var(--linea);border-radius:var(--r)}
+  .nota .ic{width:36px;height:36px;border-radius:10px;background:var(--amarillo-100);color:var(--amarillo-texto);display:grid;place-items:center;flex:none}
+  .nota b{display:block;font-size:14px;color:var(--azul-900)}
+  .nota p{margin:2px 0 0;font-size:13px;color:var(--texto)}
+
+  /* ============ COMPONENTES DEL PRODUCTO ============ */
+  .cont{max-width:1120px;margin:0 auto;padding:0 40px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid transparent;border-radius:999px;padding:12px 24px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s,transform .15s;white-space:nowrap}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+  .btn-amarillo{background:var(--amarillo);color:var(--azul-900)}
+  .btn-amarillo:hover{background:var(--amarillo-600)}
+  .btn-azul{background:var(--azul);color:#fff}
+  .btn-azul:hover{background:var(--azul-700)}
+  .btn-borde{background:var(--sup);color:var(--azul);border-color:var(--azul-200)}
+  .btn-borde:hover{border-color:var(--azul);background:var(--azul-50)}
+  .btn-blanco{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+  .btn-blanco:hover{background:rgba(255,255,255,.12);border-color:#fff}
+  .btn-sm{padding:8px 16px;font-size:13.5px}
+  .btn .ico{width:17px;height:17px}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--azul)}
+  .eyebrow::before{content:"";width:22px;height:4px;border-radius:4px;background:var(--amarillo)}
+  .pendiente{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:var(--amarillo-texto);background:var(--amarillo-100);padding:1px 8px;border-radius:999px;vertical-align:2px}
+
+  /* Sitio: cabecera */
+  .sitio-cab{background:var(--sup);border-bottom:1px solid var(--linea)}
+  .sitio-cab .cont{display:flex;align-items:center;gap:32px;height:80px}
+  .sitio-cab img{height:54px;width:auto;display:block}
+  .sitio-cab nav{display:flex;gap:22px;margin-left:auto}
+  .sitio-cab nav a{color:var(--texto);text-decoration:none;font-weight:600;font-size:14px}
+  .sitio-cab nav a:hover{color:var(--azul)}
+  .sitio-cab .acc{display:flex;align-items:center;gap:16px}
+  .sitio-cab .link{font-weight:700;font-size:14px;text-decoration:none;color:var(--azul)}
+
+  /* Hero */
+  .hero{position:relative;min-height:600px;display:flex;align-items:center;color:#fff;overflow:hidden;background:var(--azul-900)}
+  .hero>img{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(3,28,48,.94) 0%,rgba(4,45,78,.84) 36%,rgba(4,58,99,.35) 70%,rgba(4,58,99,.08) 100%),linear-gradient(0deg,rgba(3,28,48,.55) 0%,rgba(3,28,48,0) 40%)}
+  .hero-grid{position:relative;z-index:2;width:100%;max-width:1120px;margin:0 auto;padding:72px 40px 128px}
+  .hero-grid>div{max-width:580px}
+  .hero .sello{display:inline-flex;align-items:center;gap:8px;background:var(--amarillo);color:var(--azul-900);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:6px 14px;border-radius:999px}
+  .hero h2{font-weight:800;font-size:clamp(34px,4.6vw,56px);line-height:1.06;margin:20px 0 18px;letter-spacing:-.03em}
+  .hero h2 span{color:var(--amarillo)}
+  .hero p{font-size:17px;color:rgba(255,255,255,.88);max-width:500px;margin:0 0 32px}
+  .hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
+  .hero .cupo{display:flex;align-items:center;gap:10px;margin-top:28px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.82)}
+  .hero .cupo .ico{color:var(--amarillo)}
+  .hero .linea{display:flex;height:5px;width:120px;margin-top:36px;border-radius:5px;overflow:hidden}
+  .hero .linea i{flex:1}.hero .linea i:first-child{background:var(--amarillo)}.hero .linea i:last-child{background:var(--azul)}
+  [data-ancla]{scroll-margin-top:90px}
+
+  /* Preguntas frecuentes */
+  .faq{max-width:780px;margin:0 auto;display:grid;gap:12px}
+  .faq details{background:var(--sup);border:1.5px solid var(--linea);border-radius:var(--r);transition:border-color .15s}
+  .faq details[open]{border-color:var(--azul-200)}
+  .faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;font-weight:700;color:var(--azul-900)}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary .ico{color:var(--azul);transition:transform .2s}
+  .faq details[open] summary .ico{transform:rotate(180deg)}
+  .faq summary:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px;border-radius:var(--r)}
+  .faq p{margin:0;padding:0 20px 18px;color:var(--texto);font-size:14.5px}
+
+  /* Datos del evento */
+  .datos-evento{position:relative;z-index:2;margin-top:-52px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--linea);border-radius:var(--r-lg);box-shadow:var(--sombra-2);overflow:hidden}
+  .datos-evento .dato{background:var(--sup);padding:20px 18px;align-items:flex-start;gap:12px}
+  .datos-evento .dato .circ{width:40px;height:40px}
+  .datos-evento .dato .circ .ico{width:20px;height:20px}
+  .datos-evento .dato small{font-size:10.5px;letter-spacing:.06em;white-space:nowrap}
+  .datos-evento .dato b{font-size:15px;line-height:1.35;display:block;white-space:nowrap}
+  .datos-evento .dato em{display:block;font-style:normal;font-size:13px;color:var(--texto);font-weight:500;margin-top:2px}
+  .datos-evento .dato.cuota .circ{background:var(--amarillo);color:var(--azul-900)}
+  .dato{display:flex;gap:14px;align-items:center;padding:22px 28px}
+  .dato .circ{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--azul-50);color:var(--azul);flex:none}
+  .dato .circ .ico{width:22px;height:22px}
+  .dato small{display:block;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue)}
+  .dato b{font-size:16px;color:var(--azul-900)}
+
+  /* Secciones */
+  .seccion{padding:88px 0}
+  .seccion-cab{text-align:center;max-width:640px;margin:0 auto 48px}
+  .seccion-cab h3{font-weight:800;font-size:34px;line-height:1.18;margin:14px 0 10px;color:var(--azul-900)}
+  .seccion-cab p{color:var(--texto);margin:0;font-size:16px}
+  .pasos{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .paso{position:relative;padding:32px 28px 28px;border-radius:var(--r-lg);background:var(--sup);border:1px solid var(--linea);transition:box-shadow .2s,transform .2s,border-color .2s}
+  .paso:hover{box-shadow:var(--sombra-2);transform:translateY(-3px);border-color:transparent}
+  .paso .n{position:absolute;top:-18px;left:28px;width:36px;height:36px;border-radius:50%;background:var(--amarillo);color:var(--azul-900);font-weight:800;font-size:15px;display:grid;place-items:center;box-shadow:0 0 0 6px #fff}
+  .paso .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--azul-50);color:var(--azul);margin-bottom:18px}
+  .paso .ic .ico{width:26px;height:26px}
+  .paso h4{font-size:17px;font-weight:700;margin:0 0 6px;color:var(--azul-900)}
+  .paso p{margin:0;color:var(--texto);font-size:14.5px}
+
+  .causa{background:var(--azul-50)}
+  .causa-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  .causa-visual{position:relative}
+  .causa-visual::before{content:"";position:absolute;left:-18px;top:-18px;width:55%;height:55%;border-radius:var(--r-lg);background:var(--azul)}
+  .causa-visual img{position:relative;display:block;width:100%;aspect-ratio:5/4;object-fit:cover;object-position:center 60%;border-radius:var(--r-lg)}
+  .causa h3,.sobre h3{font-weight:800;font-size:34px;line-height:1.18;margin:14px 0 16px;color:var(--azul-900)}
+  .causa p,.sobre p{color:var(--texto);font-size:16px}
+  .causa-texto{max-width:860px;margin:0 auto;text-align:center}
+  .causa-texto p{font-size:16.5px}
+  .causa-texto p b{color:var(--azul)}
+  .temas{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:28px}
+  .temas span{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:var(--sup);border:1.5px solid var(--azul-100);font-size:13.5px;font-weight:600;color:var(--azul-900)}
+  .temas span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--amarillo)}
+
+  /* 40 años de impacto */
+  .impacto{background:var(--azul);color:#fff;position:relative;overflow:hidden}
+  .impacto::before{content:"";position:absolute;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;background:var(--azul-700)}
+  .impacto::after{content:"";position:absolute;left:-100px;bottom:-160px;width:300px;height:300px;border-radius:50%;border:44px solid rgba(254,206,0,.16)}
+  .impacto .cont{position:relative;z-index:1}
+  .impacto .eyebrow{color:var(--amarillo)}
+  .impacto .seccion-cab h3{color:#fff}
+  .impacto .seccion-cab p{color:rgba(255,255,255,.85)}
+  .cifras{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .cifra{padding:26px 22px;border-radius:var(--r-lg);background:rgba(4,58,99,.38);border:1px solid rgba(255,255,255,.14);position:relative}
+  .cifra::before{content:"";position:absolute;left:22px;top:0;width:40px;height:4px;border-radius:0 0 4px 4px;background:var(--amarillo)}
+  .cifra b{display:block;font-size:40px;font-weight:800;line-height:1.05;letter-spacing:-.02em}
+  .cifra b small{font-size:22px;font-weight:700;margin-left:4px}
+  .cifra span{display:block;margin-top:8px;font-size:14px;font-weight:500;color:rgba(255,255,255,.88)}
+
+  /* Sobre UKA */
+  .sobre .presencia{margin:24px 0 0;padding-top:20px;border-top:1px solid var(--linea);font-size:15px;font-weight:600;color:var(--tinta)}
+  .presencia b{color:var(--azul)}
+  .estados-mx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:0;list-style:none}
+  .estados-mx li{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--azul-50);color:var(--azul-800);font-size:13px;font-weight:700}
+  .estados-mx .ico{width:14px;height:14px;color:var(--azul)}
+
+  /* Contacto */
+  .contacto{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+  .contacto small{display:block;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .contacto h3{margin:6px 0 16px}
+  .canales{display:flex;flex-wrap:wrap;gap:10px}
+  .canales a{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;background:rgba(255,255,255,.55);color:var(--azul-900);font-size:14px;font-weight:700;text-decoration:none;transition:background .15s}
+  .canales a:hover{background:var(--sup)}
+  .canales .ico{width:17px;height:17px;color:var(--azul)}
+
+  .banda{background:var(--amarillo);color:var(--azul-900);padding:52px 0;position:relative;overflow:hidden}
+  .banda::after{content:"";position:absolute;right:-60px;top:-110px;width:300px;height:300px;border-radius:50%;border:48px solid rgba(255,255,255,.35)}
+  .banda .cont{display:flex;justify-content:space-between;align-items:center;gap:32px;position:relative;z-index:1}
+  .banda h3{font-weight:800;font-size:28px;margin:0 0 4px}
+  .banda p{margin:0;font-weight:500}
+  .pie{background:var(--azul-900);color:rgba(255,255,255,.7);font-size:13.5px;padding:28px 0}
+  .pie .cont{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .pie a{color:#fff;text-decoration:none;margin-left:20px;font-weight:500}
+
+  /* ============ REGISTRO ============ */
+  .reg{display:grid;grid-template-columns:420px 1fr;min-height:720px}
+  .reg-lado{background:var(--azul);color:#fff;padding:40px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .reg-lado::before{content:"";position:absolute;right:-140px;top:-140px;width:340px;height:340px;border-radius:50%;background:var(--azul-700)}
+  .reg-lado::after{content:"";position:absolute;left:-80px;bottom:-110px;width:240px;height:240px;border-radius:50%;border:36px solid rgba(254,206,0,.22)}
+  .reg-lado>*{position:relative;z-index:1}
+  .reg-logo{background:var(--sup);border-radius:var(--r);padding:10px 16px;display:inline-block;align-self:flex-start;box-shadow:var(--sombra-2)}
+  .reg-logo img{height:52px;display:block}
+  .reg-lado h3{font-weight:800;font-size:28px;line-height:1.2;margin:32px 0 8px}
+  .reg-lado>p{margin:0 0 28px;color:rgba(255,255,255,.85);font-size:15px}
+  .resumen{display:grid;gap:14px;padding:20px;border-radius:var(--r);background:rgba(4,58,99,.35)}
+  .resumen div{display:flex;gap:12px;align-items:center;font-size:14.5px;font-weight:500}
+  .resumen .ico{color:var(--amarillo)}
+  .que-sigue{margin-top:auto;padding-top:32px}
+  .que-sigue small{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--amarillo)}
+  .que-sigue ol{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:12px}
+  .que-sigue li{display:flex;gap:12px;font-size:14px;align-items:flex-start;font-weight:500}
+  .que-sigue li i{flex:none;width:24px;height:24px;border-radius:50%;background:var(--amarillo);color:var(--azul-900);font-style:normal;font-weight:800;font-size:12px;display:grid;place-items:center}
+  .reg-form{padding:48px 56px;max-width:720px}
+  .stepper{display:flex;align-items:center;gap:12px;margin-bottom:32px;font-size:13px;font-weight:700;color:var(--tenue)}
+  .stepper .st{display:flex;align-items:center;gap:8px}
+  .stepper .st i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;border:2px solid var(--linea)}
+  .stepper .st.on{color:var(--azul-900)}
+  .stepper .st.on i{background:var(--azul);border-color:var(--azul);color:#fff}
+  .stepper .bar{flex:1;max-width:80px;height:2px;background:var(--linea)}
+  .reg-form h3{font-weight:800;font-size:28px;margin:0 0 6px;color:var(--azul-900)}
+  .reg-form .sub{margin:0 0 28px;color:var(--texto)}
+  .campos{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px}
+  .campo.ancho{grid-column:1/-1}
+  .campo label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--azul-900)}
+  .campo label .opc{font-weight:500;color:var(--tenue)}
+  .entrada{position:relative}
+  .entrada .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#98A2B3;width:17px;height:17px}
+  .entrada input{width:100%;height:48px;padding:0 14px 0 42px;border:1.5px solid #3A3A42;border-radius:10px;background:var(--sup);font-size:15px;font-weight:500;transition:border-color .15s,box-shadow .15s}
+  .entrada input:hover{border-color:#55555E}
+  .entrada input:focus{outline:0;border-color:var(--azul);box-shadow:0 0 0 4px var(--azul-100)}
+  .entrada.valido input{border-color:#3E6B50}
+  .entrada .ok{position:absolute;right:12px;left:auto;color:var(--ok)}
+  .ayuda{font-size:12.5px;color:var(--tenue);margin-top:5px}
+  .consent{margin-top:24px;display:grid;gap:10px}
+  .consent label{display:flex;gap:12px;padding:14px 16px;cursor:pointer;font-size:14px;font-weight:600;align-items:flex-start;border:1.5px solid var(--linea);border-radius:var(--r);background:var(--sup)}
+  .consent label:has(input:checked){border-color:var(--azul-200);background:var(--azul-50)}
+  .consent input{margin:2px 0 0;width:18px;height:18px;accent-color:var(--azul);flex:none}
+  .consent em{display:block;font-style:normal;font-weight:400;color:var(--tenue);font-size:13px;margin-top:2px}
+  .consent .req{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin-left:6px}
+  .req.ob{background:var(--azul-100);color:var(--azul-800)}
+  .req.op{background:var(--fondo);color:var(--texto);border:1px solid var(--linea)}
+  .reg-acc{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:28px}
+  .seguro{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tenue);font-weight:500}
+  .seguro .ico{color:var(--ok);width:16px;height:16px}
+
+  /* ============ PASE ============ */
+  .pase-pant{display:grid;grid-template-columns:1fr 400px;gap:64px;align-items:center;padding:56px 64px;background:linear-gradient(90deg,var(--sup) 0 52%,var(--azul-50) 52% 100%)}
+  .exito{display:inline-flex;align-items:center;gap:8px;background:var(--ok-50);color:var(--ok);font-weight:700;font-size:13px;padding:6px 14px 6px 8px;border-radius:999px}
+  .exito .ico{width:18px;height:18px;background:var(--ok);color:#fff;border-radius:50%;padding:3px;stroke-width:3}
+  .pase-pant h3{font-weight:800;font-size:40px;line-height:1.1;margin:16px 0 12px;color:var(--azul-900)}
+  .pase-pant h3 span{color:var(--azul)}
+  .pase-pant .txt{color:var(--texto);font-size:16px;max-width:480px}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 32px}
+  .pase-pant>div:first-child{max-width:540px}
+  .acciones .btn{padding:9px 16px;font-size:13.5px}
+  .instrucciones{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px}
+  .instr{display:flex;gap:12px;padding:14px;border-radius:var(--r);background:var(--amarillo-50);border:1px solid var(--amarillo-200);font-size:13.5px;color:var(--texto)}
+  .instr .ico{color:var(--amarillo-texto);margin-top:1px}
+  .instr b{display:block;color:var(--azul-900);font-size:14px}
+  .recuperar{margin-top:14px;max-width:520px;display:flex;gap:10px;align-items:center;padding:14px 16px;border-radius:var(--r);border:1px dashed #45454D;font-size:13.5px;color:var(--texto)}
+  .recuperar .ico{color:var(--azul)}
+
+  .boleto{background:var(--sup);border-radius:22px;box-shadow:var(--sombra-3);overflow:hidden;position:relative}
+  .boleto-top{background:var(--amarillo);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .boleto-top img{height:50px;display:block}
+  .boleto-top .tipo{text-align:right;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--azul-900)}
+  .boleto-top .tipo b{display:block;font-size:13px;letter-spacing:0;text-transform:none}
+  .boleto-tit{background:var(--azul);color:#fff;padding:16px 24px}
+  .boleto-tit small{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amarillo)}
+  .boleto-tit b{display:block;font-weight:800;font-size:22px;line-height:1.2}
+  .boleto-qr{padding:26px 24px 20px;text-align:center}
+  .qr{width:192px;height:192px;display:block;margin:0 auto;padding:10px;border-radius:14px;border:2px solid var(--azul-100)}
+  .folio{display:inline-block;margin-top:14px;font-size:20px;font-weight:800;letter-spacing:.16em;color:var(--azul-900)}
+  .boleto-qr p{margin:4px 0 0;font-size:12px;color:var(--tenue)}
+  .corte{position:relative;height:0;border-top:2px dashed var(--linea);margin:0 22px}
+  .corte::before,.corte::after{content:"";position:absolute;top:-13px;width:24px;height:24px;border-radius:50%;background:var(--azul-50)}
+  .corte::before{left:-35px}.corte::after{right:-35px}
+  .boleto-pie{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;padding:20px 24px 24px}
+  .boleto-pie small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue)}
+  .boleto-pie b{font-size:14.5px;color:var(--azul-900)}
+
+  /* ============ CHECK-IN ============ */
+  .checkin{display:grid;grid-template-columns:auto 1fr;gap:72px;align-items:center;padding:24px 8px}
+  .telefono{width:340px;height:700px;border-radius:52px;background:#0A0A0B;padding:12px;box-shadow:var(--sombra-3),inset 0 0 0 2px #3A3A42;position:relative}
+  .telefono::before{content:"";position:absolute;top:22px;left:50%;transform:translateX(-50%);width:96px;height:28px;border-radius:20px;background:#000;z-index:3}
+  .tel{width:100%;height:100%;border-radius:40px;overflow:hidden;background:var(--sup);display:flex;flex-direction:column}
+  .tel-azul{background:var(--azul);color:#fff}
+  .tel-status{display:flex;justify-content:space-between;padding:16px 28px 0;font-size:13px;font-weight:700;height:44px}
+  .tel-cab{padding:12px 20px 16px}
+  .tel-cab .fila{display:flex;justify-content:space-between;align-items:center}
+  .tel-cab b{font-size:16px;font-weight:800}
+  .pill{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--amarillo);color:var(--azul-900)}
+  .tel-cab .op{font-size:12.5px;color:rgba(255,255,255,.82);margin-top:2px;font-weight:500}
+  .progreso{margin-top:12px}
+  .progreso .lab{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.82);margin-bottom:6px;font-weight:500}
+  .progreso .lab b{color:#fff;font-size:12px}
+  .progreso .riel{height:6px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
+  .progreso .riel i{display:block;height:100%;width:78%;background:var(--amarillo);border-radius:999px}
+  .camara{flex:1;margin:14px 14px 0;border-radius:22px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1C4E78,#06243D 72%);display:grid;place-items:center;min-height:0;color:#fff}
+  .visor{width:186px;height:186px;position:relative}
+  .visor i{position:absolute;width:40px;height:40px;border:4px solid var(--amarillo)}
+  .visor i:nth-child(1){top:0;left:0;border-right:0;border-bottom:0;border-radius:14px 0 0 0}
+  .visor i:nth-child(2){top:0;right:0;border-left:0;border-bottom:0;border-radius:0 14px 0 0}
+  .visor i:nth-child(3){bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 14px}
+  .visor i:nth-child(4){bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 14px 0}
+  .laser{position:absolute;left:12px;right:12px;height:2px;background:var(--sup);box-shadow:0 0 14px 2px rgba(254,206,0,.8);animation:scan 2.2s ease-in-out infinite}
+  @keyframes scan{0%,100%{top:14px}50%{top:170px}}
+  @media (prefers-reduced-motion:reduce){.laser{animation:none;top:92px}}
+  .camara .hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:600;background:rgba(0,0,0,.4);padding:6px 12px;border-radius:999px;white-space:nowrap}
+  .cam-ctrl{position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:12px}
+  .cam-ctrl span{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center}
+  .hoja{padding:14px 14px 18px}
+  .res{display:flex;gap:14px;align-items:center;padding:14px;border-radius:16px}
+  .res .ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff}
+  .res .ic .ico{width:24px;height:24px;stroke-width:2.8}
+  .res h4{margin:0;font-size:16px;font-weight:800}
+  .res p{margin:1px 0 0;font-size:12.5px;color:var(--texto)}
+  .r-ok{background:var(--ok-50)}.r-ok .ic{background:var(--ok)}.r-ok h4{color:var(--ok)}
+  .r-usado{background:var(--aviso-50)}.r-usado .ic{background:var(--aviso)}.r-usado h4{color:var(--aviso)}
+  .r-invalido{background:var(--error-50)}.r-invalido .ic{background:var(--error)}.r-invalido h4{color:var(--error)}
+  .hoja .btns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:12px}
+  .hoja .btn{padding:11px;font-size:14px}
+
+  .checkin-info h3{font-weight:800;font-size:36px;line-height:1.15;margin:14px 0 14px;max-width:560px;color:var(--azul-900)}
+  .checkin-info>p{color:var(--texto);font-size:16px;max-width:560px}
+  .demo{margin:28px 0;padding:20px;border-radius:var(--r-lg);background:var(--sup);border:1px solid var(--linea);max-width:560px}
+  .demo small{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--linea);background:var(--sup);border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer}
+  .chip i{width:8px;height:8px;border-radius:50%}
+  .chip[aria-pressed=true]{border-color:var(--azul);background:var(--azul-50);color:var(--azul-900)}
+  .chip:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+  .garantias{display:grid;gap:16px;max-width:560px;padding:0;margin:0;list-style:none}
+  .garantias li{display:flex;gap:14px;align-items:flex-start;font-size:14.5px;color:var(--texto)}
+  .garantias .ic{width:38px;height:38px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;flex:none}
+  .garantias b{display:block;color:var(--azul-900)}
+
+  /* ============ ADMIN ============ */
+  .admin{display:grid;grid-template-columns:244px 1fr;min-height:820px;background:var(--fondo)}
+  .lat{background:var(--sup);border-right:1px solid var(--linea);padding:20px 14px;display:flex;flex-direction:column}
+  .lat .logo{padding:0 8px 18px;border-bottom:1px solid var(--linea);margin-bottom:14px}
+  .lat .logo img{height:50px;display:block}
+  .lat small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#98A2B3;padding:14px 12px 6px}
+  .lat a{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--texto);text-decoration:none;font-weight:600;font-size:13.5px}
+  .lat a:hover{background:var(--fondo);color:var(--azul-900)}
+  .lat a.on{background:var(--azul-50);color:var(--azul);font-weight:700}
+  .lat a.on::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--amarillo)}
+  .lat a .cnt{margin-left:auto;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--fondo);color:var(--texto)}
+  .lat .usuario{margin-top:auto;display:flex;align-items:center;gap:10px;padding:14px 8px 0;border-top:1px solid var(--linea)}
+  .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+  .lat .usuario b{display:block;font-size:13px;line-height:1.2;color:var(--azul-900)}
+  .lat .usuario span{font-size:12px;color:var(--tenue)}
+  .adm-main{min-width:0}
+  .topbar{height:66px;background:var(--sup);border-bottom:1px solid var(--linea);display:flex;align-items:center;gap:16px;padding:0 28px}
+  .buscar{flex:1;max-width:420px;position:relative}
+  .buscar .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#98A2B3;width:16px;height:16px}
+  .buscar input{width:100%;height:40px;border:1.5px solid var(--linea);border-radius:999px;background:var(--fondo);padding:0 14px 0 38px;font-size:13.5px}
+  .buscar input:focus{outline:0;border-color:var(--azul);background:var(--sup)}
+  .topbar .der{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .icon-btn{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--linea);background:var(--sup);display:grid;place-items:center;position:relative;cursor:pointer;color:var(--texto)}
+  .icon-btn .badge-dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--amarillo);border:2px solid #fff}
+  .evento-sel{display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1.5px solid var(--linea);border-radius:999px;font-size:13px;font-weight:700;background:var(--sup);color:var(--azul-900)}
+  .evento-sel i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .adm-body{padding:28px}
+  .adm-cab{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+  .adm-cab h2{font-weight:800;font-size:26px;margin:0;line-height:1.2;color:var(--azul-900)}
+  .adm-cab .meta{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--tenue);margin-top:4px;font-weight:500}
+  .vivo{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:700}
+  .vivo::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;animation:late 1.6s infinite}
+  @keyframes late{50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){.vivo::before{animation:none}}
+  .adm-cab .acc{display:flex;gap:8px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:18px 20px}
+  .kpi.destacado{background:var(--azul);border-color:var(--azul);color:#fff}
+  .kpi .t{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:var(--tenue)}
+  .kpi.destacado .t,.kpi.destacado .d{color:rgba(255,255,255,.88)}
+  .kpi .t .ic{width:32px;height:32px;border-radius:50%;background:var(--azul-50);color:var(--azul);display:grid;place-items:center}
+  .kpi.destacado .t .ic{background:var(--amarillo);color:var(--azul-900)}
+  .kpi .t .ico{width:16px;height:16px}
+  .kpi b{display:block;font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:6px 0 4px}
+  .kpi .d{font-size:12.5px;color:var(--tenue);display:flex;align-items:center;gap:6px;font-weight:500}
+  .kpi .d .up{color:var(--amarillo);font-weight:800}
+  .kpi .d .warn{display:inline-flex;align-items:center;gap:4px;color:var(--error);font-weight:700}
+  .kpi .d .warn .ico{width:13px;height:13px}
+  .kpi .riel{height:6px;border-radius:999px;background:#2A2A30;margin-top:12px;overflow:hidden}
+  .kpi.destacado .riel{background:rgba(255,255,255,.22)}
+  .kpi .riel i{display:block;height:100%;border-radius:999px;background:var(--azul)}
+  .kpi.destacado .riel i{background:var(--amarillo)}
+  .fila2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:16px}
+  .fila2>*{min-width:0}
+  .caja{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:20px}
+  .caja-cab{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+  .caja-cab h3{margin:0;font-size:15px;font-weight:700;color:var(--azul-900)}
+  .caja-cab span{font-size:12.5px;color:var(--tenue);font-weight:500}
+  .grafica{position:relative}
+  .grafica svg{display:block;width:100%;height:auto;overflow:visible}
+  .grafica .eje{font-size:11px;fill:var(--tenue);font-family:var(--fuente);font-weight:500}
+  .grafica .val{font-size:11px;fill:var(--tinta);font-weight:700;font-family:var(--fuente)}
+  .grafica .barra{fill:var(--azul);transition:fill .15s}
+  .grafica .hit{fill:transparent;cursor:pointer}
+  .grafica g.col:hover .barra,.grafica g.col:focus .barra{fill:var(--azul-800)}
+  .grafica g.col{outline:none}
+  .tooltip{position:absolute;pointer-events:none;background:var(--azul-900);color:#fff;font-size:12.5px;padding:8px 10px;border-radius:8px;box-shadow:var(--sombra-2);transform:translate(-50%,-100%);white-space:nowrap;opacity:0;transition:opacity .12s}
+  .tooltip b{display:block;font-size:14px}
+  .puntos-acc{display:grid;gap:16px}
+  .pa .lab{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}
+  .pa .lab b{font-weight:700;color:var(--azul-900)}
+  .pa .lab span{color:var(--tinta);font-weight:700;font-variant-numeric:tabular-nums}
+  .pa .riel{height:10px;border-radius:999px;background:#2A2A30;overflow:hidden}
+  .pa .riel i{display:block;height:100%;background:var(--azul);border-radius:0 4px 4px 0}
+  .resumen-asis{display:flex;align-items:baseline;gap:8px;padding:6px 0 16px;margin-bottom:16px;border-bottom:1px solid var(--linea)}
+  .resumen-asis b{font-size:36px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--azul)}
+  .resumen-asis span{font-size:13px;color:var(--tenue);font-weight:500}
+  .tabla-cab{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .filtros{display:flex;gap:8px;flex-wrap:wrap}
+  .filtros .buscar{max-width:none;width:280px;flex:none}
+  .filtros select{height:40px;border:1.5px solid var(--linea);border-radius:999px;background:var(--sup);padding:0 14px;font-size:13px;font-weight:600}
+  .tabla-scroll{overflow-x:auto;margin:0 -20px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+  th{text-align:left;font-size:11px;color:var(--azul-800);font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:10px 20px;background:var(--azul-50);border-top:1px solid var(--azul-100);border-bottom:1px solid var(--azul-100)}
+  td{padding:12px 20px;border-bottom:1px solid var(--linea);vertical-align:middle}
+  tbody tr:hover{background:#222227}
+  td.folio-t{font-weight:700;color:var(--azul);letter-spacing:.04em}
+  .persona{display:flex;align-items:center;gap:10px}
+  .persona .av{width:32px;height:32px;font-size:11.5px}
+  .persona b{display:block;font-weight:700;line-height:1.2;color:var(--azul-900)}
+  .persona span{font-size:12px;color:var(--tenue)}
+  .estado{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;font-size:12px;font-weight:700}
+  .estado .ico{width:13px;height:13px;stroke-width:2.8}
+  .e-ok{background:var(--ok-50);color:var(--ok)}
+  .e-pend{background:var(--amarillo-100);color:var(--amarillo-texto)}
+  .e-inc{background:var(--error-50);color:var(--error)}
+  .tabla-pie{display:flex;justify-content:space-between;align-items:center;padding-top:14px;font-size:13px;color:var(--tenue);font-weight:500}
+  .pag{display:flex;gap:4px}
+  .pag button{min-width:32px;height:32px;border:1.5px solid var(--linea);background:var(--sup);border-radius:50%;font-size:12.5px;font-weight:700;cursor:pointer}
+  .pag button.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+  .sin-res{padding:28px;text-align:center;color:var(--tenue);display:none}
+
+  /* ============ TEMA GALA ============ */
+  .logo-oro,img[src*="uka_40"]{filter:brightness(0) saturate(100%) invert(72%) sepia(43%) saturate(553%) hue-rotate(353deg) brightness(95%) contrast(88%)}
+  .script{font-family:var(--script)!important;font-weight:400!important;letter-spacing:0!important;text-transform:none!important}
+  .shell::after{background:linear-gradient(90deg,transparent,var(--oro) 20%,var(--oro-claro) 50%,var(--oro) 80%,transparent)}
+  .segmentos button[aria-selected=true]{background:var(--metal);color:var(--sobre-oro)}
+  .segmentos button[aria-selected=true] span{background:var(--sobre-oro);color:var(--oro-claro)}
+  .btn-amarillo{background:var(--metal);color:var(--sobre-oro);box-shadow:0 8px 24px -10px rgba(217,163,91,.6)}
+  .btn-amarillo:hover{background:var(--oro-claro)}
+  .btn-azul{background:var(--oro);color:var(--sobre-oro)}
+  .btn-azul:hover{background:var(--oro-claro)}
+  .btn-blanco{border-color:rgba(243,234,219,.5);color:var(--crema)}
+  .hero .sello,.pill,.paso .n,.que-sigue li i{color:var(--sobre-oro);background:var(--metal)}
+  .paso .n{box-shadow:0 0 0 6px var(--sup)}
+
+  /* Hero: degradado carbón sobre la foto */
+  .hero{background:var(--carbon)}
+  .hero>img{left:auto;right:0;width:68%;object-position:center 35%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%);mask-image:linear-gradient(90deg,transparent 0,#000 30%)}
+  .hero::before{background:linear-gradient(90deg,rgba(14,14,16,.97) 0%,rgba(14,14,16,.9) 30%,rgba(14,14,16,.45) 52%,rgba(14,14,16,0) 72%),linear-gradient(0deg,rgba(14,14,16,.7) 0%,rgba(14,14,16,0) 40%)}
+  .hero h2.script{font-size:clamp(60px,7.4vw,104px);line-height:1;margin:22px 0 6px;color:var(--crema);font-weight:400}
+  .hero .lema{font-size:19px;font-weight:600;color:var(--oro-claro);margin:0 0 16px;max-width:520px;line-height:1.45}
+  .hero .linea i:first-child{background:var(--oro-claro)}.hero .linea i:last-child{background:var(--oro-osc)}
+
+  /* Títulos de sección con adorno dorado, como en la invitación */
+  .seccion-cab h3,.causa-texto h3{text-transform:uppercase;font-weight:600;letter-spacing:.02em;color:var(--crema)}
+  .seccion-cab h3::after,.causa-texto h3::after{content:"";display:block;width:240px;max-width:70%;height:14px;margin:14px auto 0;background:radial-gradient(circle,var(--oro-claro) 0 5px,var(--oro-osc) 5.5px 7px,transparent 7.5px) center/14px 14px no-repeat,linear-gradient(90deg,transparent,var(--oro) 35%,var(--oro-claro) 50%,var(--oro) 65%,transparent) center/100% 2px no-repeat}
+  .eyebrow{color:var(--oro)}
+  .eyebrow::before{background:var(--oro)}
+
+  /* Tarjetas de datos */
+  .datos-evento{border:1px solid rgba(217,163,91,.25)}
+  .datos-evento .dato small{color:var(--oro)}
+  .dato .circ{background:var(--amarillo-100);color:var(--oro-claro)}
+  .datos-evento .dato.cuota .circ{background:var(--metal);color:var(--sobre-oro)}
+
+  /* Secciones oscuras con patrón */
+  .causa{background:var(--carbon-2) var(--patron)}
+  .impacto{background:var(--carbon) var(--patron)}
+  .impacto::before{background:rgba(217,163,91,.05)}
+  .impacto::after{border-color:rgba(217,163,91,.08)}
+  .impacto .seccion-cab h3{color:var(--oro-claro)}
+  .cifra{background:var(--carbon-3);border-color:rgba(217,163,91,.18)}
+  .cifra::before{background:var(--metal)}
+  .cifra b{background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .banda{background:var(--carbon-3) var(--patron);color:var(--crema);border-top:1px solid rgba(217,163,91,.3)}
+  .banda::after{border-color:rgba(217,163,91,.1)}
+  .contacto small{color:var(--oro)}
+  .canales a{background:rgba(255,255,255,.05);border:1px solid var(--linea);color:var(--crema)}
+  .canales a:hover{background:rgba(217,163,91,.12);border-color:var(--oro-osc)}
+  .canales .ico{color:var(--oro-claro)}
+  .pie{background:#09090A}
+  .pie a{color:var(--oro-claro)}
+  .causa-visual::before{background:var(--metal)}
+
+  /* Registro */
+  .reg-lado{background:var(--carbon) var(--patron)}
+  .reg-lado::before{background:rgba(217,163,91,.06)}
+  .reg-lado::after{border-color:rgba(217,163,91,.12)}
+  .reg-lado h3.script{font-size:54px;line-height:1.05;color:var(--crema);margin:28px 0 6px}
+  .reg-logo{background:transparent;box-shadow:none;padding:0}
+  .resumen{background:rgba(255,255,255,.04);border:1px solid rgba(217,163,91,.2)}
+  .resumen .ico{color:var(--oro-claro)}
+  .que-sigue small{color:var(--oro)}
+  .stepper .st.on i{background:var(--metal);border-color:var(--oro);color:var(--sobre-oro)}
+  .entrada input{background:#232328}
+  .entrada input:focus{box-shadow:0 0 0 4px rgba(217,163,91,.18)}
+
+  /* Pase */
+  .boleto{border:1px solid rgba(217,163,91,.3)}
+  .boleto-top{background:var(--carbon)}
+  .boleto-top .tipo{color:var(--oro)}
+  .boleto-tit{background:var(--carbon-3) var(--patron);border-top:1px solid rgba(217,163,91,.25);border-bottom:1px solid rgba(217,163,91,.25)}
+  .boleto-tit small{color:var(--oro)}
+  .boleto-tit b.script{font-size:40px;line-height:1.1;color:var(--crema)}
+  .qr{background:#F6EFE3;border-color:var(--oro-osc)}
+  .folio{color:var(--oro-claro)}
+  .exito .ico,.res .ic,.garantias .ic,.pag button.on,.lat a.on .cnt{color:var(--sobre-oro)}
+  .lat .usuario .av{background:var(--metal)!important;color:var(--sobre-oro)!important}
+
+  /* Check-in y administración */
+  .tel-azul{background:var(--carbon-3);border-bottom:1px solid rgba(217,163,91,.3)}
+  .tel-cab .op,.progreso .lab{color:var(--texto)}
+  .progreso .riel i{background:var(--metal)}
+  .camara{background:radial-gradient(circle at 50% 45%,#34302A,#121214 72%)}
+  .visor i{border-color:var(--oro-claro)}
+  .kpi.destacado{background:var(--carbon-3);border-color:var(--oro-osc);color:var(--crema)}
+  .kpi.destacado .t .ic{background:var(--metal);color:var(--sobre-oro)}
+  .kpi.destacado .riel i{background:var(--metal)}
+  .tooltip{background:#2E2E34;color:var(--crema);border:1px solid var(--linea)}
+  .grafica .barra{fill:var(--oro)}
+  .grafica g.col:hover .barra,.grafica g.col:focus .barra{fill:var(--oro-claro)}
+  .nav-barra .url b{color:var(--crema)}
+  .lat a.on::before{background:var(--metal)}
+
+  /* ============ RESPONSIVO ============ */
+  @media (max-width:1100px){
+    .reg{grid-template-columns:340px 1fr}
+    .reg-form{padding:40px}
+    .pase-pant{grid-template-columns:1fr 360px;gap:40px;padding:48px 40px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .datos-evento,.cifras{grid-template-columns:repeat(2,1fr)}
+    .checkin{gap:48px}
+    .hero-grid{gap:40px}
+  }
+  @media (max-width:900px){
+    .shell-in{flex-wrap:wrap;gap:10px;padding:10px 16px}
+    .shell-marca img{height:34px}
+    .segmentos{width:100%;margin:0}
+    .lienzo{padding:24px 16px 56px}
+    .ficha{flex-direction:column;align-items:flex-start}
+    .ficha .tags{justify-content:flex-start}
+    .notas{grid-template-columns:1fr}
+    .cont{padding:0 20px}
+    .sitio-cab nav,.sitio-cab .link{display:none}
+    .sitio-cab .acc{margin-left:auto}
+    .sitio-cab .cont{height:68px}
+    .sitio-cab img{height:44px}
+    .hero{min-height:0}
+    .hero>img{width:100%;-webkit-mask-image:none;mask-image:none}
+    .hero::before{background:linear-gradient(180deg,rgba(14,14,16,.55) 0%,rgba(14,14,16,.93) 60%)}
+    .hero-grid{padding:56px 20px 104px}
+    .datos-evento{grid-template-columns:1fr}
+    .cifras{grid-template-columns:1fr 1fr}
+    .contacto{grid-template-columns:1fr}
+    .dato{padding:16px 20px}
+    .seccion{padding:64px 0}
+    .pasos{grid-template-columns:1fr;gap:32px}
+    .causa-grid{grid-template-columns:1fr;gap:40px}
+    .causa-visual{margin-left:18px}
+    .banda .cont{flex-direction:column;align-items:flex-start}
+    .pie a{margin:0 16px 0 0}
+    .reg{grid-template-columns:1fr}
+    .reg-lado{padding:28px 20px}
+    .que-sigue{display:none}
+    .reg-form{padding:28px 20px}
+    .campos{grid-template-columns:1fr}
+    .reg-acc{flex-direction:column-reverse;align-items:stretch}
+    .pase-pant{grid-template-columns:1fr;padding:32px 20px;background:var(--sup)}
+    .pase-pant h3{font-size:30px}
+    .instrucciones{grid-template-columns:1fr}
+    .corte::before,.corte::after{background:var(--sup)}
+    .checkin{grid-template-columns:1fr;gap:40px;padding:0}
+    .telefono{margin:0 auto;width:100%;max-width:340px}
+    .checkin-info h3{font-size:28px}
+    .admin{grid-template-columns:1fr}
+    .lat{display:none}
+    .topbar{padding:0 16px}
+    .evento-sel{display:none}
+    .adm-body{padding:20px 16px}
+    .fila2{grid-template-columns:1fr}
+    .filtros .buscar{width:100%}
+  }
+  @media (max-width:520px){
+    .kpis{gap:10px}
+    .kpi{padding:14px}
+    .kpi b{font-size:26px}
+    .kpi .d{display:block}
+    .kpi .d .warn{display:inline}
+    .url{font-size:11.5px}
+    .puntos{display:none}
+    .cifra{padding:20px 16px}
+    .cifra b{font-size:30px}
+    .cifra b small{font-size:17px}
+  }
+  /* ============ ENLACES A GOOGLE MAPS ============ */
+  .mapa{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:12.5px;font-weight:700;color:var(--azul);text-decoration:none}
+  .mapa:hover,.mapa:focus-visible{text-decoration:underline}
+  .mapa .ico{width:13px;height:13px}
+  .mapa-claro{color:var(--amarillo);font-weight:700}
+  .mapa-boleto{color:inherit;text-decoration:underline dotted var(--azul);text-underline-offset:3px}
+  .mapa-boleto:hover{color:var(--azul)}
+
+  /* ============ CALENDARIO Y WALLET ============ */
+  .menu-wrap{position:relative}
+  #btn-cal .chev{width:15px;height:15px;transition:transform .15s}
+  #btn-cal[aria-expanded=true] .chev{transform:rotate(180deg)}
+  .menu{position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:250px;padding:6px;background:var(--sup,#fff);border:1px solid var(--linea);border-radius:var(--r);box-shadow:var(--sombra-2)}
+  .menu a,.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:8px;background:none;color:var(--tinta);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;text-align:left}
+  .menu a:hover,.menu button:hover,.menu a:focus-visible,.menu button:focus-visible{background:var(--azul-50);color:var(--azul-900);outline:none}
+  .menu .ico{color:var(--azul)}
+  dialog#dlg-wallet{border:0;border-radius:20px;padding:20px;width:min(400px,calc(100% - 32px));background:var(--sup,#fff);color:var(--tinta);box-shadow:var(--sombra-3)}
+  dialog#dlg-wallet::backdrop{background:rgba(0,0,0,.55)}
+  dialog#dlg-email{border:1px solid var(--linea);border-radius:20px;padding:20px;width:min(760px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto;background:var(--sup);color:var(--tinta);box-shadow:var(--sombra-3)}
+  dialog#dlg-email::backdrop{background:rgba(0,0,0,.72)}
+  .correo-meta{display:grid;gap:6px;margin-bottom:14px;padding:12px 14px;border:1px solid var(--linea);border-radius:10px;font-size:13px}
+  .correo-meta b{color:var(--azul-800)}
+  .correo-nota{margin:0 0 14px;padding:9px 12px;border-radius:8px;background:var(--amarillo-100);color:var(--amarillo-texto);font-size:12px}
+  .correo-etapa[hidden]{display:none}
+  .activacion-form{display:grid;gap:12px;margin:16px 0}
+  .activacion-check{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #D7C6A9;border-radius:10px;background:#FBF7EF;color:#28231D;font-size:13px;font-weight:600;cursor:pointer}
+  .activacion-check input{width:18px;height:18px;flex:none;margin:1px 0 0;accent-color:#A9773A}
+  .activacion-check em{display:block;color:#786A56;font-size:11px;font-style:normal;font-weight:400;margin-top:3px}
+  .activacion-telefono{display:grid;gap:5px;color:#28231D;font-size:12px;font-weight:700}
+  .activacion-telefono input{height:42px;padding:0 12px;border:1px solid #D7C6A9;border-radius:8px;background:#fff;color:#28231D}
+  .activacion-error{min-height:18px;color:#9C3030;font-size:12px}
+  .correo-secundario{font-size:12px!important;color:#786A56!important;text-align:center}
+  .correo-cuerpo{max-width:560px;margin:0 auto;padding:24px;border-radius:14px;background:#F3EADB;color:#28231D}
+  .correo-cuerpo>img{display:block;width:135px;height:auto;margin:0 auto 12px;padding:10px;border-radius:10px;background:#141416}
+  .correo-cuerpo h3{margin:6px 0;color:#28231D;text-align:center;font-size:22px}
+  .correo-cuerpo p{margin:8px 0;color:#4C463D;font-size:14px}
+  .correo-sello{display:block;text-align:center;color:#8A6536;font-size:11px;font-weight:800;letter-spacing:.13em}
+  .correo-pase{display:grid;grid-template-columns:125px minmax(0,1fr);gap:16px;align-items:center;margin:18px 0;padding:16px;border:1px solid #D7C6A9;border-radius:12px;background:#FBF7EF}
+  .correo-pase svg{width:125px;height:125px;padding:6px;border-radius:8px;background:#fff}
+  .correo-pase small{display:block;margin-bottom:3px;color:#786A56;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .correo-pase b{display:block;color:#28231D}
+  .correo-folio{margin-top:10px;font-size:17px!important;font-weight:800;letter-spacing:.06em;color:#8A6536!important}
+  .correo-cta{display:block;width:max-content;max-width:100%;margin:16px auto;padding:11px 18px;border-radius:999px;background:#18181B;color:#F0C27A;text-align:center;text-decoration:none;font-size:13px;font-weight:800}
+  .correo-pie{padding-top:12px;border-top:1px solid #D7C6A9;font-size:11px!important;text-align:center}
+  .correo-acciones{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+  @media(max-width:520px){.correo-cuerpo{padding:18px 14px}.correo-cuerpo h3{font-size:19px}.correo-pase{grid-template-columns:1fr;text-align:center}.correo-pase svg{margin:0 auto}.correo-pase .correo-detalle{text-align:left}}
+  .dlg-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .dlg-cab h3{margin:0;font-size:18px;font-weight:800;color:var(--azul-900)}
+  .dlg-x{width:36px;height:36px;border-radius:50%;border:1px solid var(--linea);background:none;display:grid;place-items:center;cursor:pointer;color:var(--texto)}
+  .wpass{--wallet-bg:#0077C9;--wallet-fg:#fff;--wallet-lbl:#FECE00;background:var(--wallet-bg);color:var(--wallet-fg);border-radius:16px;padding:18px;display:grid;gap:14px;font-size:14px;font-weight:600}
+  .wpass .lbl{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--wallet-lbl)}
+  .wp-top{display:flex;justify-content:space-between;align-items:flex-start;font-size:13px}
+  .wp-top b{font-size:13px;letter-spacing:.08em}
+  .wp-top>span{text-align:right}
+  .wp-ev{font-size:17px;font-weight:700}
+  .wp-fila{display:flex;gap:18px;flex-wrap:wrap}
+  .wp-qr{width:150px;height:150px;margin:4px auto 0;padding:8px;background:#fff;border-radius:10px}
+  .dlg-btns{display:grid;gap:8px;margin-top:16px}
+  .dlg-nota{margin:14px 0 0;font-size:12.5px;color:var(--tenue)}
+  .aviso-toast{position:fixed;left:50%;bottom:24px;z-index:100;transform:translate(-50%,20px);max-width:calc(100% - 32px);padding:12px 18px;border-radius:12px;background:#1D2939;color:#fff;font-size:14px;font-weight:600;box-shadow:var(--sombra-3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .aviso-toast.ver{opacity:1;transform:translate(-50%,0)}  .wpass{--wallet-bg:#141416;--wallet-fg:#F3EADB;--wallet-lbl:#D9A35B;border:1px solid rgba(217,163,91,.35)}
+  .wp-qr{background:#F6EFE3}
+  .aviso-toast{background:#2E2E34;color:#F3EADB;border:1px solid rgba(217,163,91,.35)}
+  /* Mesas corporativas */
+  .admin-vista[hidden],.asiento[hidden]{display:none}
+  .admin-vista{padding:28px;background:var(--sup)}
+  .admin-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .admin-form .campo{min-width:0}
+  .admin-form input,.admin-form select{width:100%;height:44px;padding:0 12px;border:1px solid var(--linea);border-radius:9px;background:var(--fondo)}
+  .admin-form input:focus,.admin-form select:focus{outline:2px solid var(--azul)}
+  .admin-form .ancho{grid-column:1/-1}
+  .admin-form .acciones-form{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .aviso-form{font-size:13px;color:var(--tenue)}
+  .aviso-form.error{color:var(--error)}
+  .barra-mesa{height:8px;min-width:90px;border-radius:99px;background:#303036;overflow:hidden}
+  .barra-mesa i{display:block;height:100%;background:var(--amarillo)}
+  .liga-corta{font-family:monospace;font-size:12px;color:var(--azul-800);overflow-wrap:anywhere}
+  .acciones-tabla{display:flex;gap:6px;flex-wrap:wrap}
+  .acciones-tabla .btn{white-space:normal}
+  .admin-lista{display:grid;gap:12px}
+  .evento-item{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;border:1px solid var(--linea);border-radius:12px}
+  .evento-item b{display:block;color:var(--azul-900)}
+  .evento-item small{color:var(--tenue)}
+  .mesa-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .mesa-cab h2{margin:0;color:var(--azul-900);font-size:24px}
+  .mesa-cab p{margin:4px 0;color:var(--texto)}
+  .mesa-progreso{height:10px;border-radius:99px;background:#303036;overflow:hidden;margin:16px 0 22px}
+  .mesa-progreso i{display:block;height:100%;background:var(--amarillo);transition:width .2s}
+  .asientos{display:grid;gap:12px}
+  .asiento{display:grid;grid-template-columns:75px minmax(0,1fr);gap:14px;align-items:start;padding:16px;border:1px solid var(--linea);border-radius:12px;background:var(--fondo)}
+  .asiento-num{color:var(--azul-800);font-size:13px;font-weight:800;padding-top:10px}
+  .asiento .admin-form{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .asiento-lleno{display:flex;justify-content:space-between;gap:12px;align-items:center;min-width:0}
+  .asiento-lleno b{display:block;color:var(--azul-900)}
+  .asiento-lleno span{display:block;color:var(--texto);font-size:13px;overflow-wrap:anywhere}
+  .asiento-lleno .folio-t{color:var(--azul-800)}
+  .ayuda-mesa{color:var(--tenue);font-size:13px;margin:12px 0}
+  .admin-movil{display:none}
+  @media(max-width:900px){
+    .admin-form,.asiento .admin-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .admin-vista{padding:20px 16px}
+  }
+  @media(max-width:700px){
+    .admin-movil{display:block;max-width:180px;height:38px;border:1px solid var(--linea);border-radius:999px;background:var(--fondo);padding:0 10px}
+    .topbar{gap:8px;padding:0 10px}
+    .topbar>.buscar{display:none}
+    .topbar .evento-sel{display:flex;max-width:130px;padding:0 8px;font-size:11px}
+    .topbar .icon-btn{display:none}
+    .admin-form,.asiento .admin-form{grid-template-columns:1fr}
+    .admin-form .ancho,.admin-form .acciones-form{grid-column:auto}
+    .asiento{grid-template-columns:1fr;gap:6px}
+    .asiento-num{padding:0}
+    .asiento-lleno{align-items:flex-start;flex-direction:column}
+    .evento-item{align-items:flex-start;flex-direction:column}
+    .tabla-scroll{max-width:100%}
+    #inv-lista .tabla-scroll,.admin-vista[data-admin-vista="mesas"] .tabla-scroll{overflow:visible}
+    #inv-lista table,.admin-vista[data-admin-vista="mesas"] table{min-width:0;table-layout:fixed;border-collapse:separate;border-spacing:0 8px}
+    #inv-lista thead,.admin-vista[data-admin-vista="mesas"] thead{display:none}
+    #inv-lista tbody tr,.admin-vista[data-admin-vista="mesas"] tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--linea);border-radius:10px;overflow:hidden;margin-bottom:8px}
+    #inv-lista td,.admin-vista[data-admin-vista="mesas"] td{display:block;min-width:0;padding:8px;font-size:11px;overflow-wrap:anywhere}
+    #inv-lista td::before,.admin-vista[data-admin-vista="mesas"] td::before{content:attr(data-label);display:block;color:var(--azul-800);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    #inv-lista td[colspan],.admin-vista[data-admin-vista="mesas"] td[colspan]{grid-column:1/-1}
+    #inv-lista .persona{align-items:flex-start}
+    #inv-lista .persona .av{display:none}
+    .admin-vista[data-admin-vista="mesas"] .barra-mesa{min-width:50px}
+    .admin-vista[data-admin-vista="mesas"] .acciones-tabla .btn{font-size:10px;padding:6px 8px}
+  }
+</style>
+</head>
+<body>
+
+<!-- Iconos (trazo, 24x24) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></symbol>
+  <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-form" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.2"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.2"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.2"/><path d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM14 18.5v2M18 14h2.5"/></symbol>
+  <symbol id="i-puerta" viewBox="0 0 24 24"><path d="M13 3h6a1.5 1.5 0 0 1 1.5 1.5v15A1.5 1.5 0 0 1 19 21h-6"/><path d="M3.5 12H15M11 8l4 4-4 4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.01"/></symbol>
+  <symbol id="i-desc" viewBox="0 0 24 24"><path d="M12 3.5v12M7 11l5 5 5-5M4.5 20.5h15"/></symbol>
+  <symbol id="i-calmas" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M12 12.5v5M9.5 15h5"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M3 10h18M16 15h2"/></symbol>
+  <symbol id="i-lupa" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.9-3.3 3.3-5 6.5-5s5.6 1.7 6.5 5"/><path d="M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 15.3c2 .6 3.4 2.2 4 4.7"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+  <symbol id="i-org" viewBox="0 0 24 24"><path d="M4 20.5V6l8-3v17.5M12 8.5l8 3v9M2.5 20.5h19M7.5 9v.01M7.5 12.5v.01M7.5 16v.01M16 14.5v.01M16 17.5v.01"/></symbol>
+  <symbol id="i-candado" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/></symbol>
+  <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 2.5L4.5 13.5H12l-1 8 8.5-11H12z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5L12 3.5l8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5A1.5 1.5 0 0 1 3.5 19.5z"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h14a1.5 1.5 0 0 1 1.5 1.5V10a2 2 0 0 0 0 4v2.5A1.5 1.5 0 0 1 19 18H5a1.5 1.5 0 0 1-1.5-1.5V14a2 2 0 0 0 0-4z"/><path d="M14.5 6v12" stroke-dasharray="2 2"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6.5h11.5M9 12h11.5M9 17.5h11.5M4 6.5v.01M4 12v.01M4 17.5v.01"/></symbol>
+  <symbol id="i-act" viewBox="0 0 24 24"><path d="M3 12h4l3-7.5 4 15 3-7.5h4"/></symbol>
+  <symbol id="i-ajustes" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-flash" viewBox="0 0 24 24"><path d="M7 3h10l-2 6h3l-8 12 1.5-8H8z"/></symbol>
+  <symbol id="i-teclado" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7.5 14h9"/></symbol>
+  <symbol id="i-cuota" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v.01M18 14.5v.01"/></symbol>
+  <symbol id="i-fono" viewBox="0 0 24 24"><path d="M5 3.5h3.5l1.8 4.5-2.3 1.5a11 11 0 0 0 6.5 6.5l1.5-2.3 4.5 1.8V19a1.5 1.5 0 0 1-1.5 1.5C10.6 20.5 3.5 13.4 3.5 5A1.5 1.5 0 0 1 5 3.5z"/></symbol>
+  <symbol id="i-whats" viewBox="0 0 24 24"><path d="M3.5 20.5l1.3-4A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 8.5c0 3.3 2.7 6.5 6.5 6.5l1-1.6-2-1-1 .9a5 5 0 0 1-2.8-2.8l.9-1-1-2z"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V7.5z"/><path d="M14 2.5v5h5"/><text x="12" y="17.6" text-anchor="middle" font-family="Arial,sans-serif" font-size="6.4" font-weight="800" fill="currentColor" stroke="none">PDF</text></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5v.01"/></symbol>
+</svg>
+
+<!-- Barra de presentación -->
+<header class="shell">
+  <div class="shell-in">
+    <div class="shell-marca">
+      <img src="img/uka_40_amarillo.png" alt="Un Kilo de Ayuda · 40 años">
+      <div><b>UKA Eventos</b><small>Propuesta · versión gala</small></div>
+    </div>
+    <nav class="segmentos" role="tablist" aria-label="Pantallas del mockup">
+      <button role="tab" aria-selected="true" data-p="landing"><span>1</span>Landing</button>
+      <button role="tab" aria-selected="false" data-p="registro"><span>2</span>Registro</button>
+      <button role="tab" aria-selected="false" data-p="pase"><span>3</span>Pase QR</button>
+      <button role="tab" aria-selected="false" data-p="checkin"><span>4</span>Check-in</button>
+      <button role="tab" aria-selected="false" data-p="admin"><span>5</span>Administración</button>
+      <button role="tab" aria-selected="false" data-p="mesa"><span>6</span>Liga de mesa</button>
+    </nav>
+  </div>
+</header>
+
+<main class="lienzo">
+
+<!-- ================= 1. LANDING ================= -->
+<section class="pantalla activa" id="landing" role="tabpanel">
+  <div class="ficha">
+    <div>
+      <div class="num">Pantalla 01 · Público</div>
+      <h1>Landing del evento</h1>
+      <p>Presenta la gala, la causa y los datos logísticos, con una sola acción principal: confirmar asistencia.</p>
+    </div>
+    <div class="tags"><span class="tag">Escritorio</span><span class="tag">Responsivo</span><span class="tag">Contenido de la invitación oficial</span></div>
+  </div>
+
+  <div class="navegador">
+    <div class="nav-barra"><div class="puntos"><i></i><i></i><i></i></div><div class="url"><svg class="ico"><use href="#i-candado"/></svg><span><b>registro.unkilodeayuda.org.mx</b>/gala-40</span></div></div>
+    <div>
+      <header class="sitio-cab">
+        <div class="cont">
+          <img src="img/uka_40_amarillo.png" alt="Un Kilo de Ayuda · 40 años">
+          <nav aria-label="Sitio"><a href="#" data-sec="evento">El evento</a><a href="#" data-sec="causa">La causa</a><a href="#" data-sec="impacto">Impacto</a><a href="#" data-sec="nosotros" title="Sobre Un Kilo de Ayuda">Sobre UKA</a><a href="#" data-sec="faq">Preguntas</a><a href="#" data-sec="contacto">Contacto</a></nav>
+          <div class="acc">
+            <a class="link" href="#" data-ir="pase">Recuperar mi pase</a>
+            <a class="btn btn-azul btn-sm" href="#" data-ir="registro">Registrarme</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="hero">
+        <img src="img/familia_uka.jpg" alt="Niñas, niños y familias beneficiarias de Un Kilo de Ayuda">
+        <div class="hero-grid">
+          <div>
+            <span class="sello">40 años · Transformando vidas</span>
+            <h2 class="script">Gala Un Kilo de Ayuda</h2>
+            <p class="lema">Cuatro décadas trabajando por la Primera Infancia de México</p>
+            <p>Una noche para celebrar un legado en compañía de los líderes que, desde sus ámbitos, nos han fortalecido y acompañado a lo largo de estos años.</p>
+            <div class="ctas">
+              <a class="btn btn-amarillo" href="#" data-ir="registro">Confirmar mi asistencia <svg class="ico"><use href="#i-flecha"/></svg></a>
+              <a class="btn btn-blanco" href="#" data-sec="causa">Conocer la causa</a>
+            </div>
+            <div class="cupo"><svg class="ico"><use href="#i-cal"/></svg>Jueves 11 de febrero de 2027 · Jardín Santa Fe, CDMX</div>
+            <div class="linea"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cont">
+        <div class="datos-evento" id="evento" data-ancla>
+          <div class="dato"><div class="circ"><svg class="ico"><use href="#i-cal"/></svg></div><div><small>Fecha</small><b>11 de febrero, 2027</b><em>Jueves</em></div></div>
+          <div class="dato"><div class="circ"><svg class="ico"><use href="#i-reloj"/></svg></div><div><small>Horario</small><b>Recepción 6:30&nbsp;p.m.</b><em>Programa 7:00&nbsp;p.m.</em></div></div>
+          <div class="dato"><div class="circ"><svg class="ico"><use href="#i-pin"/></svg></div><div><small>Sede</small><b>Jardín Santa Fe</b><em>Ciudad de México</em><a class="mapa" href="https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9" target="_blank" rel="noopener">Cómo llegar<svg class="ico"><use href="#i-flecha"/></svg></a></div></div>
+          <div class="dato cuota"><div class="circ"><svg class="ico"><use href="#i-cuota"/></svg></div><div><small>Cuota de recuperación</small><b>$5,500 MXN</b><em>por persona</em></div></div>
+        </div>
+      </div>
+
+      <section class="seccion">
+        <div class="cont">
+          <div class="seccion-cab">
+            <span class="eyebrow">Cómo funciona</span>
+            <h3>Tu acceso, en tres pasos</h3>
+            <p>Sin filas ni listas impresas: un pase digital personal para cada invitado.</p>
+          </div>
+          <div class="pasos">
+            <div class="paso"><span class="n">1</span><div class="ic"><svg class="ico"><use href="#i-form"/></svg></div><h4>Confirma tu asistencia</h4><p>Completa tus datos con tu invitación en menos de dos minutos.</p></div>
+            <div class="paso"><span class="n">2</span><div class="ic"><svg class="ico"><use href="#i-qr"/></svg></div><h4>Recibe tu pase QR</h4><p>Lo verás en pantalla y llegará a tu correo. Es personal e intransferible.</p></div>
+            <div class="paso"><span class="n">3</span><div class="ic"><svg class="ico"><use href="#i-puerta"/></svg></div><h4>Entra en segundos</h4><p>Muestra el código desde tu teléfono o impreso en la recepción.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion causa" id="causa" data-ancla>
+        <div class="cont causa-texto">
+          <span class="eyebrow">Una gala con causa</span>
+          <h3>¿Por qué sumarse?</h3>
+          <p>La Gala del 40 Aniversario contribuirá directamente al fortalecimiento del Desarrollo Infantil Temprano y a la atención de <b>23,000 niñas, niños y sus familias</b> que forman parte del Modelo Integral de Desarrollo Infantil Temprano de Un Kilo de Ayuda. Los recursos movilizados fortalecerán intervenciones enfocadas en:</p>
+          <div class="temas">
+            <span>Crianza sensible y cariñosa</span>
+            <span>Estimulación y desarrollo emocional</span>
+            <span>Alimentación saludable</span>
+            <span>Lactancia materna</span>
+            <span>Salud</span>
+            <span>Atención a la malnutrición y anemia</span>
+            <span>Derechos de la niñez</span>
+            <span>Redes de apoyo comunitario</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion impacto" id="impacto" data-ancla>
+        <div class="cont">
+          <div class="seccion-cab">
+            <span class="eyebrow">Nuestra trayectoria</span>
+            <h3>40 años de impacto</h3>
+            <p>Resultados acumulados del trabajo de Un Kilo de Ayuda en comunidades de México.</p>
+          </div>
+          <div class="cifras">
+            <div class="cifra"><b>+580<small>mil</small></b><span>niñas y niños menores de 5 años beneficiados</span></div>
+            <div class="cifra"><b>+23<small>mil</small></b><span>niñas y niños atendidos mensualmente</span></div>
+            <div class="cifra"><b>+2<small>millones</small></b><span>personas impactadas</span></div>
+            <div class="cifra"><b>+437<small>mil</small></b><span>familias participantes</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion" id="nosotros" data-ancla>
+        <div class="cont causa-grid">
+          <div class="causa-visual"><img src="img/familia_uka.jpg" alt="Personal de Un Kilo de Ayuda acompañando a niñas y niños en su comunidad"></div>
+          <div class="sobre">
+            <span class="eyebrow">Sobre Un Kilo de Ayuda</span>
+            <h3>40 años impulsando el Desarrollo Infantil Temprano</h3>
+            <p>Un Kilo de Ayuda es una organización mexicana que desde hace 40 años trabaja para impulsar el Desarrollo Infantil Temprano de niñas y niños menores de cinco años, principalmente en comunidades rurales, indígenas y de alta marginación.</p>
+            <p>A través de nuestro modelo integral, acompañamos a las familias durante la etapa más decisiva de la vida, convencidos de que generar mejores condiciones durante la Primera Infancia transforma el presente y futuro de niñas, niños y sus comunidades.</p>
+            <p class="presencia">Tenemos presencia en <b>7 estados de la República Mexicana</b>:</p>
+            <ul class="estados-mx" aria-label="Estados con presencia">
+              <li><svg class="ico"><use href="#i-pin"/></svg>Oaxaca</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Estado de México</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Yucatán</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Chiapas</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Guerrero</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Sinaloa</li>
+              <li><svg class="ico"><use href="#i-pin"/></svg>Nuevo León</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="seccion" id="faq" data-ancla style="background:var(--fondo)">
+        <div class="cont">
+          <div class="seccion-cab">
+            <span class="eyebrow">Preguntas frecuentes</span>
+            <h3>Resolvemos tus dudas</h3>
+            <p>Si necesitas más información, escríbenos a eventos@unkilodeayuda.org.mx.</p>
+          </div>
+          <div class="faq">
+            <details open><summary>¿Cuál es la cuota de recuperación?<svg class="ico"><use href="#i-chev"/></svg></summary><p>La cuota de recuperación es de $5,500 MXN por persona. Para informes sobre el pago, comunícate con el equipo de eventos.</p></details>
+            <details><summary>¿A qué hora debo llegar?<svg class="ico"><use href="#i-chev"/></svg></summary><p>La recepción inicia a las 6:30&nbsp;p.m. y el programa comienza a las 7:00&nbsp;p.m. en Jardín Santa Fe, Ciudad de México. <a href="https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9" target="_blank" rel="noopener">Ver ubicación en Google Maps</a></p></details>
+            <details><summary>¿Puedo llevar acompañantes?<svg class="ico"><use href="#i-chev"/></svg></summary><p>Depende de tu invitación. Si incluye acompañantes, cada persona debe registrarse y recibirá su propio pase QR.</p></details>
+            <details><summary>¿Qué hago si no recibí mi pase por correo?<svg class="ico"><use href="#i-chev"/></svg></summary><p>Revisa tu carpeta de correo no deseado. También puedes usar “Recuperar mi pase” y te enviaremos un enlace seguro a tu correo registrado.</p></details>
+            <details><summary>¿Necesito imprimir el pase?<svg class="ico"><use href="#i-chev"/></svg></summary><p>No es necesario. Puedes mostrarlo desde tu teléfono; si lo prefieres, también es válido impreso.</p></details>
+            <details><summary>¿Cómo se usan mis datos personales?<svg class="ico"><use href="#i-chev"/></svg></summary><p>Solo para gestionar tu registro y acceso al evento, conforme a nuestro <a href="https://www.unkilodeayuda.org.mx/aviso-de-privacidad/" target="_blank" rel="noopener">aviso de privacidad</a>. El código QR no contiene datos personales.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <section class="banda" id="contacto" data-ancla>
+        <div class="cont contacto">
+          <div>
+            <small>Informes y confirmación</small>
+            <h3>Myranda Cruz Guevara</h3>
+            <div class="canales">
+              <a href="mailto:eventos@unkilodeayuda.org.mx"><svg class="ico"><use href="#i-mail"/></svg>eventos@unkilodeayuda.org.mx</a>
+              <a href="tel:+525510526553"><svg class="ico"><use href="#i-fono"/></svg>55 10 52 65 53</a>
+              <a href="https://w.app/eventosunkilodeayuda" target="_blank" rel="noopener"><svg class="ico"><use href="#i-whats"/></svg>WhatsApp</a>
+              <a href="https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9" target="_blank" rel="noopener"><svg class="ico"><use href="#i-pin"/></svg>Cómo llegar</a>
+            </div>
+          </div>
+          <a class="btn btn-azul" href="#" data-ir="registro">Confirmar asistencia <svg class="ico"><use href="#i-flecha"/></svg></a>
+        </div>
+      </section>
+      <footer class="pie"><div class="cont"><span>© 2026 Un Kilo de Ayuda, A.C.</span><span><a href="https://www.unkilodeayuda.org.mx/aviso-de-privacidad/" target="_blank" rel="noopener">Aviso de privacidad</a><a href="#" data-sec="contacto">Contacto</a><a href="https://www.unkilodeayuda.org.mx/" target="_blank" rel="noopener">unkilodeayuda.org.mx</a></span></div></footer>
+    </div>
+  </div>
+
+  <div class="notas">
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-rayo"/></svg></span><div><b>Una acción principal</b><p>El amarillo institucional se reserva para confirmar asistencia.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-cuota"/></svg></span><div><b>Cuota informativa</b><p>Se muestra la cuota de recuperación; el pago en línea queda fuera del MVP.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-escudo"/></svg></span><div><b>Imagen autorizada</b><p>Fotografía institucional; confirmar consentimiento de uso.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 2. REGISTRO ================= -->
+<section class="pantalla" id="registro" role="tabpanel">
+  <div class="ficha">
+    <div>
+      <div class="num">Pantalla 02 · Público</div>
+      <h1>Registro de asistencia</h1>
+      <p>Formulario individual con validación en línea y consentimientos separados: el obligatorio para el evento y el opcional para comunicaciones.</p>
+    </div>
+    <div class="tags"><span class="tag">Validación en servidor</span><span class="tag">Aviso de privacidad</span></div>
+  </div>
+
+  <div class="navegador">
+    <div class="nav-barra"><div class="puntos"><i></i><i></i><i></i></div><div class="url"><svg class="ico"><use href="#i-candado"/></svg><span><b>registro.unkilodeayuda.org.mx</b>/gala-40/registro</span></div></div>
+    <div class="reg">
+      <aside class="reg-lado">
+        <div class="reg-logo"><img src="img/uka_40_amarillo.png" alt="Un Kilo de Ayuda · 40 años"></div>
+        <h3 class="script">Gala Un Kilo de Ayuda</h3>
+        <p>Cuatro décadas trabajando por la Primera Infancia de México.</p>
+        <div class="resumen">
+          <div><svg class="ico"><use href="#i-cal"/></svg>Jueves 11 de febrero de 2027</div>
+          <div><svg class="ico"><use href="#i-reloj"/></svg>Recepción 6:30&nbsp;p.m. · Programa 7:00&nbsp;p.m.</div>
+          <div><svg class="ico"><use href="#i-pin"/></svg><span>Jardín Santa Fe · Ciudad de México · <a class="mapa-claro" href="https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9" target="_blank" rel="noopener">Ver mapa</a></span></div>
+          <div><svg class="ico"><use href="#i-cuota"/></svg>Cuota de recuperación: $5,500 MXN por persona</div>
+        </div>
+        <div class="que-sigue">
+          <small>Qué sigue</small>
+          <ol>
+            <li><i>1</i>Recibirás tu pase QR en pantalla y por correo.</li>
+            <li><i>2</i>Te enviaremos un recordatorio antes del evento.</li>
+            <li><i>3</i>Presenta tu QR en la recepción para ingresar.</li>
+          </ol>
+        </div>
+      </aside>
+      <form class="reg-form" onsubmit="return false">
+        <div class="stepper"><div class="st on"><i>1</i>Tus datos</div><div class="bar"></div><div class="st"><i>2</i>Pase de acceso</div></div>
+        <h3>Confirma tu asistencia</h3>
+        <p class="sub">El registro es individual: cada asistente completa sus propios datos.</p>
+        <div class="campos">
+          <div class="campo"><label for="f-nom">Nombre(s)</label><div class="entrada valido"><svg class="ico"><use href="#i-user"/></svg><input id="f-nom" type="text" value="María"><svg class="ico ok"><use href="#i-check"/></svg></div></div>
+          <div class="campo"><label for="f-ape">Apellidos</label><div class="entrada valido"><svg class="ico"><use href="#i-user"/></svg><input id="f-ape" type="text" value="González Pérez"><svg class="ico ok"><use href="#i-check"/></svg></div></div>
+          <div class="campo"><label for="f-mail">Correo electrónico</label><div class="entrada valido"><svg class="ico"><use href="#i-mail"/></svg><input id="f-mail" type="email" value="maria@ejemplo.com"><svg class="ico ok"><use href="#i-check"/></svg></div><div class="ayuda">Aquí enviaremos tu pase de acceso.</div></div>
+          <div class="campo"><label for="f-tel">Celular</label><div class="entrada"><svg class="ico"><use href="#i-tel"/></svg><input id="f-tel" type="tel" value="55 1234 5678"></div><div class="ayuda">10 dígitos, solo para avisos del evento.</div></div>
+          <div class="campo ancho"><label for="f-org">Organización <span class="opc">(opcional)</span></label><div class="entrada"><svg class="ico"><use href="#i-org"/></svg><input id="f-org" type="text" placeholder="Empresa o institución"></div></div>
+        </div>
+        <div class="consent">
+          <label><input type="checkbox" checked><span>He leído y acepto el <a href="https://www.unkilodeayuda.org.mx/aviso-de-privacidad/" target="_blank" rel="noopener">aviso de privacidad</a><span class="req ob">Obligatorio</span><em>Tus datos se usan únicamente para gestionar tu registro y acceso al evento.</em></span></label>
+          <label><input type="checkbox"><span>Quiero recibir información sobre campañas y actividades de UKA<span class="req op">Opcional</span><em>Puedes retirar tu consentimiento en cualquier momento.</em></span></label>
+        </div>
+        <div class="reg-acc">
+          <span class="seguro"><svg class="ico"><use href="#i-candado"/></svg>Conexión segura · tus datos no se incluyen en el QR</span>
+          <button class="btn btn-amarillo" data-ir="pase">Confirmar registro <svg class="ico"><use href="#i-flecha"/></svg></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="notas">
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-check"/></svg></span><div><b>Validación inmediata</b><p>Cada campo confirma su formato al salir de él, no al enviar.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-doc"/></svg></span><div><b>Consentimiento separado</b><p>Se guarda finalidad, versión del aviso y fecha de aceptación.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-users"/></svg></span><div><b>Acompañantes</b><p>Configurable por evento; cada acompañante recibe su propio pase.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 3. PASE ================= -->
+<section class="pantalla" id="pase" role="tabpanel">
+  <div class="ficha">
+    <div>
+      <div class="num">Pantalla 03 · Público</div>
+      <h1>Confirmación y pase QR</h1>
+      <p>Pase personal con folio legible y un QR que solo contiene un token aleatorio, sin datos personales.</p>
+    </div>
+    <div class="tags"><span class="tag">Enviado por correo</span><span class="tag">Descargable</span></div>
+  </div>
+
+  <div class="navegador">
+    <div class="nav-barra"><div class="puntos"><i></i><i></i><i></i></div><div class="url"><svg class="ico"><use href="#i-candado"/></svg><span><b>registro.unkilodeayuda.org.mx</b>/gala-40/pase</span></div></div>
+    <div class="pase-pant">
+      <div>
+        <span class="exito"><svg class="ico"><use href="#i-check"/></svg>Registro confirmado</span>
+        <h3>¡Te esperamos, <span>María</span>!</h3>
+        <p class="txt">Este es tu pase personal. Preséntalo en la entrada desde tu teléfono o impreso. También lo enviamos a <b>maria@ejemplo.com</b>.</p>
+        <div class="acciones">
+          <button class="btn btn-azul" id="btn-pdf" title="Descargar pase en PDF"><svg class="ico"><use href="#i-pdf"/></svg>Descargar PDF</button>
+          <button class="btn btn-borde" id="btn-wallet" aria-haspopup="dialog" title="Guardar en Wallet" aria-label="Guardar en Wallet"><svg class="ico"><use href="#i-wallet"/></svg>Wallet</button>
+          <div class="menu-wrap">
+            <button class="btn btn-borde" id="btn-cal" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-cal" title="Agregar al calendario" aria-label="Agregar al calendario"><svg class="ico"><use href="#i-calmas"/></svg>Calendario<svg class="ico chev"><use href="#i-chev"/></svg></button>
+            <div class="menu" id="menu-cal" role="menu" hidden>
+              <a role="menuitem" id="cal-google" target="_blank" rel="noopener"><svg class="ico"><use href="#i-cal"/></svg>Google Calendar</a>
+              <a role="menuitem" id="cal-outlook" target="_blank" rel="noopener"><svg class="ico"><use href="#i-mail"/></svg>Outlook</a>
+              <button type="button" role="menuitem" id="cal-ics"><svg class="ico"><use href="#i-desc"/></svg>Apple Calendar u otro (.ics)</button>
+            </div>
+          </div>
+        </div>
+        <div class="instrucciones">
+          <div class="instr"><svg class="ico"><use href="#i-reloj"/></svg><div><b>Llega con tiempo</b>La recepción inicia a las 6:30&nbsp;p.m.</div></div>
+          <div class="instr"><svg class="ico"><use href="#i-user"/></svg><div><b>Pase intransferible</b>Válido solo para un ingreso.</div></div>
+        </div>
+        <div class="recuperar"><svg class="ico"><use href="#i-mail"/></svg><span>¿Perdiste tu pase? Te enviaremos un enlace seguro a tu correo registrado. <a href="#">Recuperar pase</a></span></div>
+      </div>
+
+      <div class="boleto">
+        <div class="boleto-top">
+          <img src="img/uka_40_amarillo.png" alt="Un Kilo de Ayuda · 40 años">
+          <div class="tipo">Pase<b>Individual</b></div>
+        </div>
+        <div class="boleto-tit"><small>Invitación · 40 años</small><b class="script">Gala Un Kilo de Ayuda</b></div>
+        <div class="boleto-qr">
+          <svg class="qr" id="qr" viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="Código QR ilustrativo"></svg>
+          <div class="folio">UKA-0127</div>
+          <p>Código aleatorio · no contiene datos personales</p>
+        </div>
+        <div class="corte"></div>
+        <div class="boleto-pie">
+          <div><small>Invitado</small><b>María González</b></div>
+          <div><small>Fecha</small><b>Jue 11 feb 2027</b></div>
+          <div><small>Recepción</small><b>6:30&nbsp;p.m.</b></div>
+          <div><small>Sede</small><b><a class="mapa-boleto" href="https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9" target="_blank" rel="noopener" title="Abrir en Google Maps">Jardín Santa Fe</a></b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notas">
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-escudo"/></svg></span><div><b>Token con hash</b><p>En la base de datos solo se guarda el hash del token; puede revocarse.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-mail"/></svg></span><div><b>Recuperación segura</b><p>Nunca se muestra un pase sin verificar el correo registrado.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-ticket"/></svg></span><div><b>Folio de respaldo</b><p>Si el QR falla, recepción busca por folio o nombre.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 4. CHECK-IN ================= -->
+<section class="pantalla" id="checkin" role="tabpanel">
+  <div class="ficha">
+    <div>
+      <div class="num">Pantalla 04 · Personal de recepción</div>
+      <h1>Check-in móvil (PWA)</h1>
+      <p>Lector de QR desde el navegador del teléfono, con respuesta inmediata y claramente distinguible para cada estado.</p>
+    </div>
+    <div class="tags"><span class="tag">Móvil</span><span class="tag">Requiere sesión</span></div>
+  </div>
+
+  <div class="checkin">
+    <div class="telefono">
+      <div class="tel">
+        <div class="tel-azul">
+          <div class="tel-status"><span>20:14</span><span style="display:flex;gap:6px;align-items:center"><svg class="ico" style="width:15px;height:15px"><use href="#i-wifi"/></svg>100%</span></div>
+          <div class="tel-cab">
+            <div class="fila"><b>Gala 40 · Check-in</b><span class="pill">Fila A</span></div>
+            <div class="op">Operadora: Lucero León</div>
+            <div class="progreso">
+              <div class="lab"><span>Ingresados</span><b>312 / 400</b></div>
+              <div class="riel"><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="camara">
+          <span class="hint">Apunta al código QR</span>
+          <div class="visor"><i></i><i></i><i></i><i></i><div class="laser"></div></div>
+          <div class="cam-ctrl"><span><svg class="ico"><use href="#i-flash"/></svg></span><span><svg class="ico"><use href="#i-teclado"/></svg></span></div>
+        </div>
+        <div class="hoja">
+          <div class="res r-ok" id="res" aria-live="polite">
+            <div class="ic"><svg class="ico"><use href="#i-check"/></svg></div>
+            <div><h4>Acceso permitido</h4><p><b>María González</b> · UKA-0127</p><p>Rifa R-0313 · Registrado a las 20:14 h</p></div>
+          </div>
+          <div class="btns">
+            <button class="btn btn-borde"><svg class="ico"><use href="#i-lupa"/></svg>Buscar</button>
+            <button class="btn btn-azul">Siguiente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="checkin-info">
+      <span class="eyebrow">PWA para recepción</span>
+      <h3>Escaneo confiable desde cualquier teléfono o tableta</h3>
+      <p>El personal inicia sesión en el navegador, sin instalar nada desde una tienda de aplicaciones. Cada lectura se valida en el servidor de forma transaccional.</p>
+      <div class="demo">
+        <small>Prueba los estados del lector</small>
+        <div class="chips">
+          <button class="chip" aria-pressed="true" data-e="ok"><i style="background:var(--ok)"></i>Acceso permitido</button>
+          <button class="chip" aria-pressed="false" data-e="usado"><i style="background:var(--aviso)"></i>Pase ya utilizado</button>
+          <button class="chip" aria-pressed="false" data-e="invalido"><i style="background:var(--error)"></i>Pase inválido</button>
+        </div>
+      </div>
+      <ul class="garantias">
+        <li><span class="ic"><svg class="ico"><use href="#i-escudo"/></svg></span><div><b>Un pase, un ingreso</b>Si dos filas escanean el mismo pase a la vez, solo una entrada cuenta.</div></li>
+        <li><span class="ic"><svg class="ico"><use href="#i-lupa"/></svg></span><div><b>Búsqueda manual</b>Sin QR, se localiza por nombre o folio con permisos de operador.</div></li>
+        <li><span class="ic"><svg class="ico"><use href="#i-act"/></svg></span><div><b>Bitácora completa</b>Toda excepción queda registrada con el operador que la autorizó.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 5. ADMIN ================= -->
+<section class="pantalla" id="admin" role="tabpanel">
+  <div class="ficha">
+    <div>
+      <div class="num">Pantalla 05 · Administración</div>
+      <h1>Tablero del evento</h1>
+      <p>Indicadores en vivo, ritmo de ingresos, desempeño por punto de acceso y la lista de invitados con filtros.</p>
+    </div>
+    <div class="tags"><span class="tag">Acceso por rol</span><span class="tag">Exportación CSV</span></div>
+  </div>
+
+  <div class="navegador">
+    <div class="nav-barra"><div class="puntos"><i></i><i></i><i></i></div><div class="url"><svg class="ico"><use href="#i-candado"/></svg><span><b>registro.unkilodeayuda.org.mx</b>/admin/eventos/gala-40</span></div></div>
+    <div class="admin">
+      <aside class="lat">
+        <div class="logo"><img src="img/uka_40_amarillo.png" alt="Un Kilo de Ayuda · 40 años"></div>
+        <a href="#" class="on" data-admin-tab="tablero"><svg class="ico"><use href="#i-home"/></svg>Tablero</a>
+        <a href="#" data-admin-tab="eventos"><svg class="ico"><use href="#i-cal"/></svg>Eventos</a>
+        <a href="#" data-admin-tab="mesas"><svg class="ico"><use href="#i-org"/></svg>Mesas corporativas</a>
+        <a href="#" data-admin-tab="invitados"><svg class="ico"><use href="#i-users"/></svg>Invitados<span class="cnt">400</span></a>
+        <a href="#"><svg class="ico"><use href="#i-ticket"/></svg>Pases</a>
+        <small>Operación</small>
+        <a href="#"><svg class="ico"><use href="#i-qr"/></svg>Check-in</a>
+        <a href="#"><svg class="ico"><use href="#i-alerta"/></svg>Incidencias<span class="cnt">3</span></a>
+        <a href="#"><svg class="ico"><use href="#i-user"/></svg>Operadores</a>
+        <small>Cumplimiento</small>
+        <a href="#"><svg class="ico"><use href="#i-doc"/></svg>Consentimientos</a>
+        <a href="#"><svg class="ico"><use href="#i-lista"/></svg>Bitácora</a>
+        <a href="#"><svg class="ico"><use href="#i-ajustes"/></svg>Configuración</a>
+        <div class="usuario"><span class="av" style="background:var(--amarillo);color:var(--azul-900)">TI</span><div><b>Administrador</b><span>Tecnología · UKA</span></div></div>
+      </aside>
+
+      <div class="adm-main">
+        <div class="topbar">
+          <div class="buscar"><svg class="ico"><use href="#i-lupa"/></svg><input type="text" placeholder="Buscar invitado, folio u operador" aria-label="Buscar"></div>
+          <select class="admin-movil" id="admin-movil" aria-label="Sección administrativa">
+            <option value="tablero">Tablero</option><option value="eventos">Eventos</option><option value="mesas">Mesas corporativas</option><option value="invitados">Invitados</option>
+          </select>
+          <div class="der">
+            <select class="evento-sel" id="evento-activo" aria-label="Evento activo"></select>
+            <button class="icon-btn" aria-label="Notificaciones"><svg class="ico"><use href="#i-campana"/></svg><span class="badge-dot"></span></button>
+          </div>
+        </div>
+
+        <div class="adm-body" data-admin-vista="tablero">
+          <div class="adm-cab">
+            <div>
+              <h2 id="admin-evento-nombre">Gala Un Kilo de Ayuda · 40 años</h2>
+              <div class="meta"><span class="vivo">En vivo</span><span id="admin-evento-resumen">Jardín Santa Fe · Actualizado hace 5 s</span></div>
+            </div>
+            <div class="acc">
+              <button class="btn btn-borde btn-sm"><svg class="ico"><use href="#i-desc"/></svg>Exportar CSV</button>
+              <button class="btn btn-azul btn-sm"><svg class="ico"><use href="#i-mas"/></svg>Alta autorizada</button>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi destacado"><div class="t">Ingresados<span class="ic"><svg class="ico"><use href="#i-puerta"/></svg></span></div><b>312</b><div class="d"><span class="up">+18</span> en los últimos 15 min</div><div class="riel"><i style="width:78%"></i></div></div>
+            <div class="kpi"><div class="t">Registrados<span class="ic"><svg class="ico"><use href="#i-users"/></svg></span></div><b>400</b><div class="d">100% del cupo</div><div class="riel"><i style="width:100%"></i></div></div>
+            <div class="kpi"><div class="t">Pendientes<span class="ic"><svg class="ico"><use href="#i-reloj"/></svg></span></div><b>88</b><div class="d">22% por llegar</div><div class="riel"><i style="width:22%"></i></div></div>
+            <div class="kpi"><div class="t">Incidencias<span class="ic"><svg class="ico"><use href="#i-alerta"/></svg></span></div><b>3</b><div class="d"><span class="warn"><svg class="ico"><use href="#i-alerta"/></svg>1 abierta</span> · 2 resueltas</div></div>
+          </div>
+
+          <div class="fila2">
+            <div class="caja">
+              <div class="caja-cab"><h3>Ingresos cada 15 minutos</h3><span>Recepción desde 18:30 h</span></div>
+              <div class="grafica" id="graf"><div class="tooltip" id="tip"></div></div>
+            </div>
+            <div class="caja">
+              <div class="caja-cab"><h3>Por punto de acceso</h3><span>Ingresos</span></div>
+              <div class="resumen-asis"><b>78%</b><span>de asistencia · 312 de 400</span></div>
+              <div class="puntos-acc">
+                <div class="pa"><div class="lab"><b>Fila A</b><span>164</span></div><div class="riel"><i style="width:100%"></i></div></div>
+                <div class="pa"><div class="lab"><b>Fila B</b><span>142</span></div><div class="riel"><i style="width:86.6%"></i></div></div>
+                <div class="pa"><div class="lab"><b>Mesa de incidencias</b><span>6</span></div><div class="riel"><i style="width:3.7%"></i></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="caja" id="inv-lista" style="margin-top:16px">
+            <div class="tabla-cab">
+              <div class="caja-cab" style="margin:0"><h3>Invitados</h3></div>
+              <div class="filtros">
+                <div class="buscar"><svg class="ico"><use href="#i-lupa"/></svg><input type="text" id="t-buscar" placeholder="Nombre, folio u organización" aria-label="Filtrar invitados"></div>
+                <select id="t-estado" aria-label="Estado"><option value="">Todos los estados</option><option value="ok">Ingresado</option><option value="pend">Pendiente</option><option value="inc">Incidencia</option></select>
+                <select id="t-mesa" aria-label="Filtrar por empresa o mesa"><option value="">Todas las empresas / mesas</option></select>
+              </div>
+            </div>
+            <div class="tabla-scroll">
+              <table>
+                <thead><tr><th>Invitado</th><th>Folio</th><th>Empresa / mesa</th><th>Organización</th><th>Estado</th><th>Hora</th><th>Operador</th></tr></thead>
+                <tbody id="t-cuerpo"></tbody>
+              </table>
+              <div class="sin-res" id="t-vacio">No hay invitados que coincidan con el filtro.</div>
+            </div>
+            <div class="tabla-pie"><span id="t-cuenta">Mostrando 6 de 400</span><div class="pag"><button class="on">1</button><button>2</button><button>3</button><button aria-label="Siguiente">›</button></div></div>
+          </div>
+        </div>
+        <section class="admin-vista" data-admin-vista="eventos" hidden>
+          <div class="caja-cab"><h3>Administración de eventos</h3><span>Selecciona el evento activo o registra uno nuevo.</span></div>
+          <form id="form-evento" class="admin-form">
+            <div class="campo"><label for="ev-nombre">Nombre</label><input id="ev-nombre" name="nombre" required></div>
+            <div class="campo"><label for="ev-fecha">Fecha</label><input id="ev-fecha" name="fecha" type="date" required></div>
+            <div class="campo"><label for="ev-hora">Hora</label><input id="ev-hora" name="hora" type="time" required></div>
+            <div class="campo"><label for="ev-sede">Sede</label><input id="ev-sede" name="sede" required></div>
+            <div class="campo"><label for="ev-aforo">Aforo</label><input id="ev-aforo" name="aforo" type="number" min="1" step="1" required></div>
+            <div class="campo"><label for="ev-cuota">Cuota por persona (MXN)</label><input id="ev-cuota" name="cuota" type="number" min="0" step="0.01" required></div>
+            <div class="campo"><label for="ev-acompanantes">Acompañantes permitidos</label><input id="ev-acompanantes" name="acompanantes" type="number" min="0" step="1" value="0" required></div>
+            <div class="campo"><label for="ev-modalidad">Modalidad de registro</label><select id="ev-modalidad" name="modalidad"><option>Individual</option><option>Individual y corporativa</option><option>Corporativa</option></select></div>
+            <div class="acciones-form"><button class="btn btn-azul btn-sm" type="submit">Crear evento</button><span class="aviso-form" id="evento-msg" role="status"></span></div>
+          </form>
+          <div class="caja-cab" style="margin-top:28px"><h3>Eventos disponibles</h3></div>
+          <div id="eventos-lista" class="admin-lista"></div>
+        </section>
+        <section class="admin-vista" data-admin-vista="mesas" hidden>
+          <div class="caja-cab"><h3>Registrar compra de accesos</h3><span>Evento activo · aforo disponible <b id="aforo-disponible"></b></span></div>
+          <form id="form-mesa" class="admin-form">
+            <div class="campo"><label for="mesa-empresa">Empresa</label><input id="mesa-empresa" name="empresa" required></div>
+            <div class="campo"><label for="mesa-contacto">Contacto</label><input id="mesa-contacto" name="contacto" required></div>
+            <div class="campo"><label for="mesa-correo">Correo de contacto</label><input id="mesa-correo" name="correo" type="email" required></div>
+            <div class="campo"><label for="mesa-lugares">Número de lugares</label><input id="mesa-lugares" name="lugares" type="number" min="1" step="1" required></div>
+            <div class="campo"><label for="mesa-limite">Fecha límite</label><input id="mesa-limite" name="limite" type="date" required></div>
+            <div class="campo"><label for="mesa-prefijo">Prefijo de folio</label><input id="mesa-prefijo" name="prefijo" required pattern="[A-Za-z0-9\-]+" title="Usa letras, números y guiones"></div>
+            <div class="acciones-form"><button class="btn btn-azul btn-sm" type="submit">Crear mesa y liga privada</button><span class="aviso-form" id="mesa-msg" role="status"></span></div>
+          </form>
+          <div class="tabla-cab" style="margin-top:28px"><div class="caja-cab" style="margin:0"><h3>Mesas corporativas</h3></div><button class="btn btn-borde btn-sm" id="reiniciar-demo" type="button">Reiniciar demo</button></div>
+          <div class="tabla-scroll"><table><thead><tr><th>Empresa</th><th>Contacto</th><th>Avance</th><th>Liga privada</th><th>Acciones</th></tr></thead><tbody id="mesas-cuerpo"></tbody></table></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="notas">
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-act"/></svg></span><div><b>Conteos consistentes</b><p>KPIs, gráfica y tabla salen de la misma consulta en vivo.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-candado"/></svg></span><div><b>Permisos mínimos</b><p>Roles de administrador, recepción y consulta; exportar requiere permiso.</p></div></div>
+    <div class="nota"><span class="ic"><svg class="ico"><use href="#i-lista"/></svg></span><div><b>Auditoría</b><p>Altas autorizadas e incidencias quedan en la bitácora.</p></div></div>
+  </div>
+</section>
+
+<!-- ================= 6. LIGA DE MESA ================= -->
+<section class="pantalla" id="mesa" role="tabpanel">
+  <div class="ficha">
+    <div><div class="num">Pantalla 06 · Liga privada</div><h1>Registro de invitados de mesa</h1><p>La asistente captura a sus invitados poco a poco; cada pase se emite por persona.</p></div>
+    <div class="tags"><span class="tag">Sin usuario ni contraseña</span><span class="tag">Liga privada</span></div>
+  </div>
+  <div class="navegador">
+    <div class="nav-barra"><div class="puntos"><i></i><i></i><i></i></div><div class="url"><svg class="ico"><use href="#i-candado"/></svg><span id="mesa-url"><b>registro.unkilodeayuda.org.mx</b>/mesa/••••••••</span></div></div>
+    <div class="admin-vista">
+      <div class="mesa-cab"><div><h2 id="mesa-titulo">Mesa SORIANA · 10 lugares</h2><p id="mesa-saludo">Hola, asistente. Completa los datos de cada invitado cuando te sea conveniente.</p></div><span class="tag" id="mesa-conteo">3 de 10 lugares registrados</span></div>
+      <div class="mesa-progreso"><i id="mesa-barra" style="width:30%"></i></div>
+      <p class="ayuda-mesa">Al guardar, simulamos el envío del pase individual. El QR contiene solo un token aleatorio. El invitado acepta el aviso de privacidad al abrir su pase.</p>
+      <div id="mesa-asientos" class="asientos"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Vista previa del pase para Wallet -->
+<dialog id="dlg-wallet" aria-labelledby="dlg-wallet-t">
+  <div class="dlg-cab"><h3 id="dlg-wallet-t">Guardar en Wallet</h3><button class="dlg-x" id="dlg-cerrar" aria-label="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button></div>
+  <div class="wpass">
+    <div class="wp-top"><b>UN KILO DE AYUDA</b><span><span class="lbl">FOLIO</span>UKA-0127</span></div>
+    <div class="wp-ev"><span class="lbl">EVENTO</span>Gala Un Kilo de Ayuda · 40 años</div>
+    <div class="wp-fila"><div><span class="lbl">FECHA</span>11 feb 2027</div><div><span class="lbl">RECEPCIÓN</span>6:30&nbsp;p.m.</div><div><span class="lbl">SEDE</span>Jardín Santa Fe</div></div>
+    <div class="wp-fila"><div><span class="lbl">INVITADO</span>María González</div></div>
+    <svg class="wp-qr" id="qr-w" viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="Código QR del pase"></svg>
+  </div>
+  <div class="dlg-btns">
+    <button class="btn btn-azul" data-wallet="Apple Wallet">Añadir a Apple Wallet</button>
+    <button class="btn btn-borde" data-wallet="Google Wallet">Añadir a Google Wallet</button>
+  </div>
+  <p class="dlg-nota"><b>Vista previa del mockup.</b> En producción el servidor genera un pase firmado: <em>.pkpass</em> con certificado de Apple Developer y pase de Google Wallet con cuenta de emisor. El pase se actualiza solo si cambia la sede u horario.</p>
+</dialog>
+<dialog id="dlg-email" aria-labelledby="dlg-email-t">
+  <div class="dlg-cab"><h3 id="dlg-email-t">Correo de pase · vista previa</h3><button class="dlg-x" id="email-cerrar" type="button" aria-label="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button></div>
+  <div class="correo-meta">
+    <div><b>De:</b> Un Kilo de Ayuda · eventos@unkilodeayuda.org.mx</div>
+    <div><b>Para:</b> <span id="email-para"></span></div>
+    <div><b>Asunto:</b> <span id="email-asunto"></span></div>
+  </div>
+  <p class="correo-nota">Demostración del flujo: no se envían correos ni mensajes reales. Los QR son ilustrativos.</p>
+  <article class="correo-cuerpo">
+    <span class="correo-sello">UN KILO DE AYUDA · 40 AÑOS</span>
+    <div class="correo-etapa" id="email-etapa-activacion">
+      <h3 id="email-saludo">Tienes un lugar reservado</h3>
+      <p id="email-intro"></p>
+      <p>Confirma tus datos y preferencias para activar tu pase individual. La asistente que registró tu lugar no acepta estos avisos por ti.</p>
+      <a class="correo-cta" href="#" id="email-abrir-pase">Confirmar mis datos y activar mi pase</a>
+      <p class="correo-pie">El enlace es personal. Si no reconoces este registro, puedes ignorar este mensaje.</p>
+    </div>
+    <div class="correo-etapa" id="email-etapa-consentimiento" hidden>
+      <h3>Confirma tus datos y preferencias</h3>
+      <p>Hola <b id="activacion-nombre"></b>. Revisa el aviso y elige por separado cómo quieres recibir comunicaciones.</p>
+      <form class="activacion-form" id="form-activacion">
+        <label class="activacion-check"><input id="consent-privacidad" type="checkbox" required><span>He leído y acepto el <a href="https://www.unkilodeayuda.org.mx/aviso-de-privacidad/" target="_blank" rel="noopener">aviso de privacidad</a>. <b>Necesario para activar el pase.</b><em>Se usa para administrar tu registro y acceso al evento.</em></span></label>
+        <label class="activacion-check"><input id="consent-whatsapp-evento" type="checkbox"><span>Quiero recibir por WhatsApp recordatorios y avisos logísticos de este evento.<em>Opcional. No condiciona tu pase; puedes retirar tu autorización.</em></span></label>
+        <label class="activacion-check"><input id="consent-email-campanas" type="checkbox"><span>Quiero recibir por correo novedades y campañas de Un Kilo de Ayuda.<em>Opcional y separado de los mensajes necesarios del evento.</em></span></label>
+        <label class="activacion-check"><input id="consent-whatsapp-campanas" type="checkbox"><span>Quiero recibir por WhatsApp novedades y campañas de Un Kilo de Ayuda.<em>Opcional e independiente de los avisos logísticos.</em></span></label>
+        <label class="activacion-telefono">Celular para WhatsApp <input id="activacion-telefono" type="tel" inputmode="tel" autocomplete="tel" placeholder="10 dígitos"></label>
+        <span class="activacion-error" id="activacion-error" role="alert"></span>
+        <button class="correo-cta" type="submit">Guardar preferencias y activar pase</button>
+      </form>
+      <p class="correo-secundario">Puedes continuar solo con el aviso de privacidad. Las preferencias opcionales pueden cambiarse después.</p>
+    </div>
+    <div class="correo-etapa" id="email-etapa-pase" hidden>
+      <h3 id="pase-saludo">¡Tu pase está listo!</h3>
+      <p>Tu pase está activo. Preséntalo en la recepción; el QR contiene únicamente un token aleatorio, no datos personales.</p>
+      <div class="correo-pase">
+        <svg id="email-qr" viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="Código QR ilustrativo del pase"></svg>
+        <div class="correo-detalle">
+          <small>Invitado</small><b id="email-nombre"></b>
+          <small style="margin-top:10px">Evento</small><b id="email-evento"></b>
+          <small style="margin-top:10px">Fecha · recepción</small><b id="email-fecha"></b>
+          <small style="margin-top:10px">Sede</small><b id="email-sede"></b>
+          <p class="correo-folio" id="email-folio"></p>
+        </div>
+      </div>
+      <p class="correo-pie">Un Kilo de Ayuda · Si necesitas ayuda con tu pase, responde a este correo.</p>
+    </div>
+  </article>
+  <div class="correo-acciones"><button class="btn btn-borde btn-sm" type="button" id="email-reenviar">Simular reenvío del pase</button></div>
+</dialog>
+<div class="aviso-toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+  // Navegación entre pantallas
+  const tabs=[...document.querySelectorAll('.segmentos button')];
+  function ir(id){
+    document.querySelectorAll('.pantalla').forEach(s=>s.classList.toggle('activa',s.id===id));
+    tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.p===id));
+    tabs.find(b=>b.dataset.p===id)?.scrollIntoView({block:'nearest',inline:'center'});
+    history.replaceState(null,'','#'+id);
+    window.scrollTo({top:0});
+  }
+  tabs.forEach(b=>b.onclick=()=>ir(b.dataset.p));
+  document.querySelectorAll('[data-ir]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();ir(el.dataset.ir)}));
+  if(document.getElementById(location.hash.slice(1))?.classList.contains('pantalla')){ir(location.hash.slice(1));addEventListener('load',()=>setTimeout(()=>scrollTo(0,0)))}
+  document.querySelectorAll('a[href="#"]').forEach(a=>{if(!a.dataset.ir)a.addEventListener('click',e=>e.preventDefault())});
+  // Navegación interna de la landing
+  document.querySelectorAll('[data-sec]').forEach(a=>a.addEventListener('click',()=>{
+    const reducir=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(a.dataset.sec).scrollIntoView({behavior:reducir?'auto':'smooth',block:'start'});
+  }));
+
+  // Datos de demostración con la misma separación relacional prevista para PostgreSQL/Prisma.
+  const claveDemo='uka-gala-mesas-demo-v1';
+  const tokenAleatorio=()=>{const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return [...bytes].map(b=>b.toString(16).padStart(2,'0')).join('')};
+  const idNuevo=()=>tokenAleatorio().slice(0,24);
+  const seguroHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const crearDemo=()=>{
+    const eventoId='evento-gala-40';
+    const demo={
+      eventos:[{id:eventoId,nombre:'Gala Un Kilo de Ayuda · 40 años',fecha:'2027-02-11',hora:'18:30',sede:'Jardín Santa Fe',aforo:400,cuota:5500,acompanantes:1,modalidad:'Individual y corporativa'}],
+      eventoActivoId:eventoId,mesas:[],registros:[],personas:[],pases:[],checkins:[],consentimientos:[]
+    };
+    const grupos=[
+      {empresa:'SORIANA',contacto:'Asistente de Dirección',correo:'asistente@soriana.ejemplo',lugares:10,limite:'2027-01-20',prefijo:'SORIANA',invitados:[['Mariana','López','mariana@soriana.ejemplo'],['Andrés','Vega','andres@soriana.ejemplo'],['Lucía','Reyes','lucia@soriana.ejemplo']]},
+      {empresa:'Grupo Ejemplo',contacto:'Laura Méndez',correo:'laura@grupo.ejemplo',lugares:8,limite:'2027-01-25',prefijo:'GRUPO',invitados:[['Diego','Ruiz','diego@grupo.ejemplo'],['Valeria','Cruz','valeria@grupo.ejemplo'],['Emilio','Soto','emilio@grupo.ejemplo'],['Sofía','León','sofia@grupo.ejemplo'],['Pablo','Mora','pablo@grupo.ejemplo'],['Elena','Díaz','elena@grupo.ejemplo'],['Iván','Ríos','ivan@grupo.ejemplo'],['Julia','Nava','julia@grupo.ejemplo']]},
+      {empresa:'Fundación Ejemplo',contacto:'Ana Robles',correo:'ana@fundacion.ejemplo',lugares:5,limite:'2027-01-30',prefijo:'FUNDACION',invitados:[]}
+    ];
+    grupos.forEach(grupo=>{
+      const mesa={id:idNuevo(),eventoId,empresa:grupo.empresa,contacto:grupo.contacto,correo:grupo.correo,lugares:grupo.lugares,limite:grupo.limite,prefijo:grupo.prefijo,token:tokenAleatorio()};
+      demo.mesas.push(mesa);
+      grupo.invitados.forEach(([nombre,apellidos,correo],index)=>{
+        const persona={id:idNuevo(),nombre,apellidos,correo};
+        const registro={id:idNuevo(),mesaId:mesa.id,eventId:eventoId,personaId:persona.id,asiento:index+1,nombre,apellidos,correo,folio:`${mesa.prefijo}-${String(index+1).padStart(2,'0')}`,estado:'activo'};
+        demo.registros.push(registro);
+        demo.personas.push(persona);
+        demo.pases.push({id:idNuevo(),registroId:registro.id,eventId:eventoId,token:tokenAleatorio(),estado:'activacion_pendiente',correoActivacionEnviadoAt:new Date().toISOString(),enviadoAt:null,privacidadAceptadaAt:null});
+      });
+    });
+    return demo;
+  };
+  const guardado=localStorage.getItem(claveDemo);
+  let db=guardado?JSON.parse(guardado):crearDemo();
+  db.personas??=[];
+  db.pases??=[];
+  db.registros.forEach(registro=>{
+    let persona=db.personas.find(p=>p.id===registro.personaId||p.correo.toLowerCase()===registro.correo.toLowerCase());
+    if(!persona){persona={id:idNuevo(),nombre:registro.nombre,apellidos:registro.apellidos,correo:registro.correo};db.personas.push(persona)}
+    registro.personaId=persona.id;
+  });
+  db.pases.forEach(pase=>{
+    if(!pase.privacidadAceptadaAt&&pase.estado==='enviado'){
+      pase.estado='activacion_pendiente';
+      pase.correoActivacionEnviadoAt??=pase.enviadoAt||new Date().toISOString();
+      pase.enviadoAt=null;
+    }
+  });
+  db.consentimientos??=[];
+  const guardarDemo=()=>localStorage.setItem(claveDemo,JSON.stringify(db));
+  let correoRegistroId=null;
+  if(!guardado)guardarDemo();
+  let mesaActualId=db.mesas.find(m=>m.eventoId===db.eventoActivoId)?.id;
+  const eventoActivo=()=>db.eventos.find(e=>e.id===db.eventoActivoId);
+  const registrosMesa=mesa=>db.registros.filter(r=>r.mesaId===mesa.id&&r.estado==='activo');
+  const mostrarAviso=mensaje=>{const el=document.getElementById('toast');el.textContent=mensaje;el.classList.add('ver');clearTimeout(mostrarAviso.timer);mostrarAviso.timer=setTimeout(()=>el.classList.remove('ver'),3200)};
+  const errorFormulario=(id,mensaje)=>{const el=document.getElementById(id);el.textContent=mensaje;el.classList.add('error')};
+  const limpiarAviso=id=>{const el=document.getElementById(id);el.textContent='';el.classList.remove('error')};
+  function abrirCorreo(registroId){
+    const registro=db.registros.find(r=>r.id===registroId&&r.estado==='activo');
+    const pase=registro&&db.pases.find(p=>p.registroId===registro.id&&p.estado!=='revocado'&&p.estado!=='usado');
+    const evento=registro&&db.eventos.find(ev=>ev.id===registro.eventId);
+    if(!registro||!pase||!evento){mostrarAviso('No se encontró un pase activo para mostrar.');return}
+    correoRegistroId=registro.id;
+    const fecha=new Date(`${evento.fecha}T12:00:00`).toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('email-para').textContent=registro.correo;
+    const activado=Boolean(pase.privacidadAceptadaAt);
+    document.getElementById('email-asunto').textContent=activado?`Tu pase para ${evento.nombre} está listo`:`Tienes un lugar reservado para ${evento.nombre}`;
+    document.getElementById('email-saludo').textContent=activado?`¡Te esperamos, ${registro.nombre}!`:`Tienes un lugar reservado, ${registro.nombre}`;
+    document.getElementById('email-intro').textContent=`La asistente registró un lugar para ti en ${evento.nombre}. Confirma tus datos y preferencias para activar tu pase.`;
+    document.getElementById('email-nombre').textContent=`${registro.nombre} ${registro.apellidos}`;
+    document.getElementById('email-evento').textContent=evento.nombre;
+    document.getElementById('email-fecha').textContent=`${fecha} · ${evento.hora} h`;
+    document.getElementById('email-sede').textContent=evento.sede;
+    document.getElementById('email-folio').textContent=registro.folio;
+    document.getElementById('email-qr').innerHTML=document.getElementById('qr').innerHTML;
+    document.getElementById('activacion-nombre').textContent=`${registro.nombre} ${registro.apellidos}`;
+    document.getElementById('activacion-telefono').value=db.personas.find(p=>p.id===registro.personaId)?.telefono||'';
+    document.getElementById('consent-privacidad').checked=false;
+    document.getElementById('consent-whatsapp-evento').checked=false;
+    document.getElementById('consent-email-campanas').checked=false;
+    document.getElementById('consent-whatsapp-campanas').checked=false;
+    document.getElementById('activacion-error').textContent='';
+    document.getElementById('email-etapa-activacion').hidden=activado;
+    document.getElementById('email-etapa-consentimiento').hidden=true;
+    document.getElementById('email-etapa-pase').hidden=!activado;
+    document.getElementById('email-reenviar').hidden=!activado;
+    document.getElementById('dlg-email').showModal();
+  }
+  const dlgEmail=document.getElementById('dlg-email');
+  document.getElementById('email-cerrar').addEventListener('click',()=>dlgEmail.close());
+  dlgEmail.addEventListener('click',e=>{if(e.target===dlgEmail)dlgEmail.close()});
+  document.getElementById('email-abrir-pase').addEventListener('click',e=>{
+    e.preventDefault();
+    const registro=db.registros.find(r=>r.id===correoRegistroId&&r.estado==='activo');
+    const pase=registro&&db.pases.find(p=>p.registroId===registro.id&&p.estado==='activacion_pendiente');
+    if(!pase||!registro){dlgEmail.close();mostrarAviso('El enlace de activación ya no está disponible.');return}
+    document.getElementById('email-etapa-activacion').hidden=true;
+    document.getElementById('email-etapa-consentimiento').hidden=false;
+    document.getElementById('email-etapa-pase').hidden=true;
+    document.getElementById('email-reenviar').hidden=true;
+    document.getElementById('email-asunto').textContent='Activación segura de tu pase · '+registro.folio;
+  });
+  document.getElementById('form-activacion').addEventListener('submit',e=>{
+    e.preventDefault();
+    const error=document.getElementById('activacion-error');
+    const privacidad=document.getElementById('consent-privacidad').checked;
+    const whatsappEvento=document.getElementById('consent-whatsapp-evento').checked;
+    const emailCampanas=document.getElementById('consent-email-campanas').checked;
+    const whatsappCampanas=document.getElementById('consent-whatsapp-campanas').checked;
+    const telefono=document.getElementById('activacion-telefono').value.trim();
+    const usaWhatsApp=whatsappEvento||whatsappCampanas;
+    if(!privacidad){error.textContent='Acepta el aviso de privacidad para activar tu pase.';return}
+    if(usaWhatsApp&&telefono.replace(/\D/g,'').length<10){error.textContent='Ingresa un celular válido para recibir mensajes por WhatsApp.';return}
+    const registro=db.registros.find(r=>r.id===correoRegistroId&&r.estado==='activo');
+    const pase=registro&&db.pases.find(p=>p.registroId===registro.id&&p.estado==='activacion_pendiente');
+    if(!registro||!pase){error.textContent='El pase ya no está disponible. Cierra esta ventana y contacta a UKA.';return}
+    const ahora=new Date().toISOString();
+    const persona=db.personas.find(p=>p.id===registro.personaId);
+    if(persona&&telefono)persona.telefono=telefono.replace(/\D/g,'');
+    const registrar=(canal,finalidad,aceptado,version)=>db.consentimientos.push({id:idNuevo(),personaId:registro.personaId,registroId:registro.id,eventId:registro.eventId,canal,finalidad,aceptado,versionTexto:version,registradoAt:ahora,fuente:'activacion_pase'});
+    registrar('aviso_privacidad','gestion_acceso_evento',true,'aviso-uka-v1');
+    registrar('whatsapp','logistica_evento',whatsappEvento,'preferencia-uka-v1');
+    registrar('email','campanas_uka',emailCampanas,'preferencia-uka-v1');
+    registrar('whatsapp','campanas_uka',whatsappCampanas,'preferencia-uka-v1');
+    pase.privacidadAceptadaAt=ahora;
+    pase.estado='enviado';
+    pase.enviadoAt=ahora;
+    try{guardarDemo()}catch(err){error.textContent=`No se pudo guardar la activación: ${err.message}`;return}
+    document.getElementById('email-etapa-consentimiento').hidden=true;
+    document.getElementById('email-etapa-pase').hidden=false;
+    document.getElementById('email-reenviar').hidden=false;
+    document.getElementById('email-asunto').textContent=`Tu pase para ${eventoActivo()?.nombre||'la gala'} está listo · ${registro.folio}`;
+    pintarMesa();pintarInvitados();
+  });
+  document.getElementById('email-reenviar').addEventListener('click',()=>{
+    const pase=db.pases.find(p=>p.registroId===correoRegistroId&&p.estado==='enviado');
+    if(!pase){mostrarAviso('El pase ya no está activo.');return}
+    pase.enviadoAt=new Date().toISOString();
+    try{guardarDemo()}catch(error){mostrarAviso(`No se pudo registrar el reenvío: ${error.message}`);return}
+    mostrarAviso('Reenvío simulado. No se envió un correo real.');
+  });
+  function cambiarAdmin(vista){
+    document.querySelectorAll('#admin [data-admin-vista]').forEach(el=>el.hidden=el.dataset.adminVista!==vista);
+    document.querySelectorAll('[data-admin-tab]').forEach(el=>el.classList.toggle('on',el.dataset.adminTab===vista));
+    document.getElementById('admin-movil').value=vista;
+    if(vista==='invitados')document.getElementById('inv-lista').scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  document.querySelectorAll('[data-admin-tab]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();cambiarAdmin(a.dataset.adminTab)}));
+  document.getElementById('admin-movil').addEventListener('change',e=>cambiarAdmin(e.target.value));
+  function pintarEventos(){
+    const lista=document.getElementById('eventos-lista');
+    const selector=document.getElementById('evento-activo');
+    const evento=eventoActivo();
+    selector.innerHTML=db.eventos.map(ev=>`<option value="${seguroHtml(ev.id)}">${seguroHtml(ev.nombre)} · ${seguroHtml(ev.fecha)}</option>`).join('');
+    selector.value=db.eventoActivoId;
+    lista.innerHTML=db.eventos.map(ev=>`<div class="evento-item"><div><b>${seguroHtml(ev.nombre)}${ev.id===db.eventoActivoId?' · Activo':''}</b><small>${seguroHtml(ev.fecha)} · ${seguroHtml(ev.hora)} · ${seguroHtml(ev.sede)} · Aforo ${ev.aforo} · $${Number(ev.cuota).toLocaleString('es-MX')} MXN · ${seguroHtml(ev.modalidad)}</small></div><button class="btn btn-borde btn-sm" type="button" data-activar-evento="${seguroHtml(ev.id)}">${ev.id===db.eventoActivoId?'Evento activo':'Seleccionar'}</button></div>`).join('');
+    document.getElementById('admin-evento-nombre').textContent=evento?.nombre||'Sin evento activo';
+    document.getElementById('admin-evento-resumen').textContent=evento?`${evento.sede} · ${evento.fecha} · Actualizado ahora`:'Selecciona o crea un evento';
+  }
+  function pintarMesas(){
+    const evento=eventoActivo();
+    const mesas=db.mesas.filter(m=>m.eventoId===db.eventoActivoId);
+    const asignados=mesas.reduce((s,m)=>s+m.lugares,0);
+    document.getElementById('aforo-disponible').textContent=evento?`${Math.max(0,evento.aforo-asignados)} de ${evento.aforo}`:'Sin evento activo';
+    document.getElementById('mesas-cuerpo').innerHTML=mesas.map(m=>{
+      const avance=registrosMesa(m).length, porcentaje=Math.min(100,Math.round(avance/m.lugares*100));
+      return `<tr><td data-label="Empresa"><b>${seguroHtml(m.empresa)}</b><br><span class="liga-corta">${seguroHtml(m.prefijo)}</span></td><td data-label="Contacto">${seguroHtml(m.contacto)}<br><small>${seguroHtml(m.correo)}</small></td><td data-label="Avance"><div class="barra-mesa" aria-label="${avance} de ${m.lugares} lugares"><i style="width:${porcentaje}%"></i></div><small>${avance}/${m.lugares}</small></td><td data-label="Liga privada"><span class="liga-corta">/mesa/${seguroHtml(m.token.slice(0,8))}…</span></td><td data-label="Acciones"><div class="acciones-tabla"><button type="button" class="btn btn-borde btn-sm" data-recordar="${seguroHtml(m.id)}">Recordar</button><button type="button" class="btn btn-azul btn-sm" data-abrir-mesa="${seguroHtml(m.id)}">Abrir liga</button></div></td></tr>`;
+    }).join('');
+    if(!mesas.length)document.getElementById('mesas-cuerpo').innerHTML='<tr><td colspan="5" data-label="Mesas">No hay mesas para este evento.</td></tr>';
+  }
+  function pintarMesa(){
+    let mesa=db.mesas.find(m=>m.id===mesaActualId&&m.eventoId===db.eventoActivoId);
+    if(!mesa)mesa=db.mesas.find(m=>m.eventoId===db.eventoActivoId);
+    if(!mesa){
+      mesaActualId=undefined;
+      document.getElementById('mesa-titulo').textContent='No hay mesas para este evento';
+      document.getElementById('mesa-saludo').textContent='La liga aparecerá cuando Administración registre una compra de accesos.';
+      document.getElementById('mesa-conteo').textContent='0 lugares registrados';
+      document.getElementById('mesa-barra').style.width='0%';
+      document.getElementById('mesa-asientos').innerHTML='';
+      return;
+    }
+    mesaActualId=mesa.id;
+    const registros=registrosMesa(mesa), pct=Math.round(registros.length/mesa.lugares*100);
+    document.getElementById('mesa-titulo').textContent=`Mesa ${mesa.empresa} · ${mesa.lugares} lugares`;
+    document.getElementById('mesa-saludo').textContent=`Hola, ${mesa.contacto}. Completa los datos de cada invitado cuando te sea conveniente.`;
+    document.getElementById('mesa-conteo').textContent=`${registros.length} de ${mesa.lugares} lugares registrados`;
+    document.getElementById('mesa-barra').style.width=`${pct}%`;
+    document.getElementById('mesa-url').innerHTML=`<b>registro.unkilodeayuda.org.mx</b>/mesa/${seguroHtml(mesa.token)}`;
+    document.getElementById('mesa-asientos').innerHTML=Array.from({length:mesa.lugares},(_,i)=>{
+      const asiento=i+1,r=registros.find(reg=>reg.asiento===asiento);
+      if(!r)return `<article class="asiento"><div class="asiento-num">Lugar ${String(asiento).padStart(2,'0')} · ${seguroHtml(mesa.prefijo)}-${String(asiento).padStart(2,'0')}</div><form class="admin-form" data-registro-mesa="${seguroHtml(mesa.id)}" data-asiento="${asiento}"><div class="campo"><label>Nombre(s)</label><input name="nombre" autocomplete="given-name" required></div><div class="campo"><label>Apellidos</label><input name="apellidos" autocomplete="family-name" required></div><div class="campo"><label>Correo electrónico</label><input name="correo" type="email" autocomplete="email" required></div>      <div class="acciones-form"><button class="btn btn-azul btn-sm" type="submit">Registrar y enviar activación</button></div></form></article>`;
+      const pase=db.pases.find(p=>p.registroId===r.id&&p.estado!=='revocado');
+      const estadoPase=pase?.privacidadAceptadaAt?'Pase enviado':'Activación pendiente';
+      return `<article class="asiento"><div class="asiento-num">Lugar ${String(asiento).padStart(2,'0')}</div><div class="asiento-lleno"><div><b>${seguroHtml(r.nombre)} ${seguroHtml(r.apellidos)}</b><span>${seguroHtml(r.correo)}</span><span class="folio-t">${seguroHtml(r.folio)} · ${estadoPase}</span></div><div class="acciones-tabla"><button class="btn btn-borde btn-sm" type="button" data-abrir-correo="${seguroHtml(r.id)}">Ver correo</button><button class="btn btn-borde btn-sm" type="button" data-cambiar-invitado="${seguroHtml(r.id)}">Cambiar invitado</button></div></div></article>`;
+    }).join('');
+  }
+  document.getElementById('evento-activo').addEventListener('change',e=>{db.eventoActivoId=e.target.value;mesaActualId=db.mesas.find(m=>m.eventoId===db.eventoActivoId)?.id;guardarDemo();pintarEventos();pintarMesas();pintarMesa();pintarInvitados()});
+  document.getElementById('eventos-lista').addEventListener('click',e=>{
+    const boton=e.target.closest('[data-activar-evento]');if(!boton)return;
+    db.eventoActivoId=boton.dataset.activarEvento;mesaActualId=db.mesas.find(m=>m.eventoId===db.eventoActivoId)?.id;guardarDemo();pintarEventos();pintarMesas();pintarMesa();pintarInvitados();
+  });
+  document.getElementById('form-evento').addEventListener('submit',e=>{
+    e.preventDefault();limpiarAviso('evento-msg');
+    const f=new FormData(e.currentTarget),aforo=Number(f.get('aforo')),cuota=Number(f.get('cuota')),acompanantes=Number(f.get('acompanantes'));
+    if(!Number.isInteger(aforo)||aforo<1||cuota<0||!Number.isInteger(acompanantes)||acompanantes<0){errorFormulario('evento-msg','Verifica aforo, cuota y acompañantes.');return}
+    const nuevo={id:idNuevo(),nombre:String(f.get('nombre')).trim(),fecha:f.get('fecha'),hora:f.get('hora'),sede:String(f.get('sede')).trim(),aforo,cuota,acompanantes,modalidad:f.get('modalidad')};
+    if(!nuevo.nombre||!nuevo.sede){errorFormulario('evento-msg','Nombre y sede son obligatorios.');return}
+    db.eventos.push(nuevo);db.eventoActivoId=nuevo.id;
+    try{guardarDemo()}catch(error){errorFormulario('evento-msg',`No se pudo guardar el evento: ${error.message}`);return}
+    e.currentTarget.reset();mesaActualId=db.mesas.find(m=>m.eventoId===db.eventoActivoId)?.id;pintarEventos();pintarMesas();pintarMesa();pintarInvitados();
+  });
+  document.getElementById('form-mesa').addEventListener('submit',e=>{
+    e.preventDefault();limpiarAviso('mesa-msg');
+    const evento=eventoActivo(),f=new FormData(e.currentTarget),lugares=Number(f.get('lugares'));
+    if(!evento){errorFormulario('mesa-msg','Primero crea o selecciona un evento.');return}
+    const asignados=db.mesas.filter(m=>m.eventoId===evento.id).reduce((s,m)=>s+m.lugares,0);
+    if(!Number.isInteger(lugares)||lugares<1){errorFormulario('mesa-msg','Ingresa un número válido de lugares.');return}
+    if(asignados+lugares>evento.aforo){errorFormulario('mesa-msg',`El aforo es ${evento.aforo}; quedan ${Math.max(0,evento.aforo-asignados)} lugares disponibles.`);return}
+    const prefijo=String(f.get('prefijo')).trim().toUpperCase();
+    if(!/^[A-Z0-9-]+$/.test(prefijo)){errorFormulario('mesa-msg','El prefijo solo puede incluir letras, números y guiones.');return}
+    if(db.mesas.some(m=>m.eventoId===evento.id&&m.prefijo.toUpperCase()===prefijo)){errorFormulario('mesa-msg','Ese prefijo ya está reservado para otra mesa de este evento.');return}
+    db.mesas.push({id:idNuevo(),eventoId:evento.id,empresa:String(f.get('empresa')).trim(),contacto:String(f.get('contacto')).trim(),correo:String(f.get('correo')).trim(),lugares,limite:f.get('limite'),prefijo,token:tokenAleatorio()});
+    try{guardarDemo()}catch(error){errorFormulario('mesa-msg',`No se pudo guardar la mesa: ${error.message}`);return}
+    e.currentTarget.reset();pintarMesas();pintarMesa();
+  });
+  document.getElementById('mesas-cuerpo').addEventListener('click',e=>{
+    const recordar=e.target.closest('[data-recordar]'),abrir=e.target.closest('[data-abrir-mesa]');
+    if(recordar){const mesa=db.mesas.find(m=>m.id===recordar.dataset.recordar);mostrarAviso(`Recordatorio listo para ${mesa.contacto} · ${mesa.correo}.`)}
+    if(abrir){mesaActualId=abrir.dataset.abrirMesa;pintarMesa();ir('mesa')}
+  });
+  document.getElementById('reiniciar-demo').addEventListener('click',()=>{
+    if(!confirm('¿Reiniciar los datos locales de la demostración?'))return;
+    db=crearDemo();mesaActualId=db.mesas[0]?.id;guardarDemo();pintarEventos();pintarMesas();pintarMesa();pintarInvitados();mostrarAviso('Demostración reiniciada.');
+  });
+  document.getElementById('mesa-asientos').addEventListener('submit',e=>{
+    const form=e.target.closest('[data-registro-mesa]');if(!form)return;
+    e.preventDefault();
+    const mesa=db.mesas.find(m=>m.id===form.dataset.registroMesa),asiento=Number(form.dataset.asiento);
+    if(!mesa||registrosMesa(mesa).some(r=>r.asiento===asiento)){mostrarAviso('Ese lugar ya fue ocupado. Actualiza la liga.');pintarMesa();return}
+    if(registrosMesa(mesa).length>=mesa.lugares){mostrarAviso('La mesa ya alcanzó el número de lugares comprados.');return}
+    const datos=new FormData(form),correo=String(datos.get('correo')).trim().toLowerCase();
+    if(db.registros.some(r=>r.eventId===mesa.eventoId&&r.estado==='activo'&&r.correo.toLowerCase()===correo)){mostrarAviso('Ese correo ya tiene un lugar activo en este evento.');return}
+    const previos=db.registros.filter(r=>r.mesaId===mesa.id&&r.asiento===asiento).length;
+    const folio=`${mesa.prefijo}-${String(asiento).padStart(2,'0')}${previos?`-${previos+1}`:''}`;
+    const registro={id:idNuevo(),mesaId:mesa.id,eventId:mesa.eventoId,asiento,nombre:String(datos.get('nombre')).trim(),apellidos:String(datos.get('apellidos')).trim(),correo,folio,estado:'activo'};
+    if(!registro.nombre||!registro.apellidos||!correo){mostrarAviso('Completa nombre, apellidos y correo.');return}
+    let persona=db.personas.find(p=>p.correo.toLowerCase()===correo);
+    if(persona){persona.nombre=registro.nombre;persona.apellidos=registro.apellidos}
+    else{persona={id:idNuevo(),nombre:registro.nombre,apellidos:registro.apellidos,correo};db.personas.push(persona)}
+    registro.personaId=persona.id;
+    db.registros.push(registro);
+    db.pases.push({id:idNuevo(),registroId:registro.id,eventId:mesa.eventoId,token:tokenAleatorio(),estado:'activacion_pendiente',correoActivacionEnviadoAt:new Date().toISOString(),enviadoAt:null,privacidadAceptadaAt:null});
+    try{guardarDemo()}catch(error){mostrarAviso(`No se pudo guardar el registro: ${error.message}`);return}
+    pintarMesa();pintarMesas();pintarInvitados();abrirCorreo(registro.id);
+  });
+  document.getElementById('mesa-asientos').addEventListener('click',e=>{
+    const cambiar=e.target.closest('[data-cambiar-invitado]'),abrir=e.target.closest('[data-abrir-correo]');
+    if(cambiar){
+      const registro=db.registros.find(r=>r.id===cambiar.dataset.cambiarInvitado);
+      if(!confirm(`¿Anular el pase de ${registro.nombre} ${registro.apellidos} y liberar este lugar?`))return;
+      registro.estado='anulado';
+      db.pases.filter(p=>p.registroId===registro.id).forEach(p=>p.estado='revocado');
+      try{guardarDemo()}catch(error){mostrarAviso(`No se pudo actualizar el pase: ${error.message}`);return}
+      pintarMesa();pintarMesas();pintarInvitados();mostrarAviso(`Pase ${registro.folio} anulado; el lugar quedó libre.`);
+    }
+    if(abrir){
+      abrirCorreo(abrir.dataset.abrirCorreo);
+    }
+  });
+
+  // QR ilustrativo (patrón pseudoaleatorio con marcas de posición; no es un QR real)
+  (function(){
+    const n=29, svg=document.getElementById('qr'); let s=7; const r=()=>((s=(s*9301+49297)%233280)/233280);
+    let out='';
+    const marca=(x,y)=>{for(let i=0;i<7;i++)for(let j=0;j<7;j++){const borde=i===0||i===6||j===0||j===6, centro=i>=2&&i<=4&&j>=2&&j<=4;if(borde||centro)out+=`<rect x="${x+i}" y="${y+j}" width="1" height="1"/>`;}};
+    const enMarca=(x,y)=>(x<8&&y<8)||(x>n-9&&y<8)||(x<8&&y>n-9);
+    for(let x=0;x<n;x++)for(let y=0;y<n;y++)if(!enMarca(x,y)&&r()>.52)out+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;
+    marca(0,0);marca(n-7,0);marca(0,n-7);
+    svg.innerHTML=`<g fill="#141416">${out}</g>`;
+  })();
+
+  // Estados del check-in
+  const estados={
+    ok:{c:'r-ok',i:'i-check',t:'Acceso permitido',p:'<b>María González</b> · UKA-0127',h:'Registrado a las 20:14 h'},
+    usado:{c:'r-usado',i:'i-alerta',t:'Pase ya utilizado',p:'<b>María González</b> · UKA-0127',h:'Ingresó 20:14 h · Fila A (Lucero León)'},
+    invalido:{c:'r-invalido',i:'i-x',t:'Pase inválido',p:'Código no reconocido o revocado',h:'Enviar a mesa de incidencias'}
+  };
+  document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===ch));
+    const e=estados[ch.dataset.e], res=document.getElementById('res');
+    res.className='res '+e.c;
+    res.innerHTML=`<div class="ic"><svg class="ico"><use href="#${e.i}"/></svg></div><div><h4>${e.t}</h4><p>${e.p}</p><p>${e.h}</p></div>`;
+    if(ch.dataset.e==='ok'){
+      const mesa=db.mesas.find(m=>m.eventoId===db.eventoActivoId);
+      const registro=mesa&&db.registros.find(r=>r.mesaId===mesa.id&&r.estado==='activo'&&db.pases.some(p=>p.registroId===r.id&&p.estado==='enviado'&&p.privacidadAceptadaAt)&&!db.checkins.some(c=>c.registroId===r.id));
+      const porActivar=mesa&&db.registros.find(r=>r.mesaId===mesa.id&&r.estado==='activo'&&db.pases.some(p=>p.registroId===r.id&&p.estado==='activacion_pendiente'));
+      if(!registro&&porActivar){
+        res.className='res r-usado';
+        res.innerHTML=`<div class="ic"><svg class="ico"><use href="#i-alerta"/></svg></div><div><h4>Pase pendiente de activar</h4><p><b>${seguroHtml(porActivar.nombre)} ${seguroHtml(porActivar.apellidos)}</b> · ${seguroHtml(porActivar.folio)}</p><p>El invitado debe aceptar el aviso de privacidad desde su enlace antes de hacer check-in.</p></div>`;
+        return;
+      }
+      if(registro){
+        const previos=db.checkins.filter(c=>c.eventId===registro.eventId).map(c=>Number(c.folioRifa.slice(2))).filter(Number.isFinite);
+        let numero=Math.max(0,...previos)+1;
+        while(db.checkins.some(c=>c.eventId===registro.eventId&&c.folioRifa===`R-${String(numero).padStart(4,'0')}`))numero++;
+        const folioRifa=`R-${String(numero).padStart(4,'0')}`;
+        db.checkins.push({id:idNuevo(),registroId:registro.id,eventId:registro.eventId,folioRifa,checkinAt:new Date().toISOString()});
+        const pase=db.pases.find(p=>p.registroId===registro.id&&p.estado==='enviado');if(pase)pase.estado='usado';
+        guardarDemo();
+        res.innerHTML=`<div class="ic"><svg class="ico"><use href="#i-check"/></svg></div><div><h4>Acceso permitido</h4><p><b>${seguroHtml(registro.nombre)} ${seguroHtml(registro.apellidos)}</b> · ${seguroHtml(registro.folio)}</p><p>Rifa ${folioRifa} · Registrado ahora</p></div>`;
+        pintarInvitados();
+      }
+    }
+  });
+
+  // Gráfica de ingresos (una serie, barras con extremo redondeado y tooltip)
+  (function(){
+    const datos=[['18:30',18],['18:45',42],['19:00',71],['19:15',64],['19:30',58],['19:45',39],['20:00',20]];
+    const W=600,H=220,pi=28,ps=20,pb=26, cont=document.getElementById('graf'), tip=document.getElementById('tip');
+    const max=80, ancho=(W-pi)/datos.length, bw=Math.min(44,ancho-16), y=v=>H-pb-(v/max)*(H-pb-ps);
+    let g='';
+    [0,20,40,60,80].forEach(t=>{g+=`<line x1="${pi}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="${t?'#2A2A30':'#45454D'}"/><text class="eje" x="${pi-8}" y="${y(t)+4}" text-anchor="end">${t}</text>`});
+    const pico=datos.reduce((a,b)=>b[1]>a[1]?b:a);
+    datos.forEach(([h,v],i)=>{
+      const cx=pi+ancho*i+ancho/2, x=cx-bw/2, top=y(v), base=y(0), rr=4;
+      const path=`M${x},${base}V${top+rr}Q${x},${top} ${x+rr},${top}H${x+bw-rr}Q${x+bw},${top} ${x+bw},${top+rr}V${base}Z`;
+      g+=`<g class="col" tabindex="0" data-h="${h}" data-v="${v}" data-x="${cx}" data-y="${top}" aria-label="${h}: ${v} ingresos">
+        <rect class="hit" x="${pi+ancho*i}" y="${ps}" width="${ancho}" height="${H-pb-ps}"/>
+        <path class="barra" d="${path}"/>
+        ${h===pico[0]?`<text class="val" x="${cx}" y="${top-7}" text-anchor="middle">${v}</text>`:''}
+        <text class="eje" x="${cx}" y="${H-6}" text-anchor="middle">${h}</text></g>`;
+    });
+    cont.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos cada 15 minutos; máximo ${pico[1]} a las ${pico[0]}">${g}</svg>`);
+    const svg=cont.querySelector('svg');
+    const sumar=h=>{let[a,b]=h.split(':').map(Number);b+=15;if(b>=60){a++;b-=60}return `${a}:${String(b).padStart(2,'0')}`};
+    const mostrar=el=>{const k=svg.clientWidth/W, ky=svg.clientHeight/H;
+      tip.innerHTML=`<b>${el.dataset.v} ingresos</b>${el.dataset.h} – ${sumar(el.dataset.h)} h`;
+      tip.style.left=el.dataset.x*k+'px'; tip.style.top=(el.dataset.y*ky-10)+'px'; tip.style.opacity=1;};
+    const ocultar=()=>tip.style.opacity=0;
+    svg.querySelectorAll('g.col').forEach(el=>{el.addEventListener('mouseenter',()=>mostrar(el));el.addEventListener('focus',()=>mostrar(el));el.addEventListener('mouseleave',ocultar);el.addEventListener('blur',ocultar)});
+  })();
+
+  // Tabla de invitados con filtro por evento y mesa.
+  const filasBase=[
+    ['María González','maria@ejemplo.com','UKA-0127','—','—','ok','20:14','Lucero León','a'],
+    ['Jorge Ramírez','jorge@ejemplo.com','UKA-0128','—','—','ok','20:14','Ricardo Larios','b'],
+    ['Ana Torres','ana@ejemplo.org','UKA-0045','—','Fundación Ejemplo','pend','—','—','a'],
+    ['Carlos Méndez','carlos@ejemplo.mx','UKA-0302','—','Empresa Ejemplo','inc','20:09','Myranda Cruz','b'],
+    ['Lucía Herrera','lucia@ejemplo.com','UKA-0211','—','—','ok','20:02','Diana Gómez','a'],
+    ['Roberto Silva','roberto@ejemplo.mx','UKA-0390','—','Empresa Ejemplo','pend','—','—','b']
+  ];
+  const av={a:'background:var(--amarillo-100);color:var(--amarillo-texto)',b:'background:var(--azul-100);color:var(--azul-800)'};
+  const est={ok:['e-ok','i-check','Ingresado'],pend:['e-pend','i-reloj','Pendiente'],inc:['e-inc','i-alerta','Incidencia']};
+  const ini=n=>n.split(' ').map(p=>p[0]).slice(0,2).join('');
+  const cuerpoInvitados=document.getElementById('t-cuerpo'), qInvitados=document.getElementById('t-buscar'), estadoInvitados=document.getElementById('t-estado'), mesaInvitados=document.getElementById('t-mesa');
+  function pintarInvitados(){
+    const mesas=db.mesas.filter(m=>m.eventoId===db.eventoActivoId);
+    mesaInvitados.innerHTML='<option value="">Todas las empresas / mesas</option>'+mesas.map(m=>`<option value="${seguroHtml(m.id)}">${seguroHtml(m.empresa)} · ${seguroHtml(m.prefijo)}</option>`).join('');
+    const corporativos=db.registros.filter(r=>r.eventId===db.eventoActivoId&&r.estado==='activo').map(r=>{
+      const mesa=db.mesas.find(m=>m.id===r.mesaId), checkin=db.checkins.find(c=>c.registroId===r.id);
+      return [`${r.nombre} ${r.apellidos}`,r.correo,r.folio,mesa?`${mesa.empresa} · ${mesa.prefijo}`:'—','—',checkin?'ok':'pend',checkin?new Date(checkin.checkinAt).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'—','—',mesa?.id||'', 'a'];
+    });
+    const filas=[...filasBase,...corporativos], termino=qInvitados.value.trim().toLowerCase(), estado=estadoInvitados.value, mesaId=mesaInvitados.value;
+    const visibles=filas.filter(f=>(!estado||f[5]===estado)&&(!mesaId||f[8]===mesaId)&&(!termino||[f[0],f[2],f[3],f[4]].join(' ').toLowerCase().includes(termino)));
+    cuerpoInvitados.innerHTML=visibles.map(f=>{const s=est[f[5]];return `<tr>
+      <td data-label="Invitado"><div class="persona"><span class="av" style="${av[f[9]]}">${seguroHtml(ini(f[0]))}</span><div><b>${seguroHtml(f[0])}</b><span>${seguroHtml(f[1])}</span></div></div></td>
+      <td data-label="Folio" class="folio-t">${seguroHtml(f[2])}</td><td data-label="Empresa / mesa">${seguroHtml(f[3])}</td><td data-label="Organización">${seguroHtml(f[4])}</td>
+      <td data-label="Estado"><span class="estado ${s[0]}"><svg class="ico"><use href="#${s[1]}"/></svg>${s[2]}</span></td>
+      <td data-label="Hora">${seguroHtml(f[6])}</td><td data-label="Operador">${seguroHtml(f[7])}</td></tr>`}).join('');
+    document.getElementById('t-vacio').style.display=visibles.length?'none':'block';
+    document.getElementById('t-cuenta').textContent=`Mostrando ${visibles.length} de ${filas.length}`;
+  }
+  qInvitados.addEventListener('input',pintarInvitados);
+  estadoInvitados.addEventListener('change',pintarInvitados);
+  mesaInvitados.addEventListener('change',pintarInvitados);
+  pintarEventos();pintarMesas();pintarMesa();pintarInvitados();
+  // ===== Calendario y Wallet =====
+  (function(){
+    const EV={
+      titulo:'Gala Un Kilo de Ayuda · 40 años',
+      lugar:'Jardín Santa Fe, Ciudad de México',
+      detalle:'Recepción 6:30 p.m. · Programa 7:00 p.m.\nPase: UKA-0127 (presenta tu código QR en la recepción).\nInformes: eventos@unkilodeayuda.org.mx · 55 10 52 65 53\nCómo llegar: https://maps.app.goo.gl/jC9Bp9VcovhGRmPc9',
+      // 11 feb 2027, 18:30–23:00 hora de Ciudad de México (UTC-6). La hora de término es un supuesto.
+      inicioUTC:'20270212T003000Z', finUTC:'20270212T050000Z',
+      inicioLocal:'2027-02-11T18:30:00-06:00', finLocal:'2027-02-11T23:00:00-06:00'
+    };
+    const e=encodeURIComponent;
+    document.getElementById('cal-google').href='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+e(EV.titulo)+'&dates='+EV.inicioUTC+'/'+EV.finUTC+'&details='+e(EV.detalle)+'&location='+e(EV.lugar)+'&ctz=America/Mexico_City';
+    document.getElementById('cal-outlook').href='https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject='+e(EV.titulo)+'&startdt='+e(EV.inicioLocal)+'&enddt='+e(EV.finLocal)+'&location='+e(EV.lugar)+'&body='+e(EV.detalle);
+
+    const toast=document.getElementById('toast'); let tt;
+    const avisar=m=>{toast.textContent=m;toast.classList.add('ver');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('ver'),3200)};
+
+    // Archivo .ics (RFC 5545) generado en el navegador
+    const esc=s=>s.replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+    const doblar=l=>{const out=[];while(l.length>60){out.push(l.slice(0,60));l=' '+l.slice(60)}out.push(l);return out.join('\r\n')};
+    document.getElementById('cal-ics').onclick=()=>{
+      const ahora=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+      const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Un Kilo de Ayuda//UKA Eventos//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+        'BEGIN:VEVENT','UID:UKA-0127-gala40@registro.unkilodeayuda.org.mx','DTSTAMP:'+ahora,'DTSTART:'+EV.inicioUTC,'DTEND:'+EV.finUTC,
+        'SUMMARY:'+esc(EV.titulo),'LOCATION:'+esc(EV.lugar),'DESCRIPTION:'+esc(EV.detalle),
+        'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:'+esc('Mañana: '+EV.titulo),'END:VALARM',
+        'END:VEVENT','END:VCALENDAR'].map(doblar).join('\r\n');
+      const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar;charset=utf-8'}));
+      const a=Object.assign(document.createElement('a'),{href:url,download:'gala-uka-40-aniversario.ics'});
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      cerrarMenu();avisar('Archivo de calendario descargado. Ábrelo para agregar el evento.');
+    };
+
+    // Menú desplegable
+    const btn=document.getElementById('btn-cal'), menu=document.getElementById('menu-cal');
+    const cerrarMenu=()=>{menu.hidden=true;btn.setAttribute('aria-expanded','false')};
+    btn.onclick=ev=>{ev.stopPropagation();const abrir=menu.hidden;menu.hidden=!abrir;btn.setAttribute('aria-expanded',abrir);if(abrir)menu.querySelector('[role=menuitem]').focus()};
+    menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',cerrarMenu));
+    document.addEventListener('click',ev=>{if(!menu.hidden&&!menu.contains(ev.target))cerrarMenu()});
+    document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!menu.hidden){cerrarMenu();btn.focus()}});
+
+    // Wallet: vista previa (el pase firmado lo genera el servidor en producción)
+    const dlg=document.getElementById('dlg-wallet');
+    document.getElementById('qr-w').innerHTML=document.getElementById('qr').innerHTML;
+    document.getElementById('btn-wallet').onclick=()=>dlg.showModal();
+    document.getElementById('dlg-cerrar').onclick=()=>dlg.close();
+    dlg.addEventListener('click',ev=>{if(ev.target===dlg)dlg.close()});
+    dlg.querySelectorAll('[data-wallet]').forEach(b=>b.onclick=()=>{dlg.close();avisar(b.dataset.wallet+': en producción se descargará tu pase firmado desde el servidor.')});
+  })();
+</script>
+</body>
+</html>
