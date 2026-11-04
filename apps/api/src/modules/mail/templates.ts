@@ -1,12 +1,43 @@
+import { readFile } from 'node:fs/promises';
 import { PRIVACY_NOTICE_URL } from '@uka/shared';
 import QRCode from 'qrcode';
 import { prisma } from '../../database.js';
 import { groupUrl, passToken, passUrl } from '../passes/tokens.js';
 
+export interface InlineImage {
+  contentId: string;
+  name: string;
+  contentBase64: string;
+}
+
 export interface OutgoingEmail {
   subject: string;
   html: string;
-  inlineImage?: { contentId: string; name: string; contentBase64: string };
+  inlineImages: InlineImage[];
+}
+
+type EmailContent = Omit<OutgoingEmail, 'inlineImages'> & {
+  inlineImages?: InlineImage[];
+};
+
+const LOGO_FILE = new URL('../../../../../img/logo_uka.png', import.meta.url);
+const LOGO_CONTENT_ID = 'uka-logo';
+const LOGO_HEADER = `<img src="cid:${LOGO_CONTENT_ID}" width="120" height="120" alt="Un Kilo de Ayuda" style="display:block;margin:0 0 4px">`;
+const TEXT_HEADER =
+  '<p style="margin:0 0 4px;color:#0077C9;font-size:13px;font-weight:bold">Un Kilo de Ayuda</p>';
+
+/** Se lee en cada envío para que reemplazar el archivo baste para cambiar el logo. */
+async function readLogo(): Promise<InlineImage | null> {
+  try {
+    const file = await readFile(LOGO_FILE);
+    return {
+      contentId: LOGO_CONTENT_ID,
+      name: 'logo_uka.png',
+      contentBase64: file.toString('base64'),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function escapeHtml(value: string): string {
@@ -32,7 +63,7 @@ function layout(title: string, body: string): string {
   return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f5f6f8;font-family:Arial,sans-serif;color:#1c1c1c">
 <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-top:4px solid #FECE00;border-radius:8px">
 <tr><td style="padding:24px 28px">
-<p style="margin:0 0 4px;color:#0077C9;font-size:13px;font-weight:bold">Un Kilo de Ayuda</p>
+${LOGO_HEADER}
 <h1 style="margin:0 0 16px;font-size:21px">${escapeHtml(title)}</h1>
 ${body}
 <p style="margin:24px 0 0;padding-top:14px;border-top:1px solid #e2e4e8;color:#6b6b6b;font-size:12px">
@@ -54,7 +85,7 @@ function button(url: string, label: string): string {
   return `<p style="margin:18px 0"><a href="${url}" style="display:inline-block;padding:11px 18px;background:#0077C9;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></p>`;
 }
 
-async function renderPass(refId: string): Promise<OutgoingEmail | null> {
+async function renderPass(refId: string): Promise<EmailContent | null> {
   const pass = await prisma.pass.findUnique({
     where: { id: refId },
     include: {
@@ -79,11 +110,13 @@ async function renderPass(refId: string): Promise<OutgoingEmail | null> {
   });
   return {
     subject: `Tu pase para ${event.name} (${registration.folio})`,
-    inlineImage: {
-      contentId: 'pase-qr',
-      name: 'pase-qr.png',
-      contentBase64: png.toString('base64'),
-    },
+    inlineImages: [
+      {
+        contentId: 'pase-qr',
+        name: 'pase-qr.png',
+        contentBase64: png.toString('base64'),
+      },
+    ],
     html: layout(
       'Tu pase está listo',
       `<p style="margin:0 0 14px">Hola, ${escapeHtml(guest.firstName)}. Presenta este código QR en la entrada. Es personal: no lo compartas.</p>
@@ -100,9 +133,7 @@ ${button(passUrl(pass.id), 'Ver mi pase')}`,
   };
 }
 
-async function renderOrderPending(
-  refId: string,
-): Promise<OutgoingEmail | null> {
+async function renderOrderPending(refId: string): Promise<EmailContent | null> {
   const order = await prisma.order.findUnique({
     where: { id: refId },
     include: {
@@ -138,7 +169,7 @@ ${instructions}`,
   };
 }
 
-async function renderGroupLink(refId: string): Promise<OutgoingEmail | null> {
+async function renderGroupLink(refId: string): Promise<EmailContent | null> {
   const order = await prisma.order.findUnique({
     where: { id: refId },
     include: { buyer: true, event: true },
@@ -157,11 +188,10 @@ ${button(groupUrl(order.id), 'Registrar invitados')}
   };
 }
 
-/** Devuelve null si el mensaje ya no aplica, por ejemplo si se canceló el pedido. */
-export function renderEmail(
+function renderContent(
   kind: string,
   refId: string,
-): Promise<OutgoingEmail | null> {
+): Promise<EmailContent | null> {
   switch (kind) {
     case 'pass':
       return renderPass(refId);
@@ -172,4 +202,25 @@ export function renderEmail(
     default:
       return Promise.resolve(null);
   }
+}
+
+/** Devuelve null si el mensaje ya no aplica, por ejemplo si se canceló el pedido. */
+export async function renderEmail(
+  kind: string,
+  refId: string,
+): Promise<OutgoingEmail | null> {
+  const content = await renderContent(kind, refId);
+  if (!content) {
+    return null;
+  }
+  const images = content.inlineImages ?? [];
+  const logo = await readLogo();
+  // Sin el archivo, el correo sale igual: no se detiene un pase por una imagen.
+  return logo
+    ? { ...content, inlineImages: [logo, ...images] }
+    : {
+        ...content,
+        html: content.html.replace(LOGO_HEADER, TEXT_HEADER),
+        inlineImages: images,
+      };
 }

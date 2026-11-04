@@ -69,20 +69,14 @@ export const graphTransport: MailTransport = {
             subject: message.subject,
             body: { contentType: 'HTML', content: message.html },
             toRecipients: [{ emailAddress: { address: toEmail } }],
-            ...(message.inlineImage
-              ? {
-                  attachments: [
-                    {
-                      '@odata.type': '#microsoft.graph.fileAttachment',
-                      name: message.inlineImage.name,
-                      contentType: 'image/png',
-                      contentBytes: message.inlineImage.contentBase64,
-                      contentId: message.inlineImage.contentId,
-                      isInline: true,
-                    },
-                  ],
-                }
-              : {}),
+            attachments: message.inlineImages.map((image) => ({
+              '@odata.type': '#microsoft.graph.fileAttachment',
+              name: image.name,
+              contentType: 'image/png',
+              contentBytes: image.contentBase64,
+              contentId: image.contentId,
+              isInline: true,
+            })),
           },
         }),
       },

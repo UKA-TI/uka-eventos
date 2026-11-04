@@ -655,11 +655,24 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('registration and payments', () => {
     expect(pending?.email.html).toContain('&lt;b&gt;de prueba&lt;/b&gt;');
     expect(pending?.email.html).not.toContain('<b>de prueba</b>');
 
-    const passMail = [...sent, ...all].find(({ email }) => email.inlineImage);
-    expect(passMail?.email.html).toContain('cid:pase-qr');
-    expect(passMail?.email.inlineImage?.contentBase64.length).toBeGreaterThan(
-      100,
+    const passMail = [...sent, ...all].find(({ email }) =>
+      email.inlineImages.some((image) => image.contentId === 'pase-qr'),
     );
+    expect(passMail?.email.html).toContain('cid:pase-qr');
+    expect(
+      passMail?.email.inlineImages.find(
+        (image) => image.contentId === 'pase-qr',
+      )?.contentBase64.length,
+    ).toBeGreaterThan(100);
+
+    // Todos llevan el logo incrustado: los correos bloquean imágenes remotas.
+    for (const { email } of [...sent, ...all]) {
+      expect(email.html).toContain('cid:uka-logo');
+      const logo = email.inlineImages.find(
+        (image) => image.contentId === 'uka-logo',
+      );
+      expect(logo?.contentBase64.length).toBeGreaterThan(100);
+    }
 
     const group = [...sent, ...all].find(({ email }) =>
       email.subject.startsWith('Registra a tus invitados'),
