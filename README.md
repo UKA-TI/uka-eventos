@@ -47,6 +47,6 @@ archivos preparados y la CI valida lint, tipos, pruebas y build en los PR a
 
 Los secretos y valores por entorno se configuran mediante variables de entorno;
 no se deben guardar en el repositorio. Antes de desplegar en GoDaddy hay que
-confirmar el propietario del repositorio, la versión y host MySQL de cPanel,
-Remote MySQL, TLS, el origen CORS y la versión de Node.js disponible en el plan.
-Las decisiones pendientes están en `docs/decisiones.md`.
+confirmar la versión y el host MySQL de cPanel, Remote MySQL, TLS, el origen
+CORS y la versión de Node.js disponible en el plan. Las decisiones pendientes
+están en `docs/decisiones.md`.
