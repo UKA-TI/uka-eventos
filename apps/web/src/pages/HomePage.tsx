@@ -54,7 +54,7 @@ export function HomePage() {
                 {active.map((event) => (
                   <li key={event.id}>
                     <span>
-                      <strong>{event.name}</strong>
+                      <Link to={`/eventos/${event.id}`}>{event.name}</Link>
                       <small>
                         {event.startsAt
                           ? new Date(event.startsAt).toLocaleString('es-MX', {

@@ -1,3 +1,4 @@
+import { logoUrl } from '../brand.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
@@ -43,7 +44,7 @@ export function Layout() {
     <div className="shell">
       <aside className={menuOpen ? 'sidebar open' : 'sidebar'}>
         <div className="brand">
-          <img src="/img/logo_uka.png" alt="Un Kilo de Ayuda" />
+          <img src={logoUrl} alt="Un Kilo de Ayuda" />
           <strong>EVENTOS UKA</strong>
         </div>
         <nav aria-label="Navegación principal" onClick={closeMenu}>
@@ -53,6 +54,11 @@ export function Layout() {
           {can('events.view', 'events.create', 'events.edit') && (
             <NavLink className={linkClass} to="/eventos">
               Eventos
+            </NavLink>
+          )}
+          {can('events.view', 'events.create', 'events.edit') && (
+            <NavLink className={linkClass} to="/series">
+              Series
             </NavLink>
           )}
           {(can('users.view', 'users.manage') ||

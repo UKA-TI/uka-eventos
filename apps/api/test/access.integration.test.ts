@@ -8,7 +8,7 @@ import type { MicrosoftIdentity } from '../src/modules/auth/entra.js';
 
 /**
  * Flujo real contra MariaDB (no corre en CI). Ejecutar con:
- *   npm run test:access-integration --workspace @uka/api
+ *   npm run test:db-integration --workspace @uka/api
  */
 const run = randomBytes(4).toString('hex');
 const domain = `${run}.uka.test`;

@@ -68,7 +68,7 @@ npm run build
 Pruebas contra una base migrada, que no corren en CI:
 
 ```powershell
-npm run test:access-integration --workspace @uka/api
+npm run test:db-integration --workspace @uka/api
 npm run test:folio-integration
 ```
 

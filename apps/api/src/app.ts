@@ -14,6 +14,7 @@ import { createAuthRouter } from './modules/auth/auth.js';
 import type { MicrosoftTokenVerifier } from './modules/auth/entra.js';
 import { eventsRouter } from './modules/events/events.js';
 import { rolesRouter } from './modules/roles/roles.js';
+import { seriesRouter } from './modules/series/series.js';
 import { usersRouter } from './modules/users/users.js';
 
 export interface HealthDatabase {
@@ -90,6 +91,7 @@ export function createApp(
 
   app.use('/api/auth', createAuthRouter(options.microsoftVerifier));
   app.use('/api/events', eventsRouter);
+  app.use('/api/series', seriesRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/roles', rolesRouter);
 

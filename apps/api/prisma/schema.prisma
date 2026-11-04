@@ -7,33 +7,91 @@ datasource db {
   provider = "mysql"
 }
 
+model EventSeries {
+  id          String   @id @default(cuid()) @db.VarChar(30)
+  name        String   @unique @db.VarChar(180)
+  type        String   @db.VarChar(60)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  events      Event[]
+
+  @@index([type])
+  @@map("event_series")
+}
+
+model TicketType {
+  id            String         @id @default(cuid()) @db.VarChar(30)
+  eventId       String         @map("event_id") @db.VarChar(30)
+  name          String         @db.VarChar(120)
+  description   String?        @db.VarChar(500)
+  price         Decimal        @default(0) @db.Decimal(10, 2)
+  capacity      Int?           @db.UnsignedInt
+  seatsIncluded Int            @default(1) @map("seats_included") @db.UnsignedInt
+  salesStart    DateTime?      @map("sales_start") @db.DateTime(3)
+  salesEnd      DateTime?      @map("sales_end") @db.DateTime(3)
+  active        Boolean        @default(true)
+  sortOrder     Int            @default(0) @map("sort_order")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.DateTime(3)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+
+  @@unique([eventId, name])
+  @@index([eventId, active])
+  @@map("ticket_types")
+}
+
+model EventFormField {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  eventId   String   @map("event_id") @db.VarChar(30)
+  label     String   @db.VarChar(120)
+  type      String   @db.VarChar(20)
+  required  Boolean  @default(false)
+  options   Json
+  helpText  String?  @map("help_text") @db.VarChar(255)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, sortOrder])
+  @@map("event_form_fields")
+}
+
 model Event {
-  id               String          @id @default(cuid()) @db.VarChar(30)
-  slug             String          @unique @db.VarChar(100)
-  name             String          @db.VarChar(180)
-  description      String?         @db.Text
-  status           String          @default("draft") @db.VarChar(24)
-  startsAt         DateTime?       @map("starts_at") @db.DateTime(3)
-  endsAt           DateTime?       @map("ends_at") @db.DateTime(3)
-  timeZone         String          @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
-  venue            String?         @db.VarChar(180)
-  capacity         Int?            @db.UnsignedInt
-  folioPrefix      String?         @map("folio_prefix") @db.VarChar(3)
-  feeAmount        Decimal?        @map("fee_amount") @db.Decimal(10, 2)
-  currency         String          @default("MXN") @db.Char(3)
-  companionLimit   Int             @default(0) @map("companion_limit") @db.UnsignedInt
-  registrationMode String          @default("individual") @map("registration_mode") @db.VarChar(32)
-  createdAt        DateTime        @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt        DateTime        @updatedAt @map("updated_at") @db.DateTime(3)
-  counters         EventCounter[]
-  groupPurchases   GroupPurchase[]
-  tables           Table[]
-  registrations    Registration[]
-  checkins         Checkin[]
-  accessPoints     AccessPoint[]
-  auditLogs        AuditLog[]
+  id             String           @id @default(cuid()) @db.VarChar(30)
+  seriesId       String           @map("series_id") @db.VarChar(30)
+  editionYear    Int              @map("edition_year") @db.UnsignedSmallInt
+  modules        Json
+  slug           String           @unique @db.VarChar(100)
+  name           String           @db.VarChar(180)
+  description    String?          @db.Text
+  status         String           @default("draft") @db.VarChar(24)
+  startsAt       DateTime?        @map("starts_at") @db.DateTime(3)
+  endsAt         DateTime?        @map("ends_at") @db.DateTime(3)
+  timeZone       String           @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
+  venue          String?          @db.VarChar(180)
+  capacity       Int?             @db.UnsignedInt
+  folioPrefix    String?          @map("folio_prefix") @db.VarChar(3)
+  currency       String           @default("MXN") @db.Char(3)
+  companionLimit Int              @default(0) @map("companion_limit") @db.UnsignedInt
+  createdAt      DateTime         @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.DateTime(3)
+  series         EventSeries      @relation(fields: [seriesId], references: [id])
+  ticketTypes    TicketType[]
+  formFields     EventFormField[]
+  counters       EventCounter[]
+  groupPurchases GroupPurchase[]
+  tables         Table[]
+  registrations  Registration[]
+  checkins       Checkin[]
+  accessPoints   AccessPoint[]
+  auditLogs      AuditLog[]
 
   @@index([status, startsAt])
+  @@index([seriesId, editionYear])
   @@map("events")
 }
 
@@ -97,6 +155,7 @@ model Registration {
   guestId         String         @map("guest_id") @db.VarChar(30)
   groupPurchaseId String?        @map("group_purchase_id") @db.VarChar(30)
   tableId         String?        @map("table_id") @db.VarChar(30)
+  ticketTypeId    String?        @map("ticket_type_id") @db.VarChar(30)
   seatNumber      Int?           @map("seat_number") @db.UnsignedInt
   folio           String         @db.VarChar(16)
   status          String         @default("pending") @db.VarChar(24)
@@ -107,6 +166,7 @@ model Registration {
   guest           Guest          @relation(fields: [guestId], references: [id])
   groupPurchase   GroupPurchase? @relation(fields: [groupPurchaseId], references: [id])
   table           Table?         @relation(fields: [tableId], references: [id])
+  ticketType      TicketType?    @relation(fields: [ticketTypeId], references: [id])
   passes          Pass[]
   consents        Consent[]
 
@@ -115,6 +175,7 @@ model Registration {
   @@index([eventId, status])
   @@index([guestId])
   @@index([tableId])
+  @@index([ticketTypeId])
   @@map("registrations")
 }
 

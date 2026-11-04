@@ -13,6 +13,14 @@ try {
       slug,
       name: 'Folio concurrency integration test',
       status: 'draft',
+      editionYear: 2027,
+      modules: [],
+      series: {
+        connectOrCreate: {
+          where: { name: 'Folio concurrency test series' },
+          create: { name: 'Folio concurrency test series', type: 'Prueba' },
+        },
+      },
       startsAt: new Date('2027-02-12T00:30:00.000Z'),
       folioPrefix: 'TST',
     },
@@ -63,6 +71,9 @@ try {
   if (eventId) {
     await prisma.eventCounter.deleteMany({ where: { eventId } });
     await prisma.event.delete({ where: { id: eventId } });
+    await prisma.eventSeries.deleteMany({
+      where: { name: 'Folio concurrency test series', events: { none: {} } },
+    });
   }
   await prisma.$disconnect();
 }

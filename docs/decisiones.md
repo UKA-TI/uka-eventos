@@ -32,8 +32,8 @@ Decisiones del responsable del proyecto:
 
 | Fase    | Alcance                                                                        | Estado      |
 | ------- | ------------------------------------------------------------------------------ | ----------- |
-| A       | Limpieza, login con Microsoft, perfiles y diseño institucional                 | En revisión |
-| B       | Series y ediciones, módulos activables, tipos de boleto, formulario por evento | Pendiente   |
+| A       | Limpieza, login con Microsoft, perfiles y diseño institucional                 | Terminada   |
+| B       | Series y ediciones, módulos activables, tipos de boleto, formulario por evento | En revisión |
 | C       | Registro público, QR, correo con limitador, pagos manuales                     | Pendiente   |
 | D       | Check-in PWA híbrido, puntos de acceso, incidencias                            | Pendiente   |
 | E       | Contactos, empresas, segmentos, invitaciones, donativos manuales               | Pendiente   |
@@ -55,7 +55,23 @@ Decisiones del responsable del proyecto:
 - **Una sola app de Node:** entrega API e interfaz para compartir origen y simplificar
   el hospedaje.
 - **Migraciones:** se juntaron en `20261104180000_eventos_uka_init`, porque ninguna
-  había llegado a producción.
+  había llegado a producción. Desde la fase B cada cambio es una migración nueva, que
+  conserva los datos existentes.
+- **Series y ediciones:** todo evento pertenece a una serie y tiene un año de edición.
+  Es la base de la comparación año con año de la fase F. El tipo de evento es texto
+  libre con sugerencias, para admitir tipos nuevos sin programar.
+- **Estado de un evento:** se crea como borrador. Para activarlo necesita fecha de
+  inicio, prefijo de folio y al menos un boleto activo, incluso si es gratuito. Un
+  evento activo no puede perder esos requisitos.
+- **Boletos:** reemplazan la cuota por persona. Precio 0 significa gratuito, y un boleto
+  puede incluir varios lugares, como una mesa de 10. Exceder el aforo solo genera un
+  aviso, porque los boletos pueden no venderse todos.
+- **Nueva edición:** copia configuración, boletos y formulario, pero nunca registros ni
+  asistentes. No copia las fechas de venta, porque ya no aplicarían.
+- **Módulos:** se guardan por evento y parten de valores sugeridos según el tipo. En
+  esta fase solo se configuran; sus pantallas llegan en las fases siguientes.
+- **Formulario:** nombre, apellidos, correo y teléfono siempre se piden; cada evento
+  agrega sus propias preguntas.
 - **Correo (fase C):** Microsoft desactiva por defecto el SMTP con contraseña a fines
   de diciembre de 2026, así que el envío debe usar Microsoft Graph con OAuth. Esa parte
   sí requerirá un secreto en el servidor, en un registro separado y limitado al buzón
@@ -69,11 +85,13 @@ Decisiones del responsable del proyecto:
 
 ## Pendientes
 
+- Importar las ventas actuales de la Gala cuando exista el archivo. Sin eso, esos
+  compradores no recibirán su QR.
 - Crear el registro de EVENTOS UKA en Entra ID y probar el login real. Ver
   `docs/microsoft-entra.md`.
 - Primer despliegue en GoDaddy, cuando el flujo local esté aprobado. Ver
   `docs/despliegue-godaddy.md`.
-- Sustituir `apps/web/public/img/logo_uka.png` si se consigue una mejor versión,
+- Sustituir `img/logo_uka.png` si se consigue una mejor versión,
   conservando el nombre.
 - Revisar con el responsable legal si el aviso de privacidad cubre los datos de eventos.
 

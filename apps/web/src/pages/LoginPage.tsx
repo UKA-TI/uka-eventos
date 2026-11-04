@@ -1,3 +1,4 @@
+import { logoUrl } from '../brand.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { authSessionResponseSchema } from '@uka/shared';
 import { useEffect, useRef, useState } from 'react';
@@ -82,11 +83,7 @@ export function LoginPage() {
   return (
     <main className="login-page">
       <div className="login-card">
-        <img
-          className="login-logo"
-          src="/img/logo_uka.png"
-          alt="Un Kilo de Ayuda"
-        />
+        <img className="login-logo" src={logoUrl} alt="Un Kilo de Ayuda" />
         <h1>EVENTOS UKA</h1>
         <p className="muted">
           Acceso para colaboradores con cuenta de Microsoft de Un Kilo de Ayuda.

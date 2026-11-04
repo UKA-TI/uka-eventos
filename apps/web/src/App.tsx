@@ -4,10 +4,13 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { usePermissions, useSession } from './auth/session.js';
 import { Layout } from './components/Layout.js';
 import { Loading } from './components/ui.js';
+import { EventDetailPage } from './pages/EventDetailPage.js';
 import { EventsPage } from './pages/EventsPage.js';
 import { HomePage } from './pages/HomePage.js';
 import { LoginPage } from './pages/LoginPage.js';
+import { NewEventPage } from './pages/NewEventPage.js';
 import { RolesPage } from './pages/RolesPage.js';
+import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
 
 function Guard({
@@ -46,6 +49,30 @@ export default function App() {
           element={
             <Guard any={['events.view', 'events.create', 'events.edit']}>
               <EventsPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="eventos/nuevo"
+          element={
+            <Guard any={['events.create']}>
+              <NewEventPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="eventos/:id"
+          element={
+            <Guard any={['events.view', 'events.create', 'events.edit']}>
+              <EventDetailPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="series"
+          element={
+            <Guard any={['events.view', 'events.create', 'events.edit']}>
+              <SeriesPage />
             </Guard>
           }
         />
