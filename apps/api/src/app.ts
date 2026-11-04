@@ -1,27 +1,21 @@
 import cors from 'cors';
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { pino } from 'pino';
 import { pinoHttp } from 'pino-http';
 import type { HealthResponse } from '@uka/shared';
 import { config } from './config.js';
-import { pool } from './database.js';
+import { healthDatabase } from './database.js';
+import { AppError, createErrorHandler } from './errors.js';
 
 export interface HealthDatabase {
-  query(sql: string): Promise<unknown>;
+  query(): Promise<unknown>;
 }
 
 const logger = pino({ level: config.LOG_LEVEL });
 
-class HealthCheckError extends Error {
-  constructor(cause: unknown) {
-    super('MySQL health check failed', { cause });
-    this.name = 'HealthCheckError';
-  }
-}
-
-export function createApp(database: HealthDatabase = pool) {
+export function createApp(database: HealthDatabase = healthDatabase) {
   const app = express();
   const allowedOrigins = new Set(
     config.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
@@ -55,11 +49,11 @@ export function createApp(database: HealthDatabase = pool) {
 
   app.get('/api/health', async (_request, response, next) => {
     try {
-      await database.query('SELECT 1');
+      await database.query();
       const body: HealthResponse = { status: 'ok', database: 'ok' };
       response.status(200).json(body);
     } catch (error) {
-      next(new HealthCheckError(error));
+      next(new AppError(503, 'Service unavailable', { cause: error }));
     }
   });
 
@@ -67,21 +61,7 @@ export function createApp(database: HealthDatabase = pool) {
     response.status(404).json({ error: 'Not found' });
   });
 
-  const errorHandler: ErrorRequestHandler = (
-    error,
-    _request,
-    response,
-    _next,
-  ) => {
-    logger.error({ err: error }, 'Request failed');
-    if (error instanceof HealthCheckError) {
-      response.status(503).json({ error: 'Service unavailable' });
-      return;
-    }
-
-    response.status(500).json({ error: 'Internal server error' });
-  };
-  app.use(errorHandler);
+  app.use(createErrorHandler(logger));
 
   return app;
 }

@@ -72,3 +72,44 @@ Fuentes oficiales:
   o MariaDB de GoDaddy para igualar el entorno de pruebas.
 - El smoke test de `/api/health` desplegado en GoDaddy se difirió por decisión
   del usuario y deberá realizarse antes de producción.
+
+## Fase 1 — implementación verificada; pendiente aprobación e integración
+
+- Prisma 7 con adaptador MariaDB/MySQL y cliente generado en build. Se eligió
+  Prisma 7.10.1 tras detectar que Prisma 6.19 presentaba hallazgos altos en
+  `npm audit`; la versión elegida deja la auditoría sin vulnerabilidades.
+- La API acepta `DATABASE_URL`; conserva `DB_HOST`, `DB_PORT`, `DB_NAME`,
+  `DB_USER` y `DB_PASSWORD` como alternativa de compatibilidad. Prisma CLI
+  requiere `DATABASE_URL`. Los caracteres especiales de usuario o contraseña
+  deben codificarse como URL. `migrate dev` admite un `SHADOW_DATABASE_URL`
+  distinto para no requerir privilegios globales de creación de bases.
+- El folio se forma con el prefijo configurado, los dos últimos dígitos del
+  año UTC de `Event.startsAt` y un consecutivo de cuatro dígitos. El seed Gala
+  representa el 11/02/2027 18:30 de Ciudad de México como 12/02/2027 00:30 UTC.
+  La hora final se deja sin definir porque el mockup la señala como supuesto.
+- `status`, `registrationMode` y `purpose` se guardan como texto para evitar
+  fijar vocabularios de negocio todavía no acordados. El seed mantiene los tres
+  eventos en borrador; dos son ejemplos genéricos sin fecha ni aforo. El aforo,
+  acompañantes, cuota, sede y modo de la Gala reflejan los valores del mockup.
+- El seed es exclusivamente de desarrollo; requiere contraseñas locales
+  distintas (mínimo 12 caracteres), no incluidas en Git. Las cuentas ficticias
+  usan el dominio reservado `.test`.
+- El esquema incluye las entidades requeridas, `DATETIME(3)`, relaciones e
+  índices únicos para folios por evento, hashes de token, un check-in por pase
+  y folios de rifa por evento. El `SELECT ... FOR UPDATE` del contador queda
+  dentro de la transacción de Prisma.
+- El equipo confirmó GoDaddy con `SELECT VERSION()` =
+  `10.11.19-MariaDB` y `@@version_comment` = `MariaDB Server`. Se preparó una
+  instancia portátil aislada de esa misma versión, desde el paquete oficial
+  cuyo SHA-256 se verificó; escucha solo en `127.0.0.1:3307`. XAMPP/MariaDB
+  10.4.32 no se modificó.
+- `prisma migrate dev` y `prisma db seed` se ejecutaron sin error contra esa
+  instancia. El seed se repitió y verificó: 3 eventos, 40 mesas/400 lugares,
+  compras 3/10, 8/8 y 0/5, 11 registros de ejemplo y 3 cuentas con sus roles.
+- La prueba de integración ejecutó 500 transacciones concurrentes reales y
+  confirmó 500 folios distintos. El adaptador normaliza el tipo numérico que
+  entrega MariaDB antes de validarlo. La cobertura unitaria medida del servicio
+  de folios es 100% en sentencias, ramas, funciones y líneas.
+- **Pendiente:** aprobación del usuario e integración del PR #7. El smoke test
+  de esta aplicación en GoDaddy sigue diferido por decisión previa; no se usó
+  la base de producción para estas pruebas.

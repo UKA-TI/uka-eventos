@@ -28,5 +28,7 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Folio service coverage
+        run: npm run test:folio-coverage
       - name: Build
         run: npm run build
