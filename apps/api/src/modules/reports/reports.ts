@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { donationMethodOptions } from '@uka/shared';
 import { z } from 'zod';
 import { asyncHandler } from '../../async-handler.js';
 import { recordAudit } from '../../audit.js';
@@ -26,6 +27,15 @@ const registrationStatusLabels: Record<string, string> = {
   confirmed: 'Confirmado',
   cancelled: 'Cancelado',
 };
+
+const orderSourceLabels: Record<string, string> = {
+  public: 'Registro público',
+  staff: 'Capturado por el equipo',
+  reconciled: 'Compra conciliada',
+};
+
+const methodLabel = (method: string) =>
+  donationMethodOptions.find(({ key }) => key === method)?.label ?? method;
 
 reportsRouter.get(
   '/events',
@@ -166,7 +176,7 @@ reportsRouter.get(
         paid,
         buyerName,
         order.buyer.email,
-        order.source,
+        orderSourceLabels[order.source] ?? order.source,
       ];
       const attendees = order.registrations.map((registration) => {
         const checkin = registration.passes.find(
@@ -181,7 +191,11 @@ reportsRouter.get(
           registration.guest.organization,
           registrationStatusLabels[registration.status] ?? registration.status,
           checkin ? 'Sí' : 'No',
-          checkin?.checkedInAt.toISOString() ?? '',
+          checkin?.checkedInAt.toLocaleString('es-MX', {
+            timeZone: event.timeZone,
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }) ?? '',
           checkin?.accessPoint.name ?? '',
           ...common,
           answers,
@@ -232,7 +246,7 @@ reportsRouter.get(
           'Empresa',
           'Estado',
           'Asistió',
-          'Hora de ingreso (UTC)',
+          'Hora de ingreso',
           'Punto de acceso',
           'Pedido',
           'Boleto',
@@ -385,7 +399,7 @@ reportsRouter.get(
           donation.event?.name,
           donation.amount.toNumber(),
           donation.currency,
-          donation.method,
+          methodLabel(donation.method),
           donation.reference,
           donation.notes,
           donation.recordedBy?.displayName,

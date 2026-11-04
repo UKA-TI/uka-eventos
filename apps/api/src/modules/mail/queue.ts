@@ -21,6 +21,9 @@ const TRANSACTIONAL_DAILY_RESERVE = 0.2;
 
 // Dominios reservados para pruebas (RFC 2606): nunca existen como destinatarios.
 const RESERVED_DOMAIN = /\.(test|example|invalid|localhost)$/i;
+// El servidor de desarrollo comparte la base con las pruebas automáticas: si omitiera
+// sus mensajes al instante, las pruebas fallarían según el momento en que corren.
+const RESERVED_GRACE_MS = 2 * 60 * 1000;
 
 export function mailConfigured(): boolean {
   return Boolean(
@@ -96,6 +99,13 @@ export async function processMailQueue(
   const due = [...transactional, ...campaign];
 
   for (const message of due) {
+    if (
+      options.skipReservedDomains &&
+      RESERVED_DOMAIN.test(message.toEmail) &&
+      now - message.createdAt.getTime() < RESERVED_GRACE_MS
+    ) {
+      continue;
+    }
     const claim = await prisma.emailMessage.updateMany({
       where: { id: message.id, status: 'pending' },
       data: { status: 'sending', claimedAt: new Date() },

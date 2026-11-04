@@ -388,6 +388,8 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('reports', () => {
       .split('\r\n')
       .find((line) => line.includes(`ana@${domain}`));
     expect(anaLine).toContain('Sí');
+    expect(anaLine).toContain('Registro público');
+    expect(anaLine).not.toContain('Z,');
 
     const contacts = await admin.get(
       `/api/reports/export/contacts.csv?eventId=${ids.uno}&participation=attended`,
@@ -402,6 +404,8 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('reports', () => {
     expect(donations.status).toBe(200);
     expect(donations.text).toContain('500');
     expect(donations.text).toContain('999');
+    expect(donations.text).toContain('Efectivo');
+    expect(donations.text).not.toContain(',cash,');
 
     const audit = await prisma.auditLog.findMany({
       where: {
