@@ -241,6 +241,8 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('finance', () => {
         await cashier.write('put', `${base}/finance/settings`).send({
           fundraisingGoal: 1,
           paymentTermDays: 1,
+          corporateTermDays: 1,
+          paymentCutoffDays: 1,
           paymentReminders: true,
         })
       ).status,
@@ -260,7 +262,9 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('finance', () => {
     const event = await prisma.event.findUniqueOrThrow({
       where: { id: eventId },
     });
-    expect(late.dueAt!.getTime()).toBe(event.startsAt!.getTime());
+    expect(late.dueAt!.getTime()).toBe(
+      event.startsAt!.getTime() - event.paymentCutoffDays * day,
+    );
     await prisma.event.update({
       where: { id: eventId },
       data: { paymentTermDays: 7 },
@@ -748,6 +752,8 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('finance', () => {
       .send({
         fundraisingGoal: 100_000,
         paymentTermDays: 7,
+        corporateTermDays: 15,
+        paymentCutoffDays: 10,
         paymentReminders: true,
       })
       .expect(204);
@@ -869,6 +875,61 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('finance', () => {
       .expect(200);
     expect((await admin.agent.get(`${base}/finance`)).body.closing).toBeNull();
     await pay(pendingOrder.id, 1000).expect(201);
+  });
+
+  it('separates who collects from who refunds', async () => {
+    const loginAs = async (name: string, code: string) => {
+      const role = await prisma.role.findUniqueOrThrow({ where: { code } });
+      await prisma.user.create({
+        data: {
+          email: `${name}@${domain}`,
+          displayName: name,
+          roleId: role.id,
+        },
+      });
+      return login(name);
+    };
+    const collections = await loginAs('cobranza', 'COLLECTIONS');
+    const finance = await loginAs('finanzas', 'FINANCE');
+    const direction = await loginAs('direccion', 'DIRECTION');
+
+    const order = await buy();
+    expect((await pay(order.id, 1000, finance)).status).toBe(403);
+    await pay(order.id, 1000, collections).expect(201);
+
+    const denied = await collections
+      .write('post', `${base}/orders/${order.id}/refunds`)
+      .send(refundBody(100));
+    expect(denied.status).toBe(403);
+    const cannotCancel = await collections
+      .write('post', `${base}/orders/${order.id}/cancel`)
+      .send({ reason: 'Sin permiso' });
+    expect(cannotCancel.status).toBe(403);
+
+    await finance
+      .write('post', `${base}/orders/${order.id}/refunds`)
+      .send(refundBody(100))
+      .expect(201);
+    await finance
+      .write('post', `${base}/orders/${order.id}/cancel`)
+      .send({ reason: 'Autoriza finanzas' })
+      .expect(204);
+
+    expect(
+      (await collections.agent.get('/api/finance/receivables')).status,
+    ).toBe(200);
+    expect((await direction.agent.get(`${base}/finance`)).status).toBe(200);
+    expect((await direction.agent.get('/api/audit')).status).toBe(200);
+    const blocked = await direction
+      .write('put', `${base}/finance/settings`)
+      .send({
+        fundraisingGoal: 1,
+        paymentTermDays: 1,
+        corporateTermDays: 1,
+        paymentCutoffDays: 1,
+        paymentReminders: true,
+      });
+    expect(blocked.status).toBe(403);
   });
 
   it('closes without a note when nothing is pending', async () => {

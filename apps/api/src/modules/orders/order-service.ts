@@ -1,4 +1,6 @@
 import {
+  nextReminderStage,
+  paymentDueDate,
   PRIVACY_NOTICE_VERSION,
   type GroupGuestInput,
   type AuthorizedGuestInput,
@@ -609,17 +611,6 @@ export async function resendGroupGuest(token: string, registrationId: string) {
   }, TX_OPTIONS);
 }
 
-/** El plazo del evento, sin pasar de su fecha: después de empezar ya no hay a qué apartar. */
-function paymentDueDate(
-  event: { paymentTermDays: number; startsAt: Date | null },
-  now: Date,
-): Date {
-  const due = new Date(now.getTime() + event.paymentTermDays * 86_400_000);
-  return event.startsAt && event.startsAt > now && event.startsAt < due
-    ? event.startsAt
-    : due;
-}
-
 export async function createOrder(params: {
   eventId: string;
   input: OrderInput;
@@ -680,6 +671,10 @@ export async function createOrder(params: {
         contactId,
       },
     });
+    const dueAt =
+      ticket.price.toNumber() > 0
+        ? paymentDueDate(event, ticket.seatsIncluded, now)
+        : null;
     const order = await tx.order.create({
       data: {
         eventId,
@@ -691,7 +686,9 @@ export async function createOrder(params: {
         amountDue: ticket.price,
         source,
         answers,
-        dueAt: ticket.price.toNumber() > 0 ? paymentDueDate(event, now) : null,
+        dueAt,
+        // Lo que ya pasó no se recuerda: acaba de recibir el correo con su fecha límite.
+        reminderStage: dueAt ? (nextReminderStage(dueAt, 0, now) ?? 0) : 0,
         ...(input.fiscal
           ? {
               fiscalData: input.fiscal as Prisma.InputJsonValue,

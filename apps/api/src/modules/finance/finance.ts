@@ -58,6 +58,8 @@ eventFinanceRouter.get(
       select: {
         currency: true,
         paymentTermDays: true,
+        corporateTermDays: true,
+        paymentCutoffDays: true,
         paymentReminders: true,
         closedAt: true,
         closingSummary: true,
@@ -86,6 +88,8 @@ eventFinanceRouter.get(
     response.json({
       currency: event.currency,
       paymentTermDays: event.paymentTermDays,
+      corporateTermDays: event.corporateTermDays,
+      paymentCutoffDays: event.paymentCutoffDays,
       paymentReminders: event.paymentReminders,
       totals,
       byMethod: payments.map((row) => ({

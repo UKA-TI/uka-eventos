@@ -244,7 +244,10 @@ los teléfonos cuyo navegador permite controlarla.
 - **El estado financiero se calcula, no se captura:** pendiente, pagada parcial, pagada, reembolso
   parcial, reembolsada y cancelada salen de los pagos y reembolsos. Así nunca contradicen al dinero.
 - **Vencer no cancela:** la fecha límite solo activa recordatorios y el reporte de cobranza. No libera
-  lugares. El vencimiento se fija con el plazo del evento (7 días de inicio) sin pasar de su fecha.
+  lugares.
+- **Plazos de pago, ajustables por evento:** 7 días por un lugar y 15 por una mesa o compra de varios
+  lugares, que suele requerir orden de compra. Todo vence 10 días antes del evento, para acomodar las
+  mesas con lo ya pagado. Quien compra después de esa fecha tiene 2 días, sin pasar del evento.
 - **Recordatorios:** 3 días antes, el día que vence, y 3 y 7 días después. Terminan al pagar, cancelar
   o empezar el evento. Si alguien recuerda a mano, el automático espera un día.
 - **Anular no es reembolsar:** anular corrige una captura equivocada, como si nunca hubiera pasado.
@@ -252,6 +255,8 @@ los teléfonos cuyo navegador permite controlarla.
 - **Cancelar no borra el dinero:** lo cobrado se devuelve con un reembolso o se queda como importe
   retenido, que sigue contando como ingreso. Antes de esta regla desaparecía de los reportes.
 - **Compra activa con saldo:** no admite reembolso. Para devolver un anticipo se cancela.
+- **Separación de funciones:** Cobranza registra pagos y no autoriza reembolsos; Finanzas autoriza
+  reembolsos y no captura cobros. Si el equipo es muy chico, se ajusta en Perfiles y permisos.
 - **Quién puede:** cancelar una compra con pagos o reembolsar requiere `refunds.manage`, separado de
   `payments.manage`, para que quien registra cobros no sea necesariamente quien devuelve dinero.
 - **Política de cancelación por tipo de evento:** quien compra la ve antes de pagar. Los plazos solo
@@ -274,6 +279,13 @@ Pagos y reembolsos ya guardan su origen (`manual` hoy) y un identificador extern
 la pasarela o el archivo del banco, un mismo aviso repetido no podrá registrar dos veces el dinero, y
 entrará por las mismas reglas de arriba. El crédito autorizado también se decidirá en esa etapa.
 
+## Perfiles de inicio
+
+Administrador, Dirección, Coordinación de eventos, Supervisión de recepción, Recepción, Cobranza, Finanzas,
+Procuración de fondos, Comunicación, Auditoría y privacidad, y Consulta. Se crean una sola vez y no
+sobrescriben cambios posteriores. Sus permisos se editan en Perfiles y permisos; solo Administrador es fijo.
+Los perfiles del sistema no se pueden borrar: si uno no se usa, simplemente no se asigna.
+
 ## Pendiente frente al mockup
 
 Revisado contra `uka-eventos-mockup-gala.html`.
@@ -281,4 +293,6 @@ Revisado contra `uka-eventos-mockup-gala.html`.
 - WhatsApp: para una etapa futura.
 - Probar el acomodo con el plano real de la sede, cuando se tenga.
 - Pasarela de pago, conciliación por archivo bancario y crédito autorizado.
-- Landing de la Gala, importador de Excel y publicación en GoDaddy.
+- Prueba de correos financieros en un buzón real.
+- Cargar la política de cancelación cuando se apruebe.
+- Importador de Excel y publicación en GoDaddy. La landing de la Gala será otro proyecto.

@@ -79,6 +79,8 @@ model Event {
   seatingPublishedAt  DateTime?           @map("seating_published_at") @db.DateTime(3)
   paymentInstructions String?             @map("payment_instructions") @db.Text
   paymentTermDays     Int                 @default(7) @map("payment_term_days") @db.UnsignedSmallInt
+  corporateTermDays   Int                 @default(15) @map("corporate_term_days") @db.UnsignedSmallInt
+  paymentCutoffDays   Int                 @default(10) @map("payment_cutoff_days") @db.UnsignedSmallInt
   paymentReminders    Boolean             @default(true) @map("payment_reminders")
   fundraisingGoal     Decimal?            @map("fundraising_goal") @db.Decimal(12, 2)
   closedAt            DateTime?           @map("closed_at") @db.DateTime(3)

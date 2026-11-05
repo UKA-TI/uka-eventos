@@ -1910,6 +1910,42 @@ export function nextReminderStage(
   return next;
 }
 
+/** Lo mínimo para pagar cuando se compra ya encima de la fecha límite del evento. */
+export const LAST_MINUTE_PAYMENT_DAYS = 2;
+
+/**
+ * Fecha límite de una compra nueva. Una mesa o compra de varios lugares suele requerir
+ * orden de compra y aprobación, así que tiene más plazo que un boleto individual. Todo
+ * vence antes del evento, para acomodar las mesas solo con lo que ya está pagado.
+ */
+export function paymentDueDate(
+  event: {
+    paymentTermDays: number;
+    corporateTermDays: number;
+    paymentCutoffDays: number;
+    startsAt: Date | null;
+  },
+  seats: number,
+  now: Date,
+): Date {
+  const term = seats > 1 ? event.corporateTermDays : event.paymentTermDays;
+  const due = new Date(now.getTime() + term * DAY_MS);
+  if (!event.startsAt || event.startsAt <= now) {
+    return due;
+  }
+  const cutoff = new Date(
+    event.startsAt.getTime() - event.paymentCutoffDays * DAY_MS,
+  );
+  if (due <= cutoff) {
+    return due;
+  }
+  const lastMinute = new Date(
+    now.getTime() + LAST_MINUTE_PAYMENT_DAYS * DAY_MS,
+  );
+  const latest = cutoff > lastMinute ? cutoff : lastMinute;
+  return latest < event.startsAt ? latest : event.startsAt;
+}
+
 export const cancellationTierSchema = z.object({
   daysBefore: z
     .number('Escribe los días.')
@@ -2005,6 +2041,16 @@ export const eventFinanceSettingsSchema = z.object({
     .int('Escribe días completos.')
     .min(0, 'No puede ser negativo.')
     .max(180, 'Máximo 180 días.'),
+  corporateTermDays: z
+    .number('Escribe los días.')
+    .int('Escribe días completos.')
+    .min(0, 'No puede ser negativo.')
+    .max(180, 'Máximo 180 días.'),
+  paymentCutoffDays: z
+    .number('Escribe los días.')
+    .int('Escribe días completos.')
+    .min(0, 'No puede ser negativo.')
+    .max(180, 'Máximo 180 días.'),
   paymentReminders: z.boolean(),
 });
 
@@ -2035,6 +2081,8 @@ export const closingCheckSchema = z.object({
 export const eventFinanceSchema = z.object({
   currency: z.string(),
   paymentTermDays: z.number(),
+  corporateTermDays: z.number(),
+  paymentCutoffDays: z.number(),
   paymentReminders: z.boolean(),
   totals: financeTotals,
   byMethod: z.array(z.object({ method: z.string(), amount: z.number() })),

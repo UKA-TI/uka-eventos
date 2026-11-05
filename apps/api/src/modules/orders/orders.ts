@@ -533,7 +533,7 @@ ordersRouter.post(
 
 ordersRouter.post(
   '/:orderId/cancel',
-  requirePermission('registrations.manage'),
+  requirePermission('registrations.manage', 'refunds.manage'),
   requireCsrf,
   asyncHandler(async (request, response) => {
     const { eventId, orderId } = request.params as {

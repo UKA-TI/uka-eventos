@@ -1132,21 +1132,22 @@ export function EventRegistrationsTab({
                                       Registrar reembolso
                                     </button>
                                   )}
-                                {canManage && order.status !== 'cancelled' && (
-                                  <button
-                                    className="button secondary small danger"
-                                    type="button"
-                                    onClick={() => {
-                                      setNotice(undefined);
-                                      setPanel({
-                                        kind: 'cancel',
-                                        orderId: order.id,
-                                      });
-                                    }}
-                                  >
-                                    Cancelar compra
-                                  </button>
-                                )}
+                                {(canManage || canRefund) &&
+                                  order.status !== 'cancelled' && (
+                                    <button
+                                      className="button secondary small danger"
+                                      type="button"
+                                      onClick={() => {
+                                        setNotice(undefined);
+                                        setPanel({
+                                          kind: 'cancel',
+                                          orderId: order.id,
+                                        });
+                                      }}
+                                    >
+                                      Cancelar compra
+                                    </button>
+                                  )}
                               </div>
                             )}
                           </div>

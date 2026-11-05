@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `events` ADD COLUMN `corporate_term_days` SMALLINT UNSIGNED NOT NULL DEFAULT 15,
+    ADD COLUMN `payment_cutoff_days` SMALLINT UNSIGNED NOT NULL DEFAULT 10;
+

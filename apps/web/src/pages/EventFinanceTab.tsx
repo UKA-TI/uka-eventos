@@ -201,6 +201,8 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
   const [settings, setSettings] = useState<{
     goal: string;
     term: string;
+    corporateTerm: string;
+    cutoff: string;
     reminders: boolean;
   } | null>(null);
   const [item, setItem] = useState(emptyItem);
@@ -265,6 +267,8 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
     const parsed = eventFinanceSettingsSchema.safeParse({
       fundraisingGoal: settings.goal.trim() ? Number(settings.goal) : null,
       paymentTermDays: Number(settings.term),
+      corporateTermDays: Number(settings.corporateTerm),
+      paymentCutoffDays: Number(settings.cutoff),
       paymentReminders: settings.reminders,
     });
     if (!parsed.success) {
@@ -371,6 +375,8 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
                 setSettings({
                   goal: totals.goal === null ? '' : String(totals.goal),
                   term: String(finance.data.paymentTermDays),
+                  corporateTerm: String(finance.data.corporateTermDays),
+                  cutoff: String(finance.data.paymentCutoffDays),
                   reminders: finance.data.paymentReminders,
                 });
               }}
@@ -382,8 +388,11 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
         <GoalMeter totals={totals} currency={currency} />
         {!settings && (
           <p className="muted form-note">
-            Plazo de pago: {finance.data.paymentTermDays} días · Recordatorios
-            automáticos {finance.data.paymentReminders ? 'activos' : 'apagados'}
+            Plazo de pago: {finance.data.paymentTermDays} días por un lugar y{' '}
+            {finance.data.corporateTermDays} por mesa · Todo vence{' '}
+            {finance.data.paymentCutoffDays} días antes del evento ·
+            Recordatorios automáticos{' '}
+            {finance.data.paymentReminders ? 'activos' : 'apagados'}
           </p>
         )}
         {settings && (
@@ -405,9 +414,9 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
                 />
               </Field>
               <Field
-                label="Días para pagar"
+                label="Días para pagar un lugar"
                 error={errors.paymentTermDays}
-                hint="Solo aplica a compras nuevas. Nunca pasa de la fecha del evento."
+                hint="Solo aplica a compras nuevas."
               >
                 <input
                   type="number"
@@ -415,6 +424,34 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
                   value={settings.term}
                   onChange={(e) =>
                     setSettings({ ...settings, term: e.target.value })
+                  }
+                />
+              </Field>
+              <Field
+                label="Días para pagar una mesa"
+                error={errors.corporateTermDays}
+                hint="Compras de varios lugares: suelen requerir orden de compra."
+              >
+                <input
+                  type="number"
+                  min="0"
+                  value={settings.corporateTerm}
+                  onChange={(e) =>
+                    setSettings({ ...settings, corporateTerm: e.target.value })
+                  }
+                />
+              </Field>
+              <Field
+                label="Último pago, días antes del evento"
+                error={errors.paymentCutoffDays}
+                hint="Da tiempo de acomodar las mesas con lo ya pagado."
+              >
+                <input
+                  type="number"
+                  min="0"
+                  value={settings.cutoff}
+                  onChange={(e) =>
+                    setSettings({ ...settings, cutoff: e.target.value })
                   }
                 />
               </Field>

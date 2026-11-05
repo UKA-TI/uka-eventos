@@ -3,6 +3,7 @@ import {
   fiscalDataSchema,
   nextReminderStage,
   orderFinancialStatus,
+  paymentDueDate,
   suggestedRefundPercent,
 } from '@uka/shared';
 import { describe, expect, it } from 'vitest';
@@ -100,6 +101,46 @@ describe('refund suggested by the cancellation policy', () => {
   it('does not guess without a policy or a date', () => {
     expect(suggestedRefundPercent([], inDays(45), now)).toBeNull();
     expect(suggestedRefundPercent(tiers, null, now)).toBeNull();
+  });
+});
+
+describe('payment due date', () => {
+  const event = {
+    paymentTermDays: 7,
+    corporateTermDays: 15,
+    paymentCutoffDays: 10,
+    startsAt: inDays(60) as Date | null,
+  };
+
+  it('gives a table more time than a single seat', () => {
+    expect(paymentDueDate(event, 1, now)).toEqual(inDays(7));
+    expect(paymentDueDate(event, 10, now)).toEqual(inDays(15));
+  });
+
+  it('never goes past the cutoff before the event', () => {
+    const soon = { ...event, startsAt: inDays(20) };
+    expect(paymentDueDate(soon, 1, now)).toEqual(inDays(7));
+    expect(paymentDueDate(soon, 10, now)).toEqual(inDays(10));
+  });
+
+  it('gives two days to someone buying after the cutoff', () => {
+    const late = { ...event, startsAt: inDays(5) };
+    expect(paymentDueDate(late, 1, now)).toEqual(inDays(2));
+    expect(paymentDueDate(late, 10, now)).toEqual(inDays(2));
+  });
+
+  it('never passes the event itself', () => {
+    const tomorrow = { ...event, startsAt: inDays(1) };
+    expect(paymentDueDate(tomorrow, 1, now)).toEqual(inDays(1));
+  });
+
+  it('uses the plain term without an event date, or after it started', () => {
+    expect(paymentDueDate({ ...event, startsAt: null }, 1, now)).toEqual(
+      inDays(7),
+    );
+    expect(paymentDueDate({ ...event, startsAt: inDays(-1) }, 1, now)).toEqual(
+      inDays(7),
+    );
   });
 });
 

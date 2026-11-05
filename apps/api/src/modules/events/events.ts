@@ -341,6 +341,8 @@ eventsRouter.post(
         mapUrl: source.mapUrl,
         paymentInstructions: source.paymentInstructions,
         paymentTermDays: source.paymentTermDays,
+        corporateTermDays: source.corporateTermDays,
+        paymentCutoffDays: source.paymentCutoffDays,
         paymentReminders: source.paymentReminders,
         capacity: source.capacity,
         folioPrefix: source.folioPrefix,
