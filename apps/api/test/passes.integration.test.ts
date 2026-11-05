@@ -286,6 +286,19 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('pass tools and consent', () => {
     );
 
     const email = await renderEmail('pass', pass.id);
+    const qr = await request(app)
+      .get(`/api/public/passes/${token}/qr.png`)
+      .buffer(true)
+      .parse(binary);
+    expect(qr.status).toBe(200);
+    expect(qr.headers['content-type']).toContain('image/png');
+    expect(qr.headers['content-disposition']).toContain('.png');
+    expect((qr.body as Buffer).subarray(1, 4).toString()).toBe('PNG');
+
+    expect(email?.html).toContain('qr.png');
+    expect(email?.inlineImages.map(({ contentId }) => contentId)).toContain(
+      'icon-qr',
+    );
     expect(email?.html).toContain('pass.pdf');
     expect(email?.html).toContain('event.ics');
     expect(email?.html).toContain('calendar.google.com');
@@ -304,6 +317,9 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('pass tools and consent', () => {
     const token = passToken(pass.id);
     expect(
       (await request(app).get(`/api/public/passes/${token}/pass.pdf`)).status,
+    ).toBe(404);
+    expect(
+      (await request(app).get(`/api/public/passes/${token}/qr.png`)).status,
     ).toBe(404);
     expect(
       (await request(app).get(`/api/public/passes/${token}/event.ics`)).status,

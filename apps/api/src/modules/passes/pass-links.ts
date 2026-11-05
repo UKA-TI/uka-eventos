@@ -15,6 +15,7 @@ const passBase = (passId: string) =>
   `${config.PUBLIC_BASE_URL}/api/public/passes/${passToken(passId)}`;
 
 export const passPdfUrl = (passId: string) => `${passBase(passId)}/pass.pdf`;
+export const passQrUrl = (passId: string) => `${passBase(passId)}/qr.png`;
 export const passIcsUrl = (passId: string) => `${passBase(passId)}/event.ics`;
 
 const stamp = (date: Date) =>

@@ -211,14 +211,19 @@ autoriza. Su correo es opcional.
   aún no activa su pase recibe la invitación a activarlo, ya con su mesa.
 - **Solo se acomoda lo pagado.** Una compra cancelada o con el pago anulado libera sus lugares.
 
+## Guardar el pase
+
+No hay integración con Apple Wallet ni Google Wallet: exigiría cuentas y certificados, y lo que se
+necesita es conservar el QR. El pase ofrece descargar el QR como imagen, además del PDF y el
+calendario. La liga de la asistente tampoco pregunta el formulario personalizado del evento.
+
 ## Pendiente frente al mockup
 
 Revisado contra `uka-eventos-mockup-gala.html`.
 
-- Wallet: requiere cuenta de Apple Developer y cuenta de emisor de Google.
 - WhatsApp: para una etapa futura.
 - Módulo con interruptor pero sin pantalla: acompañantes.
 - Pantallas de bitácora, consentimientos y operadores.
 - Recepción: linterna y captura de folio con teclado.
-- Las preguntas personalizadas del evento en la liga de la asistente.
+- Probar el acomodo con el plano real de la sede, cuando se tenga.
 - Landing de la Gala, importador de Excel y publicación en GoDaddy.

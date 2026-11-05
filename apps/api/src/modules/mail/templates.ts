@@ -10,7 +10,12 @@ import {
   registrationUrl,
   unsubscribeUrl,
 } from '../passes/tokens.js';
-import { calendarLinks, passIcsUrl, passPdfUrl } from '../passes/pass-links.js';
+import {
+  calendarLinks,
+  passIcsUrl,
+  passPdfUrl,
+  passQrUrl,
+} from '../passes/pass-links.js';
 
 export interface InlineImage {
   contentId: string;
@@ -212,9 +217,10 @@ function passActions(
   const calendar = calendarLinks(event, folio);
   return [
     '<div style="margin:18px 0 0">',
+    actionRow([actionCell(passUrl(passId), 'Ver mi pase', { primary: true })]),
     actionRow([
-      actionCell(passUrl(passId), 'Ver mi pase', { primary: true }),
       actionCell(passPdfUrl(passId), 'Descargar PDF', { icon: 'pdf' }),
+      actionCell(passQrUrl(passId), 'Guardar QR', { icon: 'qr' }),
     ]),
     calendar
       ? `<p style="margin:14px 0 6px;color:#5e6b79;font-size:13px;font-weight:bold">Agregar a mi calendario</p>${actionRow(

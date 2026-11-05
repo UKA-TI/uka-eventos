@@ -9,6 +9,7 @@ import googleIcon from '../../../../api/assets/mail/google.png';
 import mapIcon from '../../../../api/assets/mail/map.png';
 import outlookIcon from '../../../../api/assets/mail/outlook.png';
 import pdfIcon from '../../../../api/assets/mail/pdf.png';
+import qrIcon from '../../../../api/assets/mail/qr.png';
 import { formatEventDate, issuesToErrors } from '../text.js';
 import { PublicLayout } from './PublicLayout.js';
 
@@ -186,6 +187,13 @@ export function PassPage() {
             >
               <img src={pdfIcon} alt="" />
               Descargar PDF
+            </a>
+            <a
+              className="button secondary"
+              href={`/api/public/passes/${token}/qr.png`}
+            >
+              <img src={qrIcon} alt="" />
+              Guardar QR
             </a>
             {data.calendar && (
               <details className="menu">

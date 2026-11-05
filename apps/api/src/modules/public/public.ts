@@ -344,6 +344,26 @@ publicRouter.get(
   }),
 );
 
+/** Para guardarlo donde la persona quiera, como una imagen más. */
+publicRouter.get(
+  '/passes/:token/qr.png',
+  asyncHandler(async (request, response) => {
+    const pass = await loadPassForFile(request.params.token ?? '');
+    const png = await QRCode.toBuffer(passToken(pass.id), {
+      errorCorrectionLevel: 'M',
+      margin: 4,
+      width: 800,
+    });
+    response.setHeader('Content-Type', 'image/png');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="qr-${pass.registration.folio}.png"`,
+    );
+    response.setHeader('Cache-Control', 'no-store');
+    response.send(png);
+  }),
+);
+
 publicRouter.get(
   '/passes/:token/event.ics',
   asyncHandler(async (request, response) => {
