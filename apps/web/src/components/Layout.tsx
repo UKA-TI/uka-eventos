@@ -172,7 +172,8 @@ export function Shell({
             </NavLink>
           )}
           {(can('users.view', 'users.manage') ||
-            can('roles.view', 'roles.manage')) && (
+            can('roles.view', 'roles.manage') ||
+            can('audit.view', 'consents.view')) && (
             <small className="nav-heading">Administración</small>
           )}
           {can('users.view', 'users.manage') && (
@@ -185,6 +186,18 @@ export function Shell({
             <NavLink className={linkClass} to="/perfiles">
               <Icon name="shield" />
               Perfiles y permisos
+            </NavLink>
+          )}
+          {can('audit.view') && (
+            <NavLink className={linkClass} to="/bitacora">
+              <Icon name="list" />
+              Bitácora
+            </NavLink>
+          )}
+          {can('consents.view') && (
+            <NavLink className={linkClass} to="/consentimientos">
+              <Icon name="badge" />
+              Consentimientos
             </NavLink>
           )}
         </nav>

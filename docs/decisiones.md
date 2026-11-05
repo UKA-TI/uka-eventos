@@ -217,13 +217,32 @@ No hay integración con Apple Wallet ni Google Wallet: exigiría cuentas y certi
 necesita es conservar el QR. El pase ofrece descargar el QR como imagen, además del PDF y el
 calendario. La liga de la asistente tampoco pregunta el formulario personalizado del evento.
 
+## Acompañantes
+
+No hay módulo de acompañantes: cada persona se registra con su propio boleto y su propio pase. Así la
+base de contactos queda completa, y cualquiera de ellas puede convertirse en donante.
+
+## Recepción sin QR
+
+El folio no es secreto: va impreso en el pase y es consecutivo. Por eso escribirlo no da entrada
+directa. Muestra a la persona para verificarla y exige un motivo, igual que buscarla por nombre, y
+queda en la bitácora como ingreso manual, también si se hizo sin internet. La linterna solo aparece en
+los teléfonos cuyo navegador permite controlarla.
+
+## Control y privacidad
+
+- **Bitácora:** registra lo que hizo cada persona con sesión. No hay forma de editarla ni borrarla desde
+  el sistema. Quien se dio de baja desde su correo o aceptó el aviso en público no tiene sesión: eso se
+  ve en Consentimientos.
+- **Consentimientos:** "Aviso de privacidad" es el historial de aceptaciones por registro.
+  "Comunicaciones" muestra el estado vigente de cada contacto, no su historial completo.
+- **Permisos propios:** `audit.view` y `consents.view` son aparte porque muestran datos de todas las
+  personas. Solo Administrador los trae de inicio.
+
 ## Pendiente frente al mockup
 
 Revisado contra `uka-eventos-mockup-gala.html`.
 
 - WhatsApp: para una etapa futura.
-- Módulo con interruptor pero sin pantalla: acompañantes.
-- Pantallas de bitácora, consentimientos y operadores.
-- Recepción: linterna y captura de folio con teclado.
 - Probar el acomodo con el plano real de la sede, cuando se tenga.
 - Landing de la Gala, importador de Excel y publicación en GoDaddy.

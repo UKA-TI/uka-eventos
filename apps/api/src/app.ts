@@ -14,6 +14,10 @@ import { createAuthRouter, requireAuth } from './modules/auth/auth.js';
 import type { MicrosoftTokenVerifier } from './modules/auth/entra.js';
 import { checkinRouter } from './modules/checkin/checkin.js';
 import {
+  auditRouter,
+  consentsRouter,
+} from './modules/compliance/compliance.js';
+import {
   campaignsRouter,
   templatesRouter,
 } from './modules/communications/communications.js';
@@ -115,6 +119,8 @@ export function createApp(
   app.use('/api/campaigns', campaignsRouter);
   app.use('/api/donations', donationsRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/audit', auditRouter);
+  app.use('/api/consents', consentsRouter);
   app.use('/api/public', publicRouter);
 
   app.use('/api', (_request, response) => {

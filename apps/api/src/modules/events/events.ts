@@ -310,7 +310,6 @@ eventsRouter.post(
         capacity: source.capacity,
         folioPrefix: source.folioPrefix,
         currency: source.currency,
-        companionLimit: source.companionLimit,
         modules: readModules(source.modules),
         ticketTypes: {
           create: source.ticketTypes.map((ticket) => ({

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Request } from 'express';
 import {
+  ADMIN_ROLE_CODE,
   accessPointInputSchema,
   authorizedGuestSchema,
   checkinBatchSchema,
@@ -16,7 +17,12 @@ import { asyncHandler } from '../../async-handler.js';
 import { recordAudit } from '../../audit.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
-import { currentUser, requireCsrf, requirePermission } from '../auth/auth.js';
+import {
+  currentUser,
+  effectivePermissions,
+  requireCsrf,
+  requirePermission,
+} from '../auth/auth.js';
 import { createAuthorizedGuest } from '../orders/order-service.js';
 import { hashToken, passToken } from '../passes/tokens.js';
 
@@ -41,6 +47,12 @@ const passInclude = {
 } satisfies Prisma.PassInclude;
 
 type LoadedPass = Prisma.PassGetPayload<{ include: typeof passInclude }>;
+
+const incidentActions = {
+  duplicate: 'incident.duplicate',
+  revoked: 'incident.revoked',
+  unknown: 'incident.unknown',
+} as const;
 
 function eventIdOf(request: Request): string {
   return (request.params as { eventId: string }).eventId;
@@ -147,8 +159,11 @@ async function processItem(params: {
       const occurredAt = new Date(
         Math.min(new Date(item.scannedAt).getTime(), Date.now()),
       );
-      const incident = (type: string, description: string) =>
-        tx.incident.create({
+      const incident = async (
+        type: 'duplicate' | 'revoked' | 'unknown',
+        description: string,
+      ) => {
+        const created = await tx.incident.create({
           data: {
             eventId,
             clientEventId: item.clientId,
@@ -160,6 +175,18 @@ async function processItem(params: {
             occurredAt,
           },
         });
+        await tx.auditLog.create({
+          data: {
+            eventId,
+            userId: operatorId,
+            action: incidentActions[type],
+            entityType: 'incident',
+            entityId: created.id,
+            details: { description },
+          },
+        });
+        return created;
+      };
 
       if (!belongs) {
         const created = await incident(
@@ -221,6 +248,24 @@ async function processItem(params: {
           raffleFolio,
         },
       });
+      // Dentro de la transacción: una cola reenviada no repite la excepción, y una
+      // lectura hecha sin internet deja el mismo rastro que una en línea.
+      if (item.manualReason) {
+        await tx.auditLog.create({
+          data: {
+            eventId,
+            userId: operatorId,
+            action: 'checkin.manual',
+            entityType: 'pass',
+            entityId: belongs.id,
+            details: {
+              folio: belongs.registration.folio,
+              reason: item.manualReason,
+              ...(source === 'offline' && { offline: true }),
+            },
+          },
+        });
+      }
       return {
         status: 'ok',
         ...guestView(belongs),
@@ -354,15 +399,6 @@ eventCheckinRouter.post(
       operatorId: user.id,
       source: 'online',
     });
-    if (item.manualReason && result.status === 'ok') {
-      await recordAudit({
-        userId: user.id,
-        action: 'checkin.manual',
-        entityType: 'pass',
-        eventId,
-        details: { folio: result.folio, reason: item.manualReason },
-      });
-    }
     response.json(result);
   }),
 );
@@ -581,15 +617,24 @@ eventCheckinRouter.post(
     if (!point) {
       throw new AppError(400, 'El punto de acceso no pertenece a este evento.');
     }
+    const userId = currentUser(request).id;
     const incident = await prisma.incident.create({
       data: {
         eventId,
         accessPointId: point.id,
-        operatorUserId: currentUser(request).id,
+        operatorUserId: userId,
         type: 'manual',
         description: input.description,
         occurredAt: new Date(),
       },
+    });
+    await recordAudit({
+      userId,
+      action: 'incident.manual',
+      entityType: 'incident',
+      entityId: incident.id,
+      eventId,
+      details: { description: input.description },
     });
     response.status(201).json({ id: incident.id });
   }),
@@ -624,6 +669,116 @@ eventCheckinRouter.post(
       eventId,
     });
     response.status(204).end();
+  }),
+);
+
+/**
+ * Quién puede operar la puerta y qué hizo en este evento. También aparece quien ya
+ * perdió el permiso pero dejó lecturas: esas lecturas siguen siendo suyas.
+ */
+eventCheckinRouter.get(
+  '/operators',
+  canManage,
+  asyncHandler(async (request, response) => {
+    const eventId = eventIdOf(request);
+    const [byDoor, manual, incidents, doors] = await Promise.all([
+      prisma.checkin.groupBy({
+        by: ['operatorUserId', 'accessPointId'],
+        where: { eventId, operatorUserId: { not: null } },
+        _count: { _all: true },
+        _min: { checkedInAt: true },
+        _max: { checkedInAt: true },
+      }),
+      prisma.checkin.groupBy({
+        by: ['operatorUserId'],
+        where: {
+          eventId,
+          operatorUserId: { not: null },
+          manualReason: { not: null },
+        },
+        _count: { _all: true },
+      }),
+      prisma.incident.groupBy({
+        by: ['operatorUserId'],
+        where: { eventId, operatorUserId: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.accessPoint.findMany({
+        where: { eventId },
+        select: { id: true, name: true },
+      }),
+    ]);
+    const countOf = (
+      rows: { operatorUserId: string | null; _count: { _all: number } }[],
+      userId: string,
+    ) => rows.find((row) => row.operatorUserId === userId)?._count._all ?? 0;
+    const activeIds = [
+      ...new Set(
+        [...byDoor, ...incidents].map((row) => row.operatorUserId as string),
+      ),
+    ];
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { id: { in: activeIds } },
+          {
+            status: { not: 'inactive' },
+            role: {
+              OR: [
+                { code: ADMIN_ROLE_CODE },
+                {
+                  permissions: {
+                    some: {
+                      permission: { in: ['checkin.operate', 'checkin.manage'] },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      include: { role: { include: { permissions: true } } },
+    });
+    const rows = users.map((user) => {
+      const own = byDoor.filter((row) => row.operatorUserId === user.id);
+      const moments = (key: '_min' | '_max') =>
+        own.map((row) => row[key].checkedInAt?.getTime() ?? 0).filter(Boolean);
+      const permissions = effectivePermissions(user.role);
+      return {
+        id: user.id,
+        displayName: user.displayName,
+        email: user.email,
+        roleName: user.role.name,
+        status: user.status,
+        lastLoginAt: user.lastLoginAt,
+        canOperate:
+          user.status !== 'inactive' &&
+          (permissions.includes('checkin.operate') ||
+            permissions.includes('checkin.manage')),
+        checkins: own.reduce((sum, row) => sum + row._count._all, 0),
+        manual: countOf(manual, user.id),
+        incidents: countOf(incidents, user.id),
+        doors: own
+          .map((row) => ({
+            name:
+              doors.find((door) => door.id === row.accessPointId)?.name ??
+              'Punto de acceso',
+            checkins: row._count._all,
+          }))
+          .sort((a, b) => b.checkins - a.checkins),
+        firstAt: own.length ? new Date(Math.min(...moments('_min'))) : null,
+        lastAt: own.length ? new Date(Math.max(...moments('_max'))) : null,
+      };
+    });
+    response.json(
+      rows.sort(
+        (a, b) =>
+          b.checkins - a.checkins ||
+          b.incidents - a.incidents ||
+          a.displayName.localeCompare(b.displayName, 'es'),
+      ),
+    );
   }),
 );
 

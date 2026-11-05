@@ -40,7 +40,6 @@ function initialForm(event?: EventDetail) {
     paymentInstructions: event?.paymentInstructions ?? '',
     capacity: event?.capacity?.toString() ?? '',
     folioPrefix: event?.folioPrefix ?? '',
-    companionLimit: String(event?.companionLimit ?? 0),
   };
 }
 
@@ -118,7 +117,6 @@ export function EventGeneralForm({
         capacity: form.capacity === '' ? null : Number(form.capacity),
         folioPrefix: form.folioPrefix.trim().toUpperCase() || null,
         currency: event?.currency ?? 'MXN',
-        companionLimit: Number(form.companionLimit),
         modules: event?.modules ?? defaultModulesForType(type),
       });
       if (!parsed.success) {
@@ -168,8 +166,6 @@ export function EventGeneralForm({
     setNotice('');
     save.mutate();
   };
-
-  const showCompanions = event?.modules.includes('companions') ?? false;
 
   return (
     <form className="panel" onSubmit={submit} noValidate>
@@ -317,16 +313,6 @@ export function EventGeneralForm({
             }
           />
         </Field>
-        {showCompanions && (
-          <Field label="Acompañantes por persona" error={errors.companionLimit}>
-            <input
-              type="number"
-              min="0"
-              value={form.companionLimit}
-              onChange={(e) => update('companionLimit', e.target.value)}
-            />
-          </Field>
-        )}
         <div className="span-all">
           <Field
             label="Instrucciones de pago"

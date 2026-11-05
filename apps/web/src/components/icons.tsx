@@ -1,4 +1,17 @@
 const paths = {
+  flash: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
+  list: (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </>
+  ),
+  badge: (
+    <>
+      <path d="M6 3h9l4 4v14H6z" />
+      <path d="M15 3v4h4M9.5 14l2 2 3.5-4" />
+    </>
+  ),
   home: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />

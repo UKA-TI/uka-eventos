@@ -37,9 +37,6 @@ export function EventSummaryTab({
     ['Dirección pública', event.slug],
     ['Registros', event.registrationCount.toLocaleString('es-MX')],
   ];
-  if (event.modules.includes('companions')) {
-    rows.push(['Acompañantes por persona', String(event.companionLimit)]);
-  }
 
   const publicUrl = `${window.location.origin}/r/${event.slug}`;
   const isOpen =

@@ -27,6 +27,8 @@ import { RecoverPassPage } from './pages/public/RecoverPassPage.js';
 import { UnsubscribePage } from './pages/public/UnsubscribePage.js';
 import { ReportsPage } from './pages/reports/ReportsPage.js';
 import { RolesPage } from './pages/RolesPage.js';
+import { AuditPage } from './pages/AuditPage.js';
+import { ConsentsPage } from './pages/ConsentsPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
 
@@ -205,6 +207,22 @@ export default function App() {
           element={
             <Guard any={['roles.view', 'roles.manage']}>
               <RolesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="bitacora"
+          element={
+            <Guard any={['audit.view']}>
+              <AuditPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="consentimientos"
+          element={
+            <Guard any={['consents.view']}>
+              <ConsentsPage />
             </Guard>
           }
         />

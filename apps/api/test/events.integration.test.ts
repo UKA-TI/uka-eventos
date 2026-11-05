@@ -52,7 +52,6 @@ const eventBody = (seriesId: string, overrides: object = {}) => ({
   capacity: 100,
   folioPrefix: null,
   currency: 'MXN',
-  companionLimit: 0,
   modules: ['publicRegistration', 'checkin'],
   ...overrides,
 });

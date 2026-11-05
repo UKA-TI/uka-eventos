@@ -36,7 +36,10 @@ export const permissionCatalog = [
     label: 'Recepción',
     actions: [
       { code: 'checkin.operate', label: 'Operar el check-in' },
-      { code: 'checkin.manage', label: 'Puntos de acceso e incidencias' },
+      {
+        code: 'checkin.manage',
+        label: 'Puntos de acceso, incidencias y operadores',
+      },
     ],
   },
   {
@@ -78,6 +81,14 @@ export const permissionCatalog = [
     actions: [
       { code: 'reports.view', label: 'Ver tablero y comparativos' },
       { code: 'reports.export', label: 'Descargar archivos con datos' },
+    ],
+  },
+  {
+    key: 'compliance',
+    label: 'Control y privacidad',
+    actions: [
+      { code: 'audit.view', label: 'Ver la bitácora' },
+      { code: 'consents.view', label: 'Ver los consentimientos' },
     ],
   },
   {
@@ -224,11 +235,6 @@ export const eventModuleCatalog = [
     description: 'Asigna a los asistentes a mesas con cupo.',
   },
   {
-    key: 'companions',
-    label: 'Acompañantes',
-    description: 'Cada asistente puede registrar acompañantes.',
-  },
-  {
     key: 'raffle',
     label: 'Rifa',
     description: 'Entrega un folio de rifa al ingresar al evento.',
@@ -350,10 +356,6 @@ export const eventInputSchema = z.object({
     .regex(/^[A-Z0-9]{3}$/, 'Deben ser 3 letras o números.')
     .nullable(),
   currency: z.string().length(3).toUpperCase(),
-  companionLimit: z
-    .number('Escribe un número.')
-    .int('Debe ser un número entero.')
-    .nonnegative('No puede ser negativo.'),
   modules: z.array(eventModuleSchema),
 });
 
@@ -1532,3 +1534,144 @@ export const seatingPublishResultSchema = z.object({
   notified: z.number(),
   unassigned: z.number(),
 });
+
+/** Áreas para filtrar la bitácora. Cada acción pertenece a una por su prefijo. */
+export const auditCategories = [
+  {
+    key: 'acceso',
+    label: 'Acceso y permisos',
+    prefixes: ['auth.', 'user.', 'role.'],
+  },
+  {
+    key: 'eventos',
+    label: 'Eventos',
+    prefixes: ['event.', 'series.', 'ticket.', 'field.'],
+  },
+  {
+    key: 'compras',
+    label: 'Compras y pagos',
+    prefixes: ['order.', 'payment.', 'pass.'],
+  },
+  {
+    key: 'recepcion',
+    label: 'Recepción',
+    prefixes: ['checkin.', 'incident.', 'access_point.'],
+  },
+  { key: 'acomodo', label: 'Acomodo de mesas', prefixes: ['seating.'] },
+  {
+    key: 'crm',
+    label: 'Contactos y comunicaciones',
+    prefixes: [
+      'contact.',
+      'company.',
+      'segment.',
+      'template.',
+      'campaign.',
+      'donation.',
+      'email.',
+    ],
+  },
+  { key: 'reportes', label: 'Descargas', prefixes: ['report.'] },
+] as const;
+
+const pageFields = {
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+};
+
+export const auditListSchema = z.object({
+  ...pageFields,
+  rows: z.array(
+    z.object({
+      id: z.string(),
+      createdAt: z.string(),
+      action: z.string(),
+      actionLabel: z.string(),
+      detail: z.string(),
+      userName: z.string().nullable(),
+      eventName: z.string().nullable(),
+    }),
+  ),
+});
+
+export const auditOptionsSchema = z.object({
+  events: z.array(z.object({ id: z.string(), name: z.string() })),
+  users: z.array(z.object({ id: z.string(), displayName: z.string() })),
+});
+
+export const consentEventsSchema = z.array(
+  z.object({ id: z.string(), name: z.string() }),
+);
+
+export const consentNoticeListSchema = z.object({
+  ...pageFields,
+  accepted: z.number(),
+  pending: z.number(),
+  rows: z.array(
+    z.object({
+      id: z.string(),
+      guestName: z.string(),
+      email: z.string().nullable(),
+      eventName: z.string(),
+      folio: z.string(),
+      purpose: z.string(),
+      noticeVersion: z.string(),
+      consentedAt: z.string(),
+    }),
+  ),
+});
+
+export const consentMarketingListSchema = z.object({
+  ...pageFields,
+  granted: z.number(),
+  optedOut: z.number(),
+  none: z.number(),
+  rows: z.array(
+    z.object({
+      contactId: z.string(),
+      name: z.string(),
+      email: z.string().nullable(),
+      status: z.enum(['granted', 'opted_out', 'none']),
+      at: z.string().nullable(),
+      source: z.string().nullable(),
+      noticeVersion: z.string().nullable(),
+    }),
+  ),
+});
+
+export const eventOperatorListSchema = z.array(
+  z.object({
+    id: z.string(),
+    displayName: z.string(),
+    email: z.string(),
+    roleName: z.string(),
+    status: z.string(),
+    lastLoginAt: z.string().nullable(),
+    canOperate: z.boolean(),
+    checkins: z.number(),
+    manual: z.number(),
+    incidents: z.number(),
+    doors: z.array(z.object({ name: z.string(), checkins: z.number() })),
+    firstAt: z.string().nullable(),
+    lastAt: z.string().nullable(),
+  }),
+);
+
+/**
+ * ¿Lo que se escribió en recepción es este folio? Basta el consecutivo: en la puerta
+ * nadie teclea GAL27-0127 si con 127 alcanza. Compara el número completo para que
+ * 12 no abra el pase 127.
+ */
+export function matchesFolio(folio: string, typed: string): boolean {
+  const input = typed.replace(/\s+/g, '').toUpperCase();
+  if (!input) {
+    return false;
+  }
+  const whole = folio.toUpperCase();
+  if (input === whole || input === whole.replace(/-/g, '')) {
+    return true;
+  }
+  const consecutive = Number(whole.split('-').at(-1));
+  return /^\d+$/.test(input) && Number(input) === consecutive;
+}

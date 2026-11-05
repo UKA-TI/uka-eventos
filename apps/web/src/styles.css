@@ -986,6 +986,19 @@ code {
   min-width: 0;
 }
 
+.filter-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tenue);
+  font-size: 0.84rem;
+}
+
+.filters .filter-date input {
+  flex: 0 1 auto;
+  width: auto;
+}
+
 .filters select {
   flex: 0 1 auto;
   width: auto;
@@ -1057,6 +1070,21 @@ span.row-actions {
   margin: 0 0 12px;
   color: var(--tenue);
   font-size: 0.84rem;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.cell-wrap {
+  min-width: 220px;
+  overflow-wrap: anywhere;
+}
+
+th.numeric,
+td.numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .cell-note {
@@ -1653,6 +1681,112 @@ span.row-actions {
   border-radius: var(--r-lg);
   box-shadow: 0 0 0 100vmax rgb(0 0 0 / 40%);
   transform: translate(-50%, -50%);
+}
+
+.scanner-torch {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 55%);
+  color: var(--blanco);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scanner-torch svg {
+  width: 18px;
+  height: 18px;
+}
+
+.scanner-torch.on {
+  border-color: var(--amarillo);
+  background: var(--amarillo);
+  color: var(--tinta);
+}
+
+.folio-entry {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--blanco);
+  border-top: 1px solid var(--linea);
+}
+
+.folio-entry .station-search {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.admit-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 50%);
+}
+
+.admit-sheet {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 520px);
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--blanco);
+  color: var(--tinta);
+}
+
+.admit-sheet .notice,
+.admit-sheet .muted {
+  margin: 0;
+}
+
+.admit-name {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.admit-table {
+  justify-self: start;
+}
+
+.admit-reasons {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admit-reasons legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+
+.admit-reasons label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
+
+.admit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .scanner-error {

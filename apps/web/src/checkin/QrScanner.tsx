@@ -1,8 +1,14 @@
 import jsQR from 'jsqr';
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../components/icons.js';
 
 const SCAN_EVERY_MS = 150;
 const MAX_SIDE = 640;
+
+/** La linterna aún no está en los tipos del navegador: no todos los teléfonos la ofrecen. */
+interface TorchCapabilities extends MediaTrackCapabilities {
+  torch?: boolean;
+}
 
 function cameraError(error: unknown): string {
   const name = error instanceof DOMException ? error.name : '';
@@ -28,7 +34,10 @@ export function QrScanner({
   const videoRef = useRef<HTMLVideoElement>(null);
   const pausedRef = useRef(paused);
   const onCodeRef = useRef(onCode);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
   const [error, setError] = useState('');
+  const [hasTorch, setHasTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -85,6 +94,13 @@ export function QrScanner({
           await video.play();
         }
         timer = setInterval(scan, SCAN_EVERY_MS);
+        // Algunos Android solo la reportan cuando el video ya está corriendo.
+        const track = media.getVideoTracks()[0] ?? null;
+        trackRef.current = track;
+        const capabilities = track?.getCapabilities?.() as
+          | TorchCapabilities
+          | undefined;
+        setHasTorch(capabilities?.torch === true);
       } catch (cause) {
         setError(cameraError(cause));
       }
@@ -95,9 +111,24 @@ export function QrScanner({
       if (timer) {
         clearInterval(timer);
       }
+      // Detener la cámara también apaga la linterna.
       stream?.getTracks().forEach((track) => track.stop());
+      trackRef.current = null;
     };
   }, []);
+
+  const toggleTorch = async () => {
+    const next = !torchOn;
+    try {
+      await trackRef.current?.applyConstraints({
+        advanced: [{ torch: next } as MediaTrackConstraintSet],
+      });
+      setTorchOn(next);
+    } catch {
+      setHasTorch(false);
+      setTorchOn(false);
+    }
+  };
 
   return (
     <div className="scanner">
@@ -114,6 +145,17 @@ export function QrScanner({
             aria-label="Vista de la cámara"
           />
           <div className="scanner-frame" aria-hidden="true" />
+          {hasTorch && (
+            <button
+              type="button"
+              className={torchOn ? 'scanner-torch on' : 'scanner-torch'}
+              aria-pressed={torchOn}
+              onClick={() => void toggleTorch()}
+            >
+              <Icon name="flash" />
+              {torchOn ? 'Apagar linterna' : 'Linterna'}
+            </button>
+          )}
         </>
       )}
     </div>

@@ -16,6 +16,7 @@ import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
 import { EventCheckinTab } from './EventCheckinTab.js';
+import { EventOperatorsTab } from './EventOperatorsTab.js';
 import { EventDashboardTab } from './EventDashboardTab.js';
 import { EventGroupsTab } from './EventGroupsTab.js';
 import { EventGuestsTab } from './EventGuestsTab.js';
@@ -35,6 +36,7 @@ const tabs = [
   ['acomodo', 'Acomodo'],
   ['registros', 'Compras'],
   ['checkin', 'Check-in'],
+  ['operadores', 'Operadores'],
   ['boletos', 'Boletos'],
   ['formulario', 'Formulario'],
   ['modulos', 'Módulos'],
@@ -367,6 +369,8 @@ export function EventDetailPage() {
                 )) &&
               (value !== 'checkin' ||
                 can('checkin.operate', 'checkin.manage')) &&
+              (value !== 'operadores' ||
+                (event.modules.includes('checkin') && can('checkin.manage'))) &&
               (value !== 'acomodo' ||
                 (event.modules.includes('tables') &&
                   can('seating.view', 'seating.manage'))) &&
@@ -427,6 +431,7 @@ export function EventDetailPage() {
         <EventRegistrationsTab event={event} onChanged={() => refresh()} />
       )}
       {tab === 'checkin' && <EventCheckinTab event={event} />}
+      {tab === 'operadores' && <EventOperatorsTab event={event} />}
       {tab === 'boletos' && (
         <EventTicketsTab event={event} onChanged={() => refresh()} />
       )}

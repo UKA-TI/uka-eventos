@@ -1,11 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { checkinEventsSchema, incidentInputSchema } from '@uka/shared';
+import {
+  checkinEventsSchema,
+  incidentInputSchema,
+  matchesFolio,
+  type OfflineList,
+} from '@uka/shared';
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type FormEvent,
   type ReactNode,
 } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -24,6 +30,138 @@ import { formatEventDate } from '../text.js';
 
 const RESULT_MS = 3500;
 const SAME_CODE_MS = 6000;
+const OTHER_REASON = 'Otro motivo';
+const MANUAL_REASONS = [
+  'El QR no se pudo leer',
+  'No trae su pase',
+  OTHER_REASON,
+] as const;
+
+type Entry = OfflineList['entries'][number];
+
+/** Antes de dejar pasar a alguien sin QR: se ve quién es y queda el motivo. */
+function AdmitSheet({
+  entry,
+  timeZone,
+  defaultReason,
+  onAdmit,
+  onClose,
+}: {
+  entry: Entry;
+  timeZone: string;
+  defaultReason: (typeof MANUAL_REASONS)[number];
+  onAdmit: (reason: string) => void;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState<string>(defaultReason);
+  const [other, setOther] = useState('');
+  const text = reason === OTHER_REASON ? other.trim() : reason;
+
+  useEffect(() => {
+    const onKey = (keyEvent: KeyboardEvent) => {
+      if (keyEvent.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="admit-backdrop">
+      <div
+        className="admit-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Ingreso de ${entry.guestName}`}
+      >
+        <strong className="admit-name">{entry.guestName}</strong>
+        <span>
+          {entry.ticketName} · {entry.folio}
+        </span>
+        {entry.tableName && (
+          <span className="scan-table admit-table">
+            <small>Su mesa</small>
+            {entry.tableName}
+          </span>
+        )}
+        {entry.checkedInAt ? (
+          <>
+            <p className="notice warn" role="status">
+              Este pase ya ingresó a las{' '}
+              {new Date(entry.checkedInAt).toLocaleTimeString('es-MX', {
+                timeZone,
+                timeStyle: 'short',
+              })}
+              .
+            </p>
+            <button
+              className="button secondary"
+              type="button"
+              onClick={onClose}
+            >
+              Cerrar
+            </button>
+          </>
+        ) : (
+          <>
+            {entry.pendingActivation && (
+              <p className="notice warn" role="status">
+                Aún no acepta el aviso de privacidad. Puede pasar con este
+                ingreso manual.
+              </p>
+            )}
+            <p className="muted">
+              Verifica su identidad antes de darle ingreso.
+            </p>
+            <fieldset className="admit-reasons">
+              <legend>Motivo</legend>
+              {MANUAL_REASONS.map((option) => (
+                <label key={option}>
+                  <input
+                    type="radio"
+                    name="admit-reason"
+                    checked={reason === option}
+                    onChange={() => setReason(option)}
+                  />
+                  {option}
+                </label>
+              ))}
+            </fieldset>
+            {reason === OTHER_REASON && (
+              <input
+                className="station-search"
+                aria-label="Escribe el motivo"
+                placeholder="Escribe el motivo"
+                maxLength={200}
+                autoFocus
+                value={other}
+                onChange={(e) => setOther(e.target.value)}
+              />
+            )}
+            <div className="admit-actions">
+              <button
+                className="button secondary"
+                type="button"
+                onClick={onClose}
+              >
+                Cancelar
+              </button>
+              <button
+                className="button primary"
+                type="button"
+                disabled={!text}
+                onClick={() => onAdmit(text)}
+              >
+                Dar ingreso
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Con sesión, Recepción conserva el menú. Sin conexión no hay sesión que validar.
@@ -384,7 +522,14 @@ function Station({
   const [mode, setMode] = useState<'scan' | 'search' | 'incident'>('scan');
   const [incidentText, setIncidentText] = useState('');
   const [incidentNotice, setIncidentNotice] = useState('');
+  const [folio, setFolio] = useState('');
+  const [folioMiss, setFolioMiss] = useState('');
+  const [candidate, setCandidate] = useState<{
+    entry: Entry;
+    defaultReason: (typeof MANUAL_REASONS)[number];
+  } | null>(null);
   const lastCode = useRef({ code: '', at: 0 });
+  const closeCandidate = useCallback(() => setCandidate(null), []);
 
   useEffect(() => {
     if (!outcome) {
@@ -424,6 +569,30 @@ function Station({
     },
     [handleHash],
   );
+
+  const lookUpFolio = async (submitEvent: FormEvent) => {
+    submitEvent.preventDefault();
+    const typed = folio.trim();
+    if (!typed) {
+      return;
+    }
+    setFolioMiss('');
+    const find = (entries: Entry[]) =>
+      entries.find((entry) => matchesFolio(entry.folio, typed));
+    let found = find(station.entries);
+    // La lista del teléfono se renueva cada minuto: pudo emitirse hace un momento.
+    if (!found && navigator.onLine) {
+      await station.refreshList();
+      found = find(checkinStore.list(eventId)?.entries ?? []);
+    }
+    if (found) {
+      setCandidate({ entry: found, defaultReason: 'El QR no se pudo leer' });
+    } else {
+      setFolioMiss(
+        `No hay un pase vigente con el folio ${typed}. Revísalo con la persona; si fue cancelado, envíala a la mesa de incidencias.`,
+      );
+    }
+  };
 
   const term = search.trim().toLowerCase();
   const matches = useMemo(
@@ -532,7 +701,36 @@ function Station({
       </div>
 
       {mode === 'scan' && (
-        <QrScanner paused={outcome !== null} onCode={onCode} />
+        <>
+          <QrScanner
+            paused={outcome !== null || candidate !== null}
+            onCode={onCode}
+          />
+          <form className="folio-entry" onSubmit={(e) => void lookUpFolio(e)}>
+            <input
+              className="station-search"
+              aria-label="Folio del pase"
+              placeholder="¿No lee el QR? Escribe el folio"
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              enterKeyHint="search"
+              value={folio}
+              onChange={(e) => {
+                setFolio(e.target.value);
+                setFolioMiss('');
+              }}
+            />
+            <button className="button secondary" type="submit">
+              Buscar
+            </button>
+          </form>
+          {folioMiss && (
+            <p className="notice warn" role="alert">
+              {folioMiss}
+            </p>
+          )}
+        </>
       )}
 
       {mode === 'search' && (
@@ -568,15 +766,9 @@ function Station({
                   <button
                     className="button primary small"
                     type="button"
-                    onClick={() => {
-                      const reason = window.prompt(
-                        `Motivo del ingreso manual de ${entry.guestName}:`,
-                      );
-                      if (reason?.trim()) {
-                        void handleHash(entry.tokenHash, reason.trim());
-                        setSearch('');
-                      }
-                    }}
+                    onClick={() =>
+                      setCandidate({ entry, defaultReason: 'No trae su pase' })
+                    }
                   >
                     Dar ingreso
                   </button>
@@ -613,6 +805,21 @@ function Station({
             </button>
           </div>
         </div>
+      )}
+
+      {candidate && (
+        <AdmitSheet
+          entry={candidate.entry}
+          timeZone={timeZone}
+          defaultReason={candidate.defaultReason}
+          onClose={closeCandidate}
+          onAdmit={(reason) => {
+            setCandidate(null);
+            setFolio('');
+            setSearch('');
+            void handleHash(candidate.entry.tokenHash, reason);
+          }}
+        />
       )}
 
       {outcome && (

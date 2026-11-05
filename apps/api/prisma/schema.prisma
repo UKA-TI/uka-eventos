@@ -81,7 +81,6 @@ model Event {
   capacity            Int?                @db.UnsignedInt
   folioPrefix         String?             @map("folio_prefix") @db.VarChar(3)
   currency            String              @default("MXN") @db.Char(3)
-  companionLimit      Int                 @default(0) @map("companion_limit") @db.UnsignedInt
   createdAt           DateTime            @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt           DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
   series              EventSeries         @relation(fields: [seriesId], references: [id])
