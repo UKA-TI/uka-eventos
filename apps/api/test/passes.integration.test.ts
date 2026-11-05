@@ -296,6 +296,10 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('pass tools and consent', () => {
     expect((qr.body as Buffer).subarray(1, 4).toString()).toBe('PNG');
 
     expect(email?.html).toContain('qr.png');
+    // Logotipo y leyenda, sin recuadros alrededor de cada opción.
+    const actions = email?.html.slice(email.html.indexOf('Ver mi pase')) ?? '';
+    expect(actions).toContain('Agregar al calendario');
+    expect(actions).not.toContain('border:1px solid');
     expect(email?.inlineImages.map(({ contentId }) => contentId)).toContain(
       'icon-qr',
     );

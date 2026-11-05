@@ -41,7 +41,7 @@ const TEXT_HEADER =
 
 const ICON_DIR = new URL('../../../assets/mail/', import.meta.url);
 
-/** Solo adjunta los íconos que el correo usa. Sin el archivo, el botón queda sin ícono. */
+/** Solo adjunta los íconos que el correo usa. Sin el archivo, la liga queda solo con su leyenda. */
 async function withIcons(
   html: string,
 ): Promise<{ html: string; images: InlineImage[] }> {
@@ -161,28 +161,23 @@ function button(url: string, label: string): string {
   return `<p style="margin:18px 0"><a href="${url}" style="display:inline-block;padding:11px 18px;background:#0077C9;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></p>`;
 }
 
-const SOFT_BORDER = '#c6cdd6';
-
-/** Botón para correo: una celda con fondo, porque Outlook ignora el relleno de un enlace. */
-function actionCell(
-  url: string,
-  text: string,
-  options: { primary?: boolean; icon?: string } = {},
-): string {
-  const background = options.primary ? '#0077C9' : '#ffffff';
-  const border = options.primary ? '#0077C9' : SOFT_BORDER;
-  const color = options.primary ? '#ffffff' : '#14212e';
-  const icon = options.icon
-    ? `<img src="cid:icon-${options.icon}" width="20" height="20" alt="" style="vertical-align:middle;margin-right:7px;border:0"> `
-    : '';
-  return `<td align="center" bgcolor="${background}" style="border:1px solid ${border};border-radius:6px;background:${background}"><a href="${escapeHtml(url)}" style="display:block;padding:10px 4px;color:${color};font-size:14px;font-weight:bold;text-decoration:none">${icon}<span style="vertical-align:middle">${escapeHtml(text)}</span></a></td>`;
+/** La acción principal: una celda con fondo, porque Outlook ignora el relleno de un enlace. */
+function primaryAction(url: string, text: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px"><tr><td align="center" bgcolor="#0077C9" style="border-radius:6px;background:#0077C9"><a href="${escapeHtml(url)}" style="display:block;padding:12px 4px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none">${escapeHtml(text)}</a></td></tr></table>`;
 }
 
-/** Fila de botones del mismo ancho, separados por celdas vacías. */
-function actionRow(cells: string[]): string {
-  const gap =
-    '<td width="8" style="width:8px;font-size:0;line-height:0">&nbsp;</td>';
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;margin:0 0 8px"><tr>${cells.join(gap)}</tr></table>`;
+/** Logotipo y leyenda, sin contorno. Todo el conjunto es la liga, para tocarlo fácil. */
+function iconLink(url: string, icon: string, text: string): string {
+  return `<td align="center" valign="top" width="33%" style="width:33%"><a href="${escapeHtml(url)}" style="display:block;padding:6px 2px;color:#14212e;font-size:13px;line-height:18px;text-decoration:none"><img src="cid:icon-${icon}" width="36" height="36" alt="" style="border:0;margin-bottom:4px"> <br>${escapeHtml(text)}</a></td>`;
+}
+
+/** Siempre tres columnas: los logotipos quedan alineados aunque falte alguna opción. */
+function iconRow(cells: string[]): string {
+  const blanks = Array.from(
+    { length: 3 - cells.length },
+    () => '<td width="33%" style="width:33%">&nbsp;</td>',
+  );
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;margin:0 0 10px"><tr>${[...cells, ...blanks].join('')}</tr></table>`;
 }
 
 function programRow(event: {
@@ -217,22 +212,20 @@ function passActions(
   const calendar = calendarLinks(event, folio);
   return [
     '<div style="margin:18px 0 0">',
-    actionRow([actionCell(passUrl(passId), 'Ver mi pase', { primary: true })]),
-    actionRow([
-      actionCell(passPdfUrl(passId), 'Descargar PDF', { icon: 'pdf' }),
-      actionCell(passQrUrl(passId), 'Guardar QR', { icon: 'qr' }),
+    primaryAction(passUrl(passId), 'Ver mi pase'),
+    iconRow([
+      iconLink(passPdfUrl(passId), 'pdf', 'Pase en PDF'),
+      iconLink(passQrUrl(passId), 'qr', 'Guardar QR'),
+      ...(event.mapUrl ? [iconLink(event.mapUrl, 'map', 'Cómo llegar')] : []),
     ]),
     calendar
-      ? `<p style="margin:14px 0 6px;color:#5e6b79;font-size:13px;font-weight:bold">Agregar a mi calendario</p>${actionRow(
+      ? `<p style="margin:14px 0 4px;color:#5e6b79;font-size:13px;font-weight:bold;text-align:center">Agregar al calendario</p>${iconRow(
           [
-            actionCell(calendar.google, 'Google', { icon: 'google' }),
-            actionCell(calendar.outlook, 'Outlook', { icon: 'outlook' }),
-            actionCell(passIcsUrl(passId), 'Apple u otro', { icon: 'apple' }),
+            iconLink(calendar.google, 'google', 'Google'),
+            iconLink(calendar.outlook, 'outlook', 'Outlook'),
+            iconLink(passIcsUrl(passId), 'apple', 'Apple'),
           ],
         )}`
-      : '',
-    event.mapUrl
-      ? `<div style="margin-top:14px">${actionRow([actionCell(event.mapUrl, 'Cómo llegar a la sede', { icon: 'map' })])}</div>`
       : '',
     '</div>',
   ].join('');
