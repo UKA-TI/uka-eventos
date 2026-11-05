@@ -1282,6 +1282,20 @@ td.numeric {
 }
 
 /* Matriz de permisos */
+/* Con muchos perfiles la tabla se desplaza: el nombre del permiso siempre queda a la vista. */
+.matrix thead th:first-child,
+.matrix tbody td:first-child:not(.matrix-cell) {
+  position: sticky;
+  z-index: 1;
+  left: 0;
+  background: var(--blanco);
+  box-shadow: 1px 0 0 var(--linea);
+}
+
+.matrix thead th:first-child {
+  background: inherit;
+}
+
 .matrix .role-column {
   min-width: 130px;
   text-align: center;
