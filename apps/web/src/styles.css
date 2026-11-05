@@ -2961,24 +2961,25 @@ a.link-button {
 
   /* En el teléfono la foto es un encabezado: el botón de acceso sigue a la vista. */
   .login-aside {
-    min-height: clamp(190px, 30vw, 280px);
+    min-height: clamp(250px, 36vw, 320px);
     padding: 20px;
   }
 
   /* Acercada a la gente: sin esto se verían el techo y la pared de patrocinadores. */
   .login-aside::before {
     height: 100%;
-    background-position: 0 55%;
+    background-position: 0 48%;
     background-size: 220vw auto;
   }
 
-  /* Aquí el texto ocupa casi toda la foto: necesita más contraste. */
+  /* El texto va abajo, sobre el azul; la gente se ve arriba, casi sin velo. */
   .login-aside::after {
     background: linear-gradient(
       to top,
-      rgb(4 53 92 / 96%) 0%,
-      rgb(4 53 92 / 88%) 58%,
-      rgb(4 53 92 / 12%) 100%
+      rgb(4 53 92 / 97%) 0%,
+      rgb(4 53 92 / 90%) 36%,
+      rgb(4 53 92 / 12%) 60%,
+      rgb(4 53 92 / 4%) 100%
     );
   }
 
