@@ -158,25 +158,32 @@ code {
   color: var(--blanco);
 }
 
+/*
+ * Foto de fondo de img/ispark.png. Es más alta que el panel y arranca desde arriba para
+ * dejar fuera el logotipo blanco de la imagen, que quedaría debajo del texto. Va como
+ * fondo y no como <img>: en el teléfono, donde este panel no se muestra, no se descarga.
+ */
 .login-aside::before {
   position: absolute;
-  top: -120px;
-  right: -120px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: var(--azul);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 125%;
+  background: url('../../../img/ispark.png') left top / cover no-repeat;
   content: '';
 }
 
+/* Funde la foto hacia el azul institucional para que el texto siempre se lea. */
 .login-aside::after {
   position: absolute;
-  top: 150px;
-  right: 170px;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: var(--amarillo);
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(4 53 92 / 97%) 0%,
+    rgb(4 53 92 / 90%) 26%,
+    rgb(4 53 92 / 28%) 58%,
+    rgb(4 53 92 / 8%) 100%
+  );
   content: '';
 }
 
