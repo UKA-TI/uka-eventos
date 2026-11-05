@@ -168,7 +168,7 @@ export function EventGeneralForm({
   };
 
   return (
-    <form className="panel" onSubmit={submit} noValidate>
+    <form className="panel event-config-form" onSubmit={submit} noValidate>
       <Notice>{notice}</Notice>
       <h2 className="form-section">Serie y edición</h2>
       <p className="muted form-note">

@@ -111,25 +111,31 @@ function ReceivablesView() {
           ))}
       </div>
       <div className="filters">
-        <input
-          type="search"
-          aria-label="Buscar comprador"
-          placeholder="Comprador, empresa, correo o referencia"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <select
-          aria-label="Evento"
-          value={eventId}
-          onChange={(e) => setEventId(e.target.value)}
-        >
-          <option value="">Todos los eventos</option>
-          {events.map((event) => (
-            <option key={event.id} value={event.id}>
-              {event.name}
-            </option>
-          ))}
-        </select>
+        <label className="filter-field filter-search">
+          <span>Buscar comprador</span>
+          <input
+            type="search"
+            aria-label="Buscar comprador"
+            placeholder="Comprador, empresa, correo o referencia"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+        <label className="filter-field">
+          <span>Evento</span>
+          <select
+            aria-label="Evento"
+            value={eventId}
+            onChange={(e) => setEventId(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+        </label>
         {can('reports.export') && rows.length > 0 && (
           <a
             className="button secondary"

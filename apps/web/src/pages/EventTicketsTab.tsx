@@ -147,7 +147,7 @@ export function EventTicketsTab({
       )}
 
       {formOpen && (
-        <form className="panel" onSubmit={submit} noValidate>
+        <form className="panel event-config-form" onSubmit={submit} noValidate>
           <div className="panel-heading">
             <h2>{editingId ? 'Editar boleto' : 'Nuevo tipo de boleto'}</h2>
           </div>
@@ -255,7 +255,7 @@ export function EventTicketsTab({
         </form>
       )}
 
-      <div className="panel table-panel">
+      <div className="panel table-panel event-config-panel">
         <div className="panel-heading table-heading">
           <h2>Tipos de boleto</h2>
           {canEdit && (

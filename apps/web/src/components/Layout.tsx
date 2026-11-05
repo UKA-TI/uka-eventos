@@ -84,14 +84,28 @@ export function Shell({
 
   return (
     <div className="shell">
-      <aside className={menuOpen ? 'sidebar open' : 'sidebar'}>
+      <aside
+        id="main-sidebar"
+        className={menuOpen ? 'sidebar open' : 'sidebar'}
+      >
         <div className="brand">
-          <img src={logoUrl} alt="Un Kilo de Ayuda" />
-          <strong>
-            EVENTOS
-            <br />
-            UKA
-          </strong>
+          <div className="mobile-brand">
+            <img src={logoUrl} alt="Un Kilo de Ayuda" />
+            <div className="mobile-brand-name">
+              <strong>
+                Eventos <span>UKA</span>
+              </strong>
+              <small>Un Kilo de Ayuda</small>
+            </div>
+          </div>
+          <button
+            className="mobile-menu-toggle sidebar-close"
+            type="button"
+            aria-label="Cerrar menú principal"
+            onClick={closeMenu}
+          >
+            <Icon name="close" />
+          </button>
         </div>
         <nav aria-label="Navegación principal" onClick={closeMenu}>
           <NavLink className={linkClass} end to="/">
@@ -225,15 +239,27 @@ export function Shell({
       </aside>
       <div className="main-area">
         <header className="mobile-bar">
-          <strong>EVENTOS UKA</strong>
           <button
-            className="button secondary small"
+            className="mobile-menu-toggle"
             type="button"
+            aria-label={
+              menuOpen ? 'Cerrar menú principal' : 'Abrir menú principal'
+            }
+            aria-controls="main-sidebar"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            Menú
+            <Icon name={menuOpen ? 'close' : 'menu'} />
           </button>
+          <div className="mobile-brand">
+            <img src={logoUrl} alt="Un Kilo de Ayuda" />
+            <div className="mobile-brand-name">
+              <strong>
+                Eventos <span>UKA</span>
+              </strong>
+              <small>Un Kilo de Ayuda</small>
+            </div>
+          </div>
         </header>
         <main className={bare ? 'content-bare' : 'content'}>
           <Notice>{notice}</Notice>

@@ -53,28 +53,34 @@ function FilterBar({
     label: string,
     items: { value: string; label: string }[],
   ) => (
-    <select
-      aria-label={label}
-      value={params.get(key) ?? ''}
-      onChange={(e) => update(key, e.target.value)}
-    >
-      <option value="">{label}</option>
-      {items.map((item) => (
-        <option key={item.value} value={item.value}>
-          {item.label}
-        </option>
-      ))}
-    </select>
+    <label className="filter-field">
+      <span>{label}</span>
+      <select
+        aria-label={label}
+        value={params.get(key) ?? ''}
+        onChange={(e) => update(key, e.target.value)}
+      >
+        <option value="">{label}</option>
+        {items.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
   return (
     <div className="filters">
-      <input
-        type="search"
-        placeholder="Buscar por nombre, correo, teléfono o empresa"
-        aria-label="Buscar contacto"
-        value={params.get('q') ?? ''}
-        onChange={(e) => update('q', e.target.value)}
-      />
+      <label className="filter-field filter-search">
+        <span>Buscar contacto</span>
+        <input
+          type="search"
+          placeholder="Buscar por nombre, correo, teléfono o empresa"
+          aria-label="Buscar contacto"
+          value={params.get('q') ?? ''}
+          onChange={(e) => update('q', e.target.value)}
+        />
+      </label>
       {select(
         'companyId',
         'Empresa',

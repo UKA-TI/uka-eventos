@@ -305,42 +305,51 @@ export function ReportsPage() {
       ) : (
         <>
           <div className="filters">
-            <select
-              aria-label="Filtrar por año"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-            >
-              <option value="">Todos los años</option>
-              {years.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Filtrar por tipo"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              <option value="">Todos los tipos</option>
-              {types.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Filtrar por serie"
-              value={seriesId}
-              onChange={(e) => setSeriesId(e.target.value)}
-            >
-              <option value="">Todas las series</option>
-              {seriesList.map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            <label className="filter-field">
+              <span>Año</span>
+              <select
+                aria-label="Filtrar por año"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              >
+                <option value="">Todos los años</option>
+                {years.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="filter-field">
+              <span>Tipo</span>
+              <select
+                aria-label="Filtrar por tipo"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                <option value="">Todos los tipos</option>
+                {types.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="filter-field">
+              <span>Serie</span>
+              <select
+                aria-label="Filtrar por serie"
+                value={seriesId}
+                onChange={(e) => setSeriesId(e.target.value)}
+              >
+                <option value="">Todas las series</option>
+                {seriesList.map(([id, name]) => (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="stats">

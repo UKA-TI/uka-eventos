@@ -119,32 +119,38 @@ function NoticesView() {
         </div>
       )}
       <div className="filters">
-        <input
-          type="search"
-          aria-label="Buscar por nombre, correo o folio"
-          placeholder="Nombre, correo o folio"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setPage(1);
-          }}
-        />
-        {events.data && (
-          <select
-            aria-label="Evento"
-            value={eventId}
+        <label className="filter-field filter-search">
+          <span>Buscar por nombre, correo o folio</span>
+          <input
+            type="search"
+            aria-label="Buscar por nombre, correo o folio"
+            placeholder="Nombre, correo o folio"
+            value={q}
             onChange={(e) => {
-              setEventId(e.target.value);
+              setQ(e.target.value);
               setPage(1);
             }}
-          >
-            <option value="">Todos los eventos</option>
-            {events.data.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
+          />
+        </label>
+        {events.data && (
+          <label className="filter-field">
+            <span>Evento</span>
+            <select
+              aria-label="Evento"
+              value={eventId}
+              onChange={(e) => {
+                setEventId(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Todos los eventos</option>
+              {events.data.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
       {list.isPending && <Loading />}
@@ -247,31 +253,37 @@ function MarketingView() {
         </div>
       )}
       <div className="filters">
-        <input
-          type="search"
-          aria-label="Buscar por nombre o correo"
-          placeholder="Nombre o correo"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          aria-label="Estado"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(marketingStates).map(([value, [label]]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <label className="filter-field filter-search">
+          <span>Buscar por nombre o correo</span>
+          <input
+            type="search"
+            aria-label="Buscar por nombre o correo"
+            placeholder="Nombre o correo"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label className="filter-field">
+          <span>Estado</span>
+          <select
+            aria-label="Estado"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos los estados</option>
+            {Object.entries(marketingStates).map(([value, [label]]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {list.isPending && <Loading />}
       {list.isError && <Notice>{list.error.message}</Notice>}

@@ -62,42 +62,51 @@ export function AuditPage() {
         description="Lo que hizo cada persona en el sistema. No se puede editar ni borrar."
       />
       <div className="filters">
-        <select
-          aria-label="Evento"
-          value={filters.eventId}
-          onChange={(e) => update('eventId', e.target.value)}
-        >
-          <option value="">Todos los eventos</option>
-          {options.data?.events.map((event) => (
-            <option key={event.id} value={event.id}>
-              {event.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Persona"
-          value={filters.userId}
-          onChange={(e) => update('userId', e.target.value)}
-        >
-          <option value="">Todas las personas</option>
-          {options.data?.users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.displayName}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Área"
-          value={filters.category}
-          onChange={(e) => update('category', e.target.value)}
-        >
-          <option value="">Todas las áreas</option>
-          {auditCategories.map((category) => (
-            <option key={category.key} value={category.key}>
-              {category.label}
-            </option>
-          ))}
-        </select>
+        <label className="filter-field">
+          <span>Evento</span>
+          <select
+            aria-label="Evento"
+            value={filters.eventId}
+            onChange={(e) => update('eventId', e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            {options.data?.events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Persona</span>
+          <select
+            aria-label="Persona"
+            value={filters.userId}
+            onChange={(e) => update('userId', e.target.value)}
+          >
+            <option value="">Todas las personas</option>
+            {options.data?.users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Área</span>
+          <select
+            aria-label="Área"
+            value={filters.category}
+            onChange={(e) => update('category', e.target.value)}
+          >
+            <option value="">Todas las áreas</option>
+            {auditCategories.map((category) => (
+              <option key={category.key} value={category.key}>
+                {category.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="filter-date">
           <span>Desde</span>
           <input

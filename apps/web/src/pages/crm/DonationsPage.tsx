@@ -367,36 +367,42 @@ export function DonationsPage() {
       )}
 
       <div className="filters">
-        <select
-          aria-label="Filtrar por evento"
-          value={eventId}
-          onChange={(e) => {
-            setEventId(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todos los eventos</option>
-          {options.data?.events.map((event) => (
-            <option key={event.id} value={event.id}>
-              {event.name}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filtrar por año"
-          value={year}
-          onChange={(e) => {
-            setYear(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todos los años</option>
-          {years.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+        <label className="filter-field">
+          <span>Evento</span>
+          <select
+            aria-label="Filtrar por evento"
+            value={eventId}
+            onChange={(e) => {
+              setEventId(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos los eventos</option>
+            {options.data?.events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Año</span>
+          <select
+            aria-label="Filtrar por año"
+            value={year}
+            onChange={(e) => {
+              setYear(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos los años</option>
+            {years.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="panel table-panel">

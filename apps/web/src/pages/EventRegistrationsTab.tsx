@@ -522,31 +522,37 @@ export function EventRegistrationsTab({
       )}
 
       <div className="filters">
-        <input
-          type="search"
-          placeholder="Buscar por nombre, correo, empresa o folio"
-          aria-label="Buscar registro"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          aria-label="Filtrar por estado"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todos los estados</option>
-          <option value="pending_payment">Con saldo</option>
-          <option value="partial">Pagada parcial</option>
-          <option value="overdue">Vencida</option>
-          <option value="confirmed">Confirmada</option>
-          <option value="cancelled">Cancelada</option>
-        </select>
+        <label className="filter-field filter-search">
+          <span>Buscar registro</span>
+          <input
+            type="search"
+            placeholder="Buscar por nombre, correo, empresa o folio"
+            aria-label="Buscar registro"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label className="filter-field">
+          <span>Estado</span>
+          <select
+            aria-label="Filtrar por estado"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos los estados</option>
+            <option value="pending_payment">Con saldo</option>
+            <option value="partial">Pagada parcial</option>
+            <option value="overdue">Vencida</option>
+            <option value="confirmed">Confirmada</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+        </label>
         {can('payments.manage') &&
           event.status === 'active' &&
           !reconciling && (

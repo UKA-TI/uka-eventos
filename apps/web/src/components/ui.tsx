@@ -40,7 +40,7 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="field">
+    <label className={error ? 'field field-invalid' : 'field'}>
       <span>{label}</span>
       {children}
       {hint && !error && <small className="hint">{hint}</small>}

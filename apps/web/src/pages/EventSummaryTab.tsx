@@ -43,7 +43,7 @@ export function EventSummaryTab({
     event.status === 'active' && event.modules.includes('publicRegistration');
 
   return (
-    <div className="panel">
+    <div className="panel event-summary">
       <div className="panel-heading">
         <h2>Datos del evento</h2>
         {onEdit && (
@@ -64,7 +64,7 @@ export function EventSummaryTab({
           </a>
         </p>
       )}
-      <dl className="data-list">
+      <dl className="data-list event-summary-data">
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -73,9 +73,13 @@ export function EventSummaryTab({
         ))}
         <div>
           <dt>Módulos activos</dt>
-          <dd>
+          <dd className="summary-modules">
             {modules.length > 0
-              ? modules.map((module) => module.label).join(', ')
+              ? modules.map((module) => (
+                  <span className="summary-module" key={module.key}>
+                    {module.label}
+                  </span>
+                ))
               : 'Ninguno'}
           </dd>
         </div>

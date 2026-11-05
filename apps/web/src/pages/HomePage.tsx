@@ -77,23 +77,26 @@ export function HomePage() {
   const links = quickLinks.filter((link) => can(...link.any));
 
   return (
-    <section>
+    <section className="home-page">
       <PageHeading
         title={`Hola, ${user?.displayName ?? ''}`}
         description={`Perfil: ${user?.roleName ?? ''}`}
       />
       {links.length > 0 && (
-        <nav className="quick-links" aria-label="Accesos rápidos">
-          {links.map((link) => (
-            <Link key={link.to} className="quick-link" to={link.to}>
-              <Icon name={link.icon} />
-              <span>
-                {link.title}
-                <small>{link.text}</small>
-              </span>
-            </Link>
-          ))}
-        </nav>
+        <div className="home-actions">
+          <h2>Accesos rápidos</h2>
+          <nav className="quick-links" aria-label="Accesos rápidos">
+            {links.map((link) => (
+              <Link key={link.to} className="quick-link" to={link.to}>
+                <Icon name={link.icon} />
+                <span>
+                  {link.title}
+                  <small>{link.text}</small>
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </div>
       )}
       {latest.length > 0 && (
         <div className="home-summary">
@@ -139,7 +142,7 @@ export function HomePage() {
       )}
       {canSeeEvents ? (
         <>
-          <div className="panel">
+          <div className="panel home-events">
             <div className="panel-heading">
               <h2>Eventos activos</h2>
               <Link to="/eventos">Ver todos</Link>

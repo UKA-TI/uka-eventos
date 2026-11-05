@@ -1,4 +1,6 @@
 const paths = {
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  close: <path d="m6 6 12 12M18 6 6 18" />,
   wallet: (
     <>
       <rect x="3" y="6" width="18" height="14" rx="2" />

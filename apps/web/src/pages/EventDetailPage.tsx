@@ -13,6 +13,7 @@ import {
 } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
+import { EventNavigation } from '../components/EventNavigation.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
 import { EventCheckinTab } from './EventCheckinTab.js';
@@ -33,16 +34,16 @@ import { formatEventDate, issuesToErrors, slugify } from './text.js';
 const tabs = [
   ['tablero', 'Tablero'],
   ['invitados', 'Invitados'],
-  ['mesas', 'Mesas'],
-  ['acomodo', 'Acomodo'],
+  ['mesas', 'Registro de invitados por grupo'],
+  ['acomodo', 'Acomodo de mesas'],
   ['registros', 'Compras'],
-  ['finanzas', 'Finanzas'],
-  ['checkin', 'Check-in'],
-  ['operadores', 'Operadores'],
-  ['boletos', 'Boletos'],
-  ['formulario', 'Formulario'],
-  ['modulos', 'Módulos'],
-  ['resumen', 'Datos'],
+  ['finanzas', 'Finanzas del evento'],
+  ['checkin', 'Entradas e incidencias'],
+  ['operadores', 'Operadores de recepción'],
+  ['boletos', 'Tipos de boleto'],
+  ['formulario', 'Formulario de registro'],
+  ['modulos', 'Módulos habilitados'],
+  ['resumen', 'Datos del evento'],
 ] as const;
 
 type Tab = (typeof tabs)[number][0];
@@ -270,24 +271,34 @@ export function EventDetailPage() {
   };
 
   return (
-    <section>
+    <section className="event-detail-page">
       <Link className="back-link" to="/eventos">
         Eventos
       </Link>
-      <div className="page-heading">
-        <div>
+      <div className="page-heading event-heading">
+        <div className="event-identity">
+          <div className="event-heading-meta">
+            <span className="event-edition">Edición {event.editionYear}</span>
+            <StatusBadge status={event.status} />
+          </div>
           <h1>{event.name}</h1>
           <p className="muted">
-            {event.series.name} · {event.series.type} · Edición{' '}
-            {event.editionYear}
+            {event.series.name} · {event.series.type}
           </p>
-          <p className="muted">
-            {formatEventDate(event.startsAt, event.timeZone, true)}
-            {event.venue ? ` · ${event.venue}` : ''}
-          </p>
+          <dl className="event-meta">
+            <div>
+              <dt>Fecha</dt>
+              <dd>{formatEventDate(event.startsAt, event.timeZone, true)}</dd>
+            </div>
+            {event.venue && (
+              <div>
+                <dt>Sede</dt>
+                <dd>{event.venue}</dd>
+              </div>
+            )}
+          </dl>
         </div>
-        <div className="heading-actions">
-          <StatusBadge status={event.status} />
+        <div className="heading-actions event-heading-actions">
           {can('events.create') && (
             <button
               className="button secondary"
@@ -373,12 +384,13 @@ export function EventDetailPage() {
         />
       )}
 
-      <div
-        className="tabs event-tabs"
-        role="tablist"
-        aria-label="Secciones del evento"
-      >
-        {tabs
+      <EventNavigation
+        current={tab}
+        onSelect={(value) => {
+          setTab(value);
+          setEditing(false);
+        }}
+        tabs={tabs
           .filter(
             ([value]) =>
               (value !== 'registros' ||
@@ -403,24 +415,19 @@ export function EventDetailPage() {
                   'checkin.manage',
                 )),
           )
-          .map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={tab === value}
-              className={tab === value ? 'tab active' : 'tab'}
-              onClick={() => {
-                setTab(value);
-                setEditing(false);
-              }}
-            >
-              {label}
-              {value === 'boletos' ? ` (${event.ticketTypes.length})` : ''}
-              {value === 'formulario' ? ` (${event.formFields.length})` : ''}
-            </button>
-          ))}
-      </div>
+          .map(
+            ([value, label]) =>
+              [
+                value,
+                label +
+                  (value === 'boletos'
+                    ? ` (${event.ticketTypes.length})`
+                    : value === 'formulario'
+                      ? ` (${event.formFields.length})`
+                      : ''),
+              ] as const,
+          )}
+      />
 
       {tab === 'resumen' &&
         (editing ? (

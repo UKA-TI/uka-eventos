@@ -44,7 +44,7 @@ export function EventsPage() {
   );
 
   return (
-    <section>
+    <section className="events-page">
       <PageHeading
         title="Eventos"
         description="Todas las ediciones de los eventos de Un Kilo de Ayuda."
@@ -62,47 +62,65 @@ export function EventsPage() {
       />
       {events.isError && <Notice>{events.error.message}</Notice>}
 
-      <div className="filters">
-        <input
-          type="search"
-          placeholder="Buscar por nombre, serie o sede"
-          aria-label="Buscar evento"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          aria-label="Filtrar por tipo"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
-          <option value="">Todos los tipos</option>
-          {types.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filtrar por año"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-        >
-          <option value="">Todos los años</option>
-          {years.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filtrar por estado"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          <option value="draft">Borrador</option>
-          <option value="active">Activo</option>
-          <option value="closed">Cerrado</option>
-        </select>
+      <div className="filters event-filters">
+        <label className="filter-field filter-search">
+          <span>Buscar evento</span>
+          <input
+            type="search"
+            placeholder="Buscar por nombre, serie o sede"
+            aria-label="Buscar evento"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <label className="filter-field">
+          <span>Tipo</span>
+          <select
+            aria-label="Filtrar por tipo"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="">Todos los tipos</option>
+            {types.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Edición</span>
+          <select
+            aria-label="Filtrar por año"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          >
+            <option value="">Todos los años</option>
+            {years.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Estado</span>
+          <select
+            aria-label="Filtrar por estado"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="draft">Borrador</option>
+            <option value="active">Activo</option>
+            <option value="closed">Cerrado</option>
+          </select>
+        </label>
       </div>
 
       <div className="panel table-panel">
+        <div className="panel-heading">
+          <h2>Listado de eventos</h2>
+          <span className="result-count">
+            {filtered.length} de {list.length} eventos
+          </span>
+        </div>
         {filtered.length === 0 ? (
           <p className="muted">
             {list.length === 0
@@ -111,7 +129,7 @@ export function EventsPage() {
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="events-table">
               <thead>
                 <tr>
                   <th>Evento</th>
@@ -126,15 +144,19 @@ export function EventsPage() {
               <tbody>
                 {filtered.map((event) => (
                   <tr key={event.id}>
-                    <td>
+                    <td data-label="Evento" className="event-name-cell">
                       <Link to={`/eventos/${event.id}`}>{event.name}</Link>
                     </td>
-                    <td>{event.series.type}</td>
-                    <td>{event.editionYear}</td>
-                    <td>{formatEventDate(event.startsAt, event.timeZone)}</td>
-                    <td>{event.venue ?? '—'}</td>
-                    <td>{event.capacity?.toLocaleString('es-MX') ?? '—'}</td>
-                    <td>
+                    <td data-label="Tipo">{event.series.type}</td>
+                    <td data-label="Edición">{event.editionYear}</td>
+                    <td data-label="Fecha">
+                      {formatEventDate(event.startsAt, event.timeZone)}
+                    </td>
+                    <td data-label="Sede">{event.venue ?? '—'}</td>
+                    <td data-label="Aforo">
+                      {event.capacity?.toLocaleString('es-MX') ?? '—'}
+                    </td>
+                    <td data-label="Estado">
                       <StatusBadge status={event.status} />
                     </td>
                   </tr>

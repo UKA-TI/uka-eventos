@@ -72,46 +72,55 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
   return (
     <>
       <div className="filters">
-        <input
-          type="search"
-          placeholder="Nombre, correo, folio u organización"
-          aria-label="Buscar invitado"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          aria-label="Filtrar por estado"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todos los estados</option>
-          {guestStatusOptions.map((option) => (
-            <option key={option.key} value={option.key}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filtrar por empresa o mesa"
-          value={orderId}
-          onChange={(e) => {
-            setOrderId(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Todas las empresas / mesas</option>
-          {groups.data?.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.company}
-            </option>
-          ))}
-        </select>
+        <label className="filter-field filter-search">
+          <span>Buscar invitado</span>
+          <input
+            type="search"
+            placeholder="Nombre, correo, folio u organización"
+            aria-label="Buscar invitado"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label className="filter-field">
+          <span>Estado</span>
+          <select
+            aria-label="Filtrar por estado"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos los estados</option>
+            {guestStatusOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Empresa o mesa</span>
+          <select
+            aria-label="Filtrar por empresa o mesa"
+            value={orderId}
+            onChange={(e) => {
+              setOrderId(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todas las empresas / mesas</option>
+            {groups.data?.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.company}
+              </option>
+            ))}
+          </select>
+        </label>
         {can('reports.export') && data.allGuests > 0 && (
           <a
             className="button secondary"
@@ -122,7 +131,14 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
         )}
       </div>
 
-      <div className="panel table-panel">
+      <div className="panel table-panel attendee-panel">
+        <div className="panel-heading">
+          <h2>Invitados del evento</h2>
+          <span className="result-count">
+            {data.total.toLocaleString('es-MX')}{' '}
+            {data.total === 1 ? 'resultado' : 'resultados'}
+          </span>
+        </div>
         {data.guests.length === 0 ? (
           <p className="muted">
             {filtered
@@ -131,7 +147,7 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
           </p>
         ) : (
           <div className="table-scroll">
-            <table className="guests-table">
+            <table className="guests-table attendee-table">
               <thead>
                 <tr>
                   <th>Invitado</th>
@@ -151,7 +167,7 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                   )!;
                   return (
                     <tr key={guest.id}>
-                      <td>
+                      <td data-label="Invitado" className="attendee-name-cell">
                         <div className="person">
                           <span className="avatar soft" aria-hidden="true">
                             {initials(guest.name)}
@@ -162,18 +178,20 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                           </span>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Folio">
                         <strong className="folio">{guest.folio}</strong>
                       </td>
-                      <td>{guest.group ?? '—'}</td>
-                      <td>{guest.tableName ?? '—'}</td>
-                      <td>{guest.organization ?? '—'}</td>
-                      <td>
+                      <td data-label="Empresa / mesa">{guest.group ?? '—'}</td>
+                      <td data-label="Mesa">{guest.tableName ?? '—'}</td>
+                      <td data-label="Organización">
+                        {guest.organization ?? '—'}
+                      </td>
+                      <td data-label="Estado">
                         <span className={`badge ${state.tone}`}>
                           {state.label}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Hora">
                         {guest.checkedInAt
                           ? new Date(guest.checkedInAt).toLocaleTimeString(
                               'es-MX',
@@ -181,13 +199,15 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                             )
                           : '—'}
                       </td>
-                      <td>
-                        {guest.operatorName ?? '—'}
-                        {guest.accessPointName && (
-                          <small className="cell-note">
-                            {guest.accessPointName}
-                          </small>
-                        )}
+                      <td data-label="Operador">
+                        <div>
+                          {guest.operatorName ?? '—'}
+                          {guest.accessPointName && (
+                            <small className="cell-note">
+                              {guest.accessPointName}
+                            </small>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

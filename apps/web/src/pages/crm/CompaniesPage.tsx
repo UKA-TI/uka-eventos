@@ -183,13 +183,16 @@ export function CompaniesPage() {
       )}
 
       <div className="filters">
-        <input
-          type="search"
-          placeholder="Buscar empresa"
-          aria-label="Buscar empresa"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <label className="filter-field filter-search">
+          <span>Buscar empresa</span>
+          <input
+            type="search"
+            placeholder="Buscar empresa"
+            aria-label="Buscar empresa"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
       </div>
 
       <div className="panel table-panel">

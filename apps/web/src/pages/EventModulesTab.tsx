@@ -54,7 +54,7 @@ export function EventModulesTab({
   };
 
   return (
-    <div className="panel">
+    <div className="panel event-config-panel">
       <div className="panel-heading">
         <h2>Módulos de este evento</h2>
       </div>

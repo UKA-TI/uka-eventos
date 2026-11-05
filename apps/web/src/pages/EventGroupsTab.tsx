@@ -65,7 +65,7 @@ function DelegateForm({
   };
 
   return (
-    <form className="inner-form" onSubmit={submit} noValidate>
+    <form className="inner-form event-config-form" onSubmit={submit} noValidate>
       <Notice>{error}</Notice>
       <div className="form-grid">
         <Field label="Asistente o contacto" error={errors.delegateName}>
@@ -207,7 +207,20 @@ export function EventGroupsTab({
         />
       )}
 
-      <div className="panel table-panel">
+      <div className="panel table-panel attendee-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Registro de invitados por grupo</h2>
+            <p className="muted">
+              Contacto responsable y avance de captura de cada compra de varios
+              lugares.
+            </p>
+          </div>
+          <span className="result-count">
+            {list.length.toLocaleString('es-MX')}{' '}
+            {list.length === 1 ? 'grupo' : 'grupos'}
+          </span>
+        </div>
         {list.length === 0 ? (
           <p className="muted">
             Aún no hay mesas. Una compra de varios lugares aparece aquí cuando
@@ -215,7 +228,7 @@ export function EventGroupsTab({
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="groups-table attendee-table">
               <thead>
                 <tr>
                   <th>Empresa</th>
@@ -233,40 +246,56 @@ export function EventGroupsTab({
                 return (
                   <tbody key={group.id}>
                     <tr>
-                      <td>
+                      <td data-label="Empresa" className="attendee-name-cell">
                         <strong>{group.company}</strong>
                         <small className="cell-note">{group.reference}</small>
                       </td>
-                      <td>
-                        {group.delegateName ?? group.buyerName}
-                        <small className="cell-note">
-                          {group.delegateEmail ?? group.buyerEmail}
-                        </small>
-                      </td>
-                      <td>
-                        <div className="progress small-progress">
-                          <i
-                            style={{
-                              width: `${(group.registered / group.seats) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <small className="cell-note">
-                          {group.registered} de {group.seats} registrados ·{' '}
-                          {group.activated} activados
-                        </small>
-                      </td>
-                      <td>
-                        {group.registrationDeadline
-                          ? shortDate(group.registrationDeadline)
-                          : '—'}
-                        {late && (
+                      <td data-label="Contacto">
+                        <div>
+                          {group.delegateName ?? group.buyerName}
                           <small className="cell-note">
-                            <span className="badge warn">Vencida</span>
+                            {group.delegateEmail ?? group.buyerEmail}
                           </small>
-                        )}
+                        </div>
                       </td>
-                      <td>
+                      <td data-label="Avance">
+                        <div className="group-registration-progress">
+                          <div
+                            className="progress small-progress"
+                            role="progressbar"
+                            aria-label={`Invitados registrados de ${group.company}`}
+                            aria-valuemin={0}
+                            aria-valuemax={group.seats}
+                            aria-valuenow={group.registered}
+                          >
+                            <i
+                              style={{
+                                width: `${(group.registered / group.seats) * 100}%`,
+                              }}
+                            />
+                          </div>
+                          <small className="cell-note">
+                            {group.registered} de {group.seats} registrados ·{' '}
+                            {group.activated} activados
+                          </small>
+                        </div>
+                      </td>
+                      <td data-label="Fecha límite">
+                        <div>
+                          {group.registrationDeadline
+                            ? shortDate(group.registrationDeadline)
+                            : '—'}
+                          {late && (
+                            <small className="cell-note">
+                              <span className="badge warn">Vencida</span>
+                            </small>
+                          )}
+                        </div>
+                      </td>
+                      <td
+                        data-label="Acciones"
+                        className="attendee-actions-cell"
+                      >
                         <div className="row-actions">
                           {canEdit && group.registered < group.seats && (
                             <button
