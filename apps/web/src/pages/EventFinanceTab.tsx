@@ -81,9 +81,9 @@ function ResultTable({
   currency: string;
 }) {
   const rows: [string, number, boolean?][] = [
-    ['Cobrado de boletos', totals.grossCollected],
+    ['Pagos recibidos', totals.grossCollected],
     ['Reembolsos', -totals.refunded],
-    ['Neto de boletos', totals.netCollected, true],
+    ['Cobrado por boletos', totals.netCollected, true],
     ['Donativos', totals.donations],
     ['Ingreso total', totals.totalIncome, true],
     ['Costos reales', -totals.actualCosts],

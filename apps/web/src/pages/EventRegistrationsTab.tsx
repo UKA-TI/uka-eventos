@@ -9,7 +9,7 @@ import {
   type OrderRecord,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
@@ -18,7 +18,6 @@ import {
   CancelOrderForm,
   DueDateForm,
   FiscalForm,
-  NameChangeForm,
   RefundForm,
 } from './OrderFinanceForms.js';
 import { ReconciledOrderForm } from './ReconciledOrderForm.js';
@@ -208,7 +207,7 @@ function NewOrderForm({
   return (
     <form className="panel" onSubmit={submit} noValidate>
       <div className="panel-heading">
-        <h2>Nuevo registro</h2>
+        <h2>Nueva compra</h2>
       </div>
       <p className="muted form-note">
         Para ventas directas. Avísale a la persona que sus datos se tratan
@@ -336,6 +335,8 @@ export function EventRegistrationsTab({
   const canPay = can('payments.manage');
   const canCollect = can('payments.manage', 'finance.manage');
   const canRefund = can('refunds.manage');
+  const groupTabVisible =
+    event.modules.includes('corporate') || event.modules.includes('tables');
   const isClosed = event.status === 'closed';
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
@@ -421,13 +422,14 @@ export function EventRegistrationsTab({
           <strong>{summary.seatsToRegister.toLocaleString('es-MX')}</strong>
         </article>
         <article className="stat">
-          <span>Cobrado neto</span>
+          <span>Cobrado por boletos</span>
           <strong>
             {formatAmount(summary.amountCollected, event.currency)}
           </strong>
           {summary.amountRefunded > 0 && (
             <small>
-              Tras {formatAmount(summary.amountRefunded, event.currency)} de
+              Ya descuenta{' '}
+              {formatAmount(summary.amountRefunded, event.currency)} de
               reembolsos
             </small>
           )}
@@ -505,20 +507,9 @@ export function EventRegistrationsTab({
           onDone={async (reference) => {
             await refresh();
             setCreating(false);
-            setNotice({ kind: 'ok', text: `Registro ${reference} creado.` });
+            setNotice({ kind: 'ok', text: `Compra ${reference} creada.` });
           }}
         />
-      )}
-
-      {can('reports.export') && total > 0 && (
-        <div className="section-actions">
-          <a
-            className="button secondary small"
-            href={`/api/reports/export/events/${event.id}/registrations.csv`}
-          >
-            Descargar registros
-          </a>
-        </div>
       )}
 
       <div className="filters">
@@ -565,7 +556,7 @@ export function EventRegistrationsTab({
                 setReconciling(true);
               }}
             >
-              Conciliar compra
+              Compra ya pagada
             </button>
           )}
         {canManage && event.status === 'active' && !creating && (
@@ -577,7 +568,7 @@ export function EventRegistrationsTab({
               setCreating(true);
             }}
           >
-            Nuevo registro
+            Nueva compra
           </button>
         )}
       </div>
@@ -771,21 +762,6 @@ export function EventRegistrationsTab({
                                   onDone={finishPanel}
                                 />
                               )}
-                            {panel?.orderId === order.id &&
-                              panel.kind === 'name' &&
-                              order.registrations
-                                .filter(
-                                  (item) => item.id === panel.registrationId,
-                                )
-                                .map((registration) => (
-                                  <NameChangeForm
-                                    key={registration.id}
-                                    event={event}
-                                    registration={registration}
-                                    onCancel={() => setPanel(null)}
-                                    onDone={finishPanel}
-                                  />
-                                ))}
                             <div className="detail-columns">
                               <div>
                                 <h3>Contacto</h3>
@@ -842,12 +818,12 @@ export function EventRegistrationsTab({
                                 )}
                               </div>
                               <div>
-                                <h3>Pases</h3>
+                                <h3>Invitados</h3>
                                 {order.registrations.length === 0 ? (
                                   <p className="muted">
                                     {order.seats > 1
-                                      ? 'Los invitados se capturan con la liga privada una vez confirmado el pago.'
-                                      : 'Sin pases todavía.'}
+                                      ? 'Los invitados se registran con la liga privada cuando el pago está confirmado.'
+                                      : 'Sin invitado todavía.'}
                                   </p>
                                 ) : (
                                   <ul className="compact-list">
@@ -868,85 +844,54 @@ export function EventRegistrationsTab({
                                             }
                                           </small>
                                         )}
-                                        {registration.passUrl && (
-                                          <span className="inline-actions">
-                                            <a
-                                              href={registration.passUrl}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                            >
-                                              Ver pase
-                                            </a>
-                                            {canManage && (
-                                              <button
-                                                className="link-button"
-                                                type="button"
-                                                disabled={act.isPending}
-                                                onClick={() => {
-                                                  setNotice(undefined);
-                                                  act.mutate({
-                                                    path: `registrations/${registration.id}/resend`,
-                                                    success:
-                                                      'El pase se agregó a la cola de correo.',
-                                                  });
-                                                }}
-                                              >
-                                                Reenviar
-                                              </button>
-                                            )}
-                                          </span>
-                                        )}
-                                        {canManage &&
-                                          registration.status !==
-                                            'cancelled' && (
-                                            <span className="inline-actions">
-                                              <button
-                                                className="link-button"
-                                                type="button"
-                                                onClick={() => {
-                                                  setNotice(undefined);
-                                                  setPanel({
-                                                    kind: 'name',
-                                                    orderId: order.id,
-                                                    registrationId:
-                                                      registration.id,
-                                                  });
-                                                }}
-                                              >
-                                                Cambiar nombre
-                                              </button>
-                                            </span>
-                                          )}
                                       </li>
                                     ))}
                                   </ul>
                                 )}
-                                {order.groupUrl && (
+                                {order.registrations.length > 0 && (
                                   <p className="inline-actions">
-                                    <a
-                                      href={order.groupUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
+                                    <Link
+                                      to={`/eventos/${event.id}?tab=invitados&compra=${order.id}`}
                                     >
-                                      Abrir liga de registro
-                                    </a>
-                                    <button
-                                      className="link-button"
-                                      type="button"
-                                      disabled={act.isPending}
-                                      onClick={() => {
-                                        setNotice(undefined);
-                                        act.mutate({
-                                          path: `${order.id}/resend-link`,
-                                          success:
-                                            'La liga se agregó a la cola de correo.',
-                                        });
-                                      }}
-                                    >
-                                      Reenviar liga
-                                    </button>
+                                      Ver pases, reenviar o cambiar nombres
+                                    </Link>
                                   </p>
                                 )}
+                                {order.groupUrl &&
+                                  (groupTabVisible ? (
+                                    <p className="inline-actions">
+                                      <Link
+                                        to={`/eventos/${event.id}?tab=mesas`}
+                                      >
+                                        Ver el avance en Registro por grupo
+                                      </Link>
+                                    </p>
+                                  ) : (
+                                    <p className="inline-actions">
+                                      <a
+                                        href={order.groupUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        Abrir liga de registro
+                                      </a>
+                                      <button
+                                        className="link-button"
+                                        type="button"
+                                        disabled={act.isPending}
+                                        onClick={() => {
+                                          setNotice(undefined);
+                                          act.mutate({
+                                            path: `${order.id}/resend-link`,
+                                            success:
+                                              'La liga se agregó a la cola de correo.',
+                                          });
+                                        }}
+                                      >
+                                        Reenviar liga
+                                      </button>
+                                    </p>
+                                  ))}
                               </div>
                               <div>
                                 <h3>Pagos</h3>

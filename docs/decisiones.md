@@ -279,6 +279,25 @@ Pagos y reembolsos ya guardan su origen (`manual` hoy) y un identificador extern
 la pasarela o el archivo del banco, un mismo aviso repetido no podrá registrar dos veces el dinero, y
 entrará por las mismas reglas de arriba. El crédito autorizado también se decidirá en esa etapa.
 
+## Navegación por tarea
+
+Regla: cada acción vive en un solo lugar, y cada sección aparece solo si el evento la usa.
+
+- **Evento:** Tablero (solo números y alertas) · Ventas (Compras y pagos, Finanzas del evento) ·
+  Asistentes (Lista de invitados, Registro por grupo, Acomodo de mesas) · Día del evento (Entradas e
+  incidencias, Operadores de recepción) · Configuración (Datos, Tipos de boleto, Formulario, Puntos de
+  acceso, Módulos).
+- **El dinero de una compra** se maneja en Compras y pagos; **cada persona** (ver pase, reenviar, corregir
+  o ceder) en Lista de invitados; la **liga de una mesa** en Registro por grupo; la **alta autorizada**
+  en Entradas e incidencias.
+- **Menú general:** Inicio · Eventos (Eventos y Series) · Recepción · Contactos (Personas, Empresas y
+  Segmentos) · Comunicaciones · Donativos · Cobranza · Reportes · Usuarios y permisos · Control y
+  privacidad (Bitácora y Consentimientos).
+
+## Sin importador de Excel
+
+Toda la información se trabajará desde este CRM: no se traerán contactos ni invitados de archivos.
+
 ## Perfiles de inicio
 
 Administrador, Dirección, Coordinación de eventos, Supervisión de recepción, Recepción, Cobranza, Finanzas,
@@ -295,4 +314,4 @@ Revisado contra `uka-eventos-mockup-gala.html`.
 - Pasarela de pago, conciliación por archivo bancario y crédito autorizado.
 - Prueba de correos financieros en un buzón real.
 - Cargar la política de cancelación cuando se apruebe.
-- Importador de Excel y publicación en GoDaddy. La landing de la Gala será otro proyecto.
+- Publicación en GoDaddy. La landing de la Gala será otro proyecto.

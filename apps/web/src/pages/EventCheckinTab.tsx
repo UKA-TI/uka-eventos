@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
+import { AuthorizedGuestForm } from './AuthorizedGuestForm.js';
 import { issuesToErrors } from './text.js';
 
 const REFRESH_MS = 15_000;
@@ -22,41 +23,27 @@ const incidentTypes: Record<string, string> = {
   manual: 'Reporte de recepción',
 };
 
-export function EventCheckinTab({ event }: { event: EventDetail }) {
-  const queryClient = useQueryClient();
-  const { can, csrfToken } = usePermissions();
-  const canManage = can('checkin.manage');
-  const canOperate = can('checkin.operate', 'checkin.manage');
-  const base = `/api/events/${event.id}/checkin`;
-  const [doorName, setDoorName] = useState('');
-  const [doorErrors, setDoorErrors] = useState<Record<string, string>>({});
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [resolution, setResolution] = useState('');
-  const [notice, setNotice] = useState<{
-    kind: 'ok' | 'error';
-    text: string;
-  }>();
+type NoticeState = { kind: 'ok' | 'error'; text: string };
 
-  const overview = useQuery({
+function useCheckinOverview(event: EventDetail) {
+  return useQuery({
     queryKey: ['checkin', event.id],
     refetchInterval: REFRESH_MS,
     queryFn: async () =>
-      checkinOverviewSchema.parse(await apiRequest(`${base}/overview`)),
+      checkinOverviewSchema.parse(
+        await apiRequest(`/api/events/${event.id}/checkin/overview`),
+      ),
   });
-  const incidents = useQuery({
-    queryKey: ['incidents', event.id],
-    enabled: canManage,
-    refetchInterval: REFRESH_MS,
-    queryFn: async () =>
-      incidentListSchema.parse(await apiRequest(`${base}/incidents`)),
-  });
+}
 
-  const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['checkin', event.id] });
-    await queryClient.invalidateQueries({ queryKey: ['incidents', event.id] });
-  };
-
-  const act = useMutation({
+function useCheckinAction(
+  event: EventDetail,
+  onSuccess: (text: string) => void,
+  onError: (text: string) => void,
+) {
+  const queryClient = useQueryClient();
+  const { csrfToken } = usePermissions();
+  return useMutation({
     mutationFn: async (action: {
       path: string;
       method: 'POST' | 'PUT' | 'DELETE';
@@ -64,24 +51,39 @@ export function EventCheckinTab({ event }: { event: EventDetail }) {
       success: string;
     }) => {
       await apiRequest(
-        `${base}/${action.path}`,
+        `/api/events/${event.id}/checkin/${action.path}`,
         jsonRequest(action.method, action.body, csrfToken),
       );
       return action.success;
     },
     onSuccess: async (success) => {
-      await refresh();
-      setNotice({ kind: 'ok', text: success });
-      setDoorName('');
-      setResolvingId(null);
-      setResolution('');
+      await queryClient.invalidateQueries({ queryKey: ['checkin', event.id] });
+      await queryClient.invalidateQueries({
+        queryKey: ['incidents', event.id],
+      });
+      onSuccess(success);
     },
     onError: (error) =>
-      setNotice({
-        kind: 'error',
-        text: errorText(error, 'No se pudo completar la acción.'),
-      }),
+      onError(errorText(error, 'No se pudo completar la acción.')),
   });
+}
+
+/** Configuración › Puntos de acceso: las puertas o filas se preparan antes del evento. */
+export function EventAccessPointsTab({ event }: { event: EventDetail }) {
+  const { can } = usePermissions();
+  const canManage = can('checkin.manage');
+  const [doorName, setDoorName] = useState('');
+  const [doorErrors, setDoorErrors] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState<NoticeState>();
+  const overview = useCheckinOverview(event);
+  const act = useCheckinAction(
+    event,
+    (text) => {
+      setNotice({ kind: 'ok', text });
+      setDoorName('');
+    },
+    (text) => setNotice({ kind: 'error', text }),
+  );
 
   if (overview.isPending) {
     return <Loading />;
@@ -89,10 +91,6 @@ export function EventCheckinTab({ event }: { event: EventDetail }) {
   if (overview.isError) {
     return <Notice>{overview.error.message}</Notice>;
   }
-
-  const data = overview.data;
-  const pending = Math.max(data.expected - data.checkedIn, 0);
-  const moduleOn = event.modules.includes('checkin');
 
   const addDoor = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -114,56 +112,29 @@ export function EventCheckinTab({ event }: { event: EventDetail }) {
     });
   };
 
+  const points = overview.data.accessPoints;
+
   return (
     <>
-      {!moduleOn && (
-        <p className="notice warn" role="status">
-          El módulo de check-in está apagado en este evento. Actívalo en la
-          pestaña Módulos para usar la recepción.
-        </p>
-      )}
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-
-      <div className="stats">
-        <article className="stat">
-          <span>Ingresaron</span>
-          <strong>
-            {data.checkedIn.toLocaleString('es-MX')}
-            <small> de {data.expected.toLocaleString('es-MX')}</small>
-          </strong>
-        </article>
-        <article className="stat">
-          <span>Por llegar</span>
-          <strong>{pending.toLocaleString('es-MX')}</strong>
-        </article>
-        <article className="stat">
-          <span>Incidencias abiertas</span>
-          <strong>{data.openIncidents}</strong>
-        </article>
-      </div>
-
-      {canOperate && moduleOn && event.status === 'active' && (
-        <p>
-          <Link
-            className="button primary link-as-button inline-button"
-            to={`/recepcion/${event.id}`}
-          >
-            Abrir recepción
-          </Link>
-        </p>
-      )}
-
       <div className="panel">
         <div className="panel-heading">
-          <h2>Puntos de acceso</h2>
+          <div>
+            <h2>Puntos de acceso</h2>
+            <p className="muted">
+              Cada puerta o fila por donde entra la gente. Recepción elige el
+              suyo al abrir el escáner, y así se sabe por dónde entró cada
+              persona.
+            </p>
+          </div>
         </div>
-        {data.accessPoints.length === 0 ? (
+        {points.length === 0 ? (
           <p className="muted form-note">
-            Agrega al menos uno, como Entrada principal o Fila A.
+            Agrega al menos uno, por ejemplo «Entrada principal» o «Fila A».
           </p>
         ) : (
           <ul className="plain-list">
-            {data.accessPoints.map((point) => (
+            {points.map((point) => (
               <li key={point.id}>
                 <span>
                   <strong>{point.name}</strong>
@@ -236,6 +207,134 @@ export function EventCheckinTab({ event }: { event: EventDetail }) {
           </form>
         )}
       </div>
+    </>
+  );
+}
+
+/** Día del evento › Entradas e incidencias: lo que pasa en la puerta. */
+export function EventCheckinTab({ event }: { event: EventDetail }) {
+  const queryClient = useQueryClient();
+  const { can } = usePermissions();
+  const canManage = can('checkin.manage');
+  const canOperate = can('checkin.operate', 'checkin.manage');
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolution, setResolution] = useState('');
+  const [authorizing, setAuthorizing] = useState(false);
+  const [notice, setNotice] = useState<NoticeState>();
+
+  const overview = useCheckinOverview(event);
+  const incidents = useQuery({
+    queryKey: ['incidents', event.id],
+    enabled: canManage,
+    refetchInterval: REFRESH_MS,
+    queryFn: async () =>
+      incidentListSchema.parse(
+        await apiRequest(`/api/events/${event.id}/checkin/incidents`),
+      ),
+  });
+  const act = useCheckinAction(
+    event,
+    (text) => {
+      setNotice({ kind: 'ok', text });
+      setResolvingId(null);
+      setResolution('');
+    },
+    (text) => setNotice({ kind: 'error', text }),
+  );
+
+  if (overview.isPending) {
+    return <Loading />;
+  }
+  if (overview.isError) {
+    return <Notice>{overview.error.message}</Notice>;
+  }
+
+  const data = overview.data;
+  const pending = Math.max(data.expected - data.checkedIn, 0);
+  const activePoints = data.accessPoints.filter((point) => point.active);
+
+  return (
+    <>
+      {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+
+      {activePoints.length === 0 && (
+        <p className="notice warn" role="status">
+          Este evento aún no tiene puntos de acceso, y sin ellos recepción no
+          puede escanear.{' '}
+          <Link to={`/eventos/${event.id}?tab=accesos`}>
+            Agregarlos en Configuración › Puntos de acceso
+          </Link>
+        </p>
+      )}
+
+      <div className="stats">
+        <article className="stat">
+          <span>Ingresaron</span>
+          <strong>
+            {data.checkedIn.toLocaleString('es-MX')}
+            <small> de {data.expected.toLocaleString('es-MX')}</small>
+          </strong>
+        </article>
+        <article className="stat">
+          <span>Por llegar</span>
+          <strong>{pending.toLocaleString('es-MX')}</strong>
+        </article>
+        <article className="stat">
+          <span>Incidencias abiertas</span>
+          <strong>{data.openIncidents}</strong>
+        </article>
+      </div>
+
+      {event.status === 'active' && (
+        <div className="section-actions">
+          {canOperate && activePoints.length > 0 && (
+            <Link
+              className="button primary link-as-button inline-button"
+              to={`/recepcion/${event.id}`}
+            >
+              Abrir el escáner de recepción
+            </Link>
+          )}
+          {can('checkin.manage', 'registrations.manage') && !authorizing && (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                setNotice(undefined);
+                setAuthorizing(true);
+              }}
+            >
+              Alta autorizada
+            </button>
+          )}
+        </div>
+      )}
+
+      {authorizing && (
+        <AuthorizedGuestForm
+          event={event}
+          accessPoints={activePoints}
+          onCancel={() => setAuthorizing(false)}
+          onDone={async (folio, admitted) => {
+            await queryClient.invalidateQueries({
+              queryKey: ['checkin', event.id],
+            });
+            await queryClient.invalidateQueries({
+              queryKey: ['event-guests', event.id],
+            });
+            await queryClient.invalidateQueries({
+              queryKey: ['event-dashboard', event.id],
+            });
+            setAuthorizing(false);
+            setNotice({
+              kind: 'ok',
+              text: admitted
+                ? `Alta ${folio} registrada; ya cuenta como ingreso.`
+                : `Alta ${folio} registrada. Búscala en el escáner para darle ingreso.`,
+            });
+          }}
+        />
+      )}
 
       {canManage && (
         <div className="panel">

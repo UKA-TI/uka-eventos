@@ -550,7 +550,7 @@ export function NameChangeForm({
   onCancel,
 }: {
   event: EventDetail;
-  registration: OrderRecord['registrations'][number];
+  registration: { id: string; guestName: string };
   onDone: (message: string) => Promise<void>;
   onCancel: () => void;
 }) {

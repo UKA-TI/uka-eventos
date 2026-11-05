@@ -116,7 +116,7 @@ export function ReconciledOrderForm({
     <form className="panel" onSubmit={submit} noValidate>
       <div className="panel-heading">
         <div>
-          <h2>Conciliar compra</h2>
+          <h2>Compra ya pagada</h2>
           <small className="cell-note">
             Para quien ya pagó por otro medio. Al guardar le enviamos una
             invitación privada para registrarse; su pase con QR sale cuando se

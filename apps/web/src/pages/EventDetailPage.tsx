@@ -16,7 +16,7 @@ import { usePermissions } from '../auth/session.js';
 import { EventNavigation } from '../components/EventNavigation.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
-import { EventCheckinTab } from './EventCheckinTab.js';
+import { EventAccessPointsTab, EventCheckinTab } from './EventCheckinTab.js';
 import { ClosingDialog, EventFinanceTab } from './EventFinanceTab.js';
 import { EventOperatorsTab } from './EventOperatorsTab.js';
 import { EventDashboardTab } from './EventDashboardTab.js';
@@ -33,17 +33,18 @@ import { formatEventDate, issuesToErrors, slugify } from './text.js';
 
 const tabs = [
   ['tablero', 'Tablero'],
-  ['invitados', 'Invitados'],
-  ['mesas', 'Registro de invitados por grupo'],
-  ['acomodo', 'Acomodo de mesas'],
-  ['registros', 'Compras'],
+  ['registros', 'Compras y pagos'],
   ['finanzas', 'Finanzas del evento'],
+  ['invitados', 'Lista de invitados'],
+  ['mesas', 'Registro por grupo'],
+  ['acomodo', 'Acomodo de mesas'],
   ['checkin', 'Entradas e incidencias'],
   ['operadores', 'Operadores de recepción'],
+  ['resumen', 'Datos del evento'],
   ['boletos', 'Tipos de boleto'],
   ['formulario', 'Formulario de registro'],
-  ['modulos', 'Módulos habilitados'],
-  ['resumen', 'Datos del evento'],
+  ['accesos', 'Puntos de acceso'],
+  ['modulos', 'Módulos'],
 ] as const;
 
 type Tab = (typeof tabs)[number][0];
@@ -172,13 +173,8 @@ export function EventDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { can, csrfToken } = usePermissions();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [closing, setClosing] = useState(false);
-  const [chosenTab, setTab] = useState<Tab | null>(() => {
-    // Otras pantallas pueden enlazar directo a una pestaña.
-    const requested = searchParams.get('tab');
-    return tabs.find(([value]) => value === requested)?.[0] ?? null;
-  });
   const [editing, setEditing] = useState(false);
   const [newEdition, setNewEdition] = useState(false);
   const [notice, setNotice] = useState<{
@@ -261,9 +257,64 @@ export function EventDetailPage() {
   }
 
   const event = query.data;
+  const hasModule = (key: (typeof event.modules)[number]) =>
+    event.modules.includes(key);
+  const canSeePeople = can(
+    'registrations.view',
+    'registrations.manage',
+    'payments.manage',
+    'checkin.manage',
+  );
+  // Cada sección aparece solo si el evento la usa y la persona puede abrirla.
+  const visible = (value: Tab): boolean => {
+    switch (value) {
+      case 'registros':
+        return can(
+          'registrations.view',
+          'registrations.manage',
+          'payments.manage',
+          'refunds.manage',
+        );
+      case 'finanzas':
+        return can('finance.view', 'finance.manage');
+      case 'invitados':
+        return canSeePeople;
+      case 'mesas':
+        return (hasModule('corporate') || hasModule('tables')) && canSeePeople;
+      case 'acomodo':
+        return hasModule('tables') && can('seating.view', 'seating.manage');
+      case 'checkin':
+      case 'accesos':
+        return hasModule('checkin') && can('checkin.operate', 'checkin.manage');
+      case 'operadores':
+        return hasModule('checkin') && can('checkin.manage');
+      default:
+        return true;
+    }
+  };
+  const visibleTabs = tabs
+    .filter(([value]) => visible(value))
+    .map(
+      ([value, label]) =>
+        [
+          value,
+          label +
+            (value === 'boletos'
+              ? ` (${event.ticketTypes.length})`
+              : value === 'formulario'
+                ? ` (${event.formFields.length})`
+                : ''),
+        ] as const,
+    );
+  const requested = visibleTabs.find(
+    ([value]) => value === searchParams.get('tab'),
+  )?.[0];
   // Un borrador aún no tiene actividad: abre en sus datos, no en un tablero vacío.
   const tab: Tab =
-    chosenTab ?? (event.status === 'draft' ? 'resumen' : 'tablero');
+    requested ?? (event.status === 'draft' ? 'resumen' : 'tablero');
+  // La sección vive en la dirección: se puede compartir, recargar y regresar con «Atrás».
+  const setTab = (next: Tab) => setSearchParams({ tab: next });
+  const groupTabVisible = visible('mesas');
   const canEdit = can('events.edit');
   const setStatus = (status: string) => {
     setNotice(undefined);
@@ -390,43 +441,7 @@ export function EventDetailPage() {
           setTab(value);
           setEditing(false);
         }}
-        tabs={tabs
-          .filter(
-            ([value]) =>
-              (value !== 'registros' ||
-                can(
-                  'registrations.view',
-                  'registrations.manage',
-                  'payments.manage',
-                )) &&
-              (value !== 'finanzas' || can('finance.view', 'finance.manage')) &&
-              (value !== 'checkin' ||
-                can('checkin.operate', 'checkin.manage')) &&
-              (value !== 'operadores' ||
-                (event.modules.includes('checkin') && can('checkin.manage'))) &&
-              (value !== 'acomodo' ||
-                (event.modules.includes('tables') &&
-                  can('seating.view', 'seating.manage'))) &&
-              ((value !== 'invitados' && value !== 'mesas') ||
-                can(
-                  'registrations.view',
-                  'registrations.manage',
-                  'payments.manage',
-                  'checkin.manage',
-                )),
-          )
-          .map(
-            ([value, label]) =>
-              [
-                value,
-                label +
-                  (value === 'boletos'
-                    ? ` (${event.ticketTypes.length})`
-                    : value === 'formulario'
-                      ? ` (${event.formFields.length})`
-                      : ''),
-              ] as const,
-          )}
+        tabs={visibleTabs}
       />
 
       {tab === 'resumen' &&
@@ -448,7 +463,11 @@ export function EventDetailPage() {
           />
         ))}
       {tab === 'tablero' && (
-        <EventDashboardTab event={event} onOpenTab={(next) => setTab(next)} />
+        <EventDashboardTab
+          event={event}
+          groupTabVisible={groupTabVisible}
+          onOpenTab={(next) => setTab(next)}
+        />
       )}
       {tab === 'invitados' && <EventGuestsTab event={event} />}
       {tab === 'acomodo' && <EventSeatingTab event={event} />}
@@ -461,6 +480,7 @@ export function EventDetailPage() {
       {tab === 'finanzas' && <EventFinanceTab event={event} />}
       {tab === 'checkin' && <EventCheckinTab event={event} />}
       {tab === 'operadores' && <EventOperatorsTab event={event} />}
+      {tab === 'accesos' && <EventAccessPointsTab event={event} />}
       {tab === 'boletos' && (
         <EventTicketsTab event={event} onChanged={() => refresh()} />
       )}

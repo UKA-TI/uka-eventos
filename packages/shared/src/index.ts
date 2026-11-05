@@ -233,33 +233,38 @@ export const eventModuleCatalog = [
   {
     key: 'publicRegistration',
     label: 'Registro público',
-    description: 'Cualquier persona se registra con la liga del evento.',
+    description:
+      'Cualquier persona se registra con la liga del evento. La liga está en Configuración › Datos del evento.',
   },
   {
     key: 'corporate',
     label: 'Compras corporativas',
     description:
-      'Una empresa compra lugares y captura a sus invitados con una liga privada.',
+      'Una empresa compra varios lugares y su asistente registra a los invitados con una liga privada. Activa Asistentes › Registro por grupo.',
   },
   {
     key: 'tables',
     label: 'Mesas',
-    description: 'Asigna a los asistentes a mesas con cupo.',
+    description:
+      'Acomoda a los asistentes en mesas sobre el plano. Activa Asistentes › Acomodo de mesas.',
   },
   {
     key: 'raffle',
     label: 'Rifa',
-    description: 'Entrega un folio de rifa al ingresar al evento.',
+    description:
+      'Entrega un folio de rifa al ingresar. Se ve en Día del evento › Entradas e incidencias.',
   },
   {
     key: 'donations',
     label: 'Donativos',
-    description: 'Registra los donativos recibidos en el evento.',
+    description:
+      'Permite ligar donativos a este evento. Se registran en el menú Donativos y suman en Ventas › Finanzas del evento.',
   },
   {
     key: 'checkin',
     label: 'Check-in con QR',
-    description: 'Recepción escanea los pases desde la app instalada.',
+    description:
+      'Recepción escanea los pases en la puerta. Activa Día del evento y Configuración › Puntos de acceso.',
   },
 ] as const;
 
@@ -1468,6 +1473,8 @@ export const guestListResponseSchema = z.object({
       checkedInAt: z.string().nullable(),
       accessPointName: z.string().nullable(),
       operatorName: z.string().nullable(),
+      passUrl: z.string().nullable(),
+      passPending: z.boolean(),
     }),
   ),
   total: z.number(),

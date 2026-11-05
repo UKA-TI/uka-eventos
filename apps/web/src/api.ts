@@ -23,10 +23,9 @@ export async function apiRequest(
         : `El servidor respondió con un error (HTTP ${response.status}).`,
     );
   }
-  if (response.status === 204) {
-    return null;
-  }
-  return response.json();
+  // Una respuesta correcta puede venir vacía, como el 202 de "en cola": no es un error.
+  const text = await response.text();
+  return text ? (JSON.parse(text) as unknown) : null;
 }
 
 export function jsonRequest(

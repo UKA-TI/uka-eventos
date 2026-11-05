@@ -419,7 +419,7 @@ export function ReceptionStationPage() {
           <p className="notice warn" role="status">
             Este evento aún no tiene puntos de acceso.{' '}
             {can('checkin.manage') ? (
-              <Link to={`/eventos/${event.id}?tab=checkin`}>
+              <Link to={`/eventos/${event.id}?tab=accesos`}>
                 Agregar puntos de acceso
               </Link>
             ) : (

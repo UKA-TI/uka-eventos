@@ -1,4 +1,9 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   eventGroupsResponseSchema,
   guestListResponseSchema,
@@ -6,9 +11,11 @@ import {
   type EventDetail,
 } from '@uka/shared';
 import { useState } from 'react';
-import { apiRequest } from '../api.js';
+import { useSearchParams } from 'react-router-dom';
+import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Loading, Notice } from '../components/ui.js';
+import { NameChangeForm } from './OrderFinanceForms.js';
 
 const REFRESH_MS = 30_000;
 
@@ -21,12 +28,27 @@ function initials(name: string): string {
     .join('');
 }
 
+/** Asistentes › Lista de invitados: todo lo que se hace con una persona vive aquí. */
 export function EventGuestsTab({ event }: { event: EventDetail }) {
-  const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const { can, csrfToken } = usePermissions();
+  const canManage = can('registrations.manage');
+  const [searchParams] = useSearchParams();
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
   const [status, setStatus] = useState('');
-  const [orderId, setOrderId] = useState('');
+  // Desde una compra se llega con sus invitados ya filtrados.
+  const [orderId, setOrderId] = useState(
+    () => searchParams.get('compra') ?? '',
+  );
+  const [changing, setChanging] = useState<{
+    id: string;
+    guestName: string;
+  } | null>(null);
+  const [notice, setNotice] = useState<{
+    kind: 'ok' | 'error';
+    text: string;
+  }>();
 
   const query = new URLSearchParams({ page: String(page) });
   if (search.trim()) {
@@ -55,6 +77,23 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
         await apiRequest(`/api/events/${event.id}/groups`),
       ),
   });
+  const resend = useMutation({
+    mutationFn: async (guest: { id: string; name: string }) =>
+      apiRequest(
+        `/api/events/${event.id}/orders/registrations/${guest.id}/resend`,
+        jsonRequest('POST', undefined, csrfToken),
+      ),
+    onSuccess: (_result, guest) =>
+      setNotice({
+        kind: 'ok',
+        text: `El pase de ${guest.name} está en la cola de correo.`,
+      }),
+    onError: (error) =>
+      setNotice({
+        kind: 'error',
+        text: errorText(error, 'No se pudo reenviar el pase.'),
+      }),
+  });
 
   if (guests.isPending) {
     return <Loading />;
@@ -68,9 +107,26 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
   const filtered = Boolean(search.trim() || status || orderId);
   const shownFrom = data.total === 0 ? 0 : (page - 1) * data.pageSize + 1;
   const shownTo = Math.min(page * data.pageSize, data.total);
+  const groupOption = groups.data?.find((group) => group.id === orderId);
 
   return (
     <>
+      {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+      {changing && (
+        <NameChangeForm
+          event={event}
+          registration={changing}
+          onCancel={() => setChanging(null)}
+          onDone={async (text) => {
+            await queryClient.invalidateQueries({
+              queryKey: ['event-guests', event.id],
+            });
+            setChanging(null);
+            setNotice({ kind: 'ok', text });
+          }}
+        />
+      )}
+
       <div className="filters">
         <label className="filter-field filter-search">
           <span>Buscar invitado</span>
@@ -103,24 +159,40 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
             ))}
           </select>
         </label>
-        <label className="filter-field">
-          <span>Empresa o mesa</span>
-          <select
-            aria-label="Filtrar por empresa o mesa"
-            value={orderId}
-            onChange={(e) => {
-              setOrderId(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Todas las empresas / mesas</option>
-            {groups.data?.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.company}
-              </option>
-            ))}
-          </select>
-        </label>
+        {orderId && !groupOption ? (
+          <span className="filter-chip">
+            Invitados de una compra
+            <button
+              className="link-button"
+              type="button"
+              onClick={() => {
+                setOrderId('');
+                setPage(1);
+              }}
+            >
+              Quitar filtro
+            </button>
+          </span>
+        ) : (
+          <label className="filter-field">
+            <span>Empresa o mesa</span>
+            <select
+              aria-label="Filtrar por empresa o mesa"
+              value={orderId}
+              onChange={(e) => {
+                setOrderId(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Todas las empresas / mesas</option>
+              {groups.data?.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.company}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {can('reports.export') && data.allGuests > 0 && (
           <a
             className="button secondary"
@@ -154,10 +226,9 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                   <th>Folio</th>
                   <th>Empresa / mesa</th>
                   <th>Mesa</th>
-                  <th>Organización</th>
                   <th>Estado</th>
-                  <th>Hora</th>
-                  <th>Operador</th>
+                  <th>Ingreso</th>
+                  {canManage && <th>Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -174,7 +245,9 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                           </span>
                           <span>
                             <strong>{guest.name}</strong>
-                            <small className="cell-note">{guest.email}</small>
+                            <small className="cell-note">
+                              {guest.email ?? guest.organization ?? ''}
+                            </small>
                           </span>
                         </div>
                       </td>
@@ -183,32 +256,71 @@ export function EventGuestsTab({ event }: { event: EventDetail }) {
                       </td>
                       <td data-label="Empresa / mesa">{guest.group ?? '—'}</td>
                       <td data-label="Mesa">{guest.tableName ?? '—'}</td>
-                      <td data-label="Organización">
-                        {guest.organization ?? '—'}
-                      </td>
                       <td data-label="Estado">
                         <span className={`badge ${state.tone}`}>
                           {state.label}
                         </span>
                       </td>
-                      <td data-label="Hora">
-                        {guest.checkedInAt
-                          ? new Date(guest.checkedInAt).toLocaleTimeString(
+                      <td data-label="Ingreso">
+                        {guest.checkedInAt ? (
+                          <div>
+                            {new Date(guest.checkedInAt).toLocaleTimeString(
                               'es-MX',
                               { timeZone: event.timeZone, timeStyle: 'short' },
-                            )
-                          : '—'}
-                      </td>
-                      <td data-label="Operador">
-                        <div>
-                          {guest.operatorName ?? '—'}
-                          {guest.accessPointName && (
+                            )}
                             <small className="cell-note">
-                              {guest.accessPointName}
+                              {[guest.accessPointName, guest.operatorName]
+                                .filter(Boolean)
+                                .join(' · ')}
                             </small>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          '—'
+                        )}
                       </td>
+                      {canManage && (
+                        <td data-label="Acciones">
+                          <span className="guest-actions">
+                            {guest.passUrl && (
+                              <a
+                                href={guest.passUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Ver pase
+                              </a>
+                            )}
+                            {guest.passUrl && guest.email && (
+                              <button
+                                className="link-button"
+                                type="button"
+                                disabled={resend.isPending}
+                                onClick={() => {
+                                  setNotice(undefined);
+                                  resend.mutate(guest);
+                                }}
+                              >
+                                {guest.passPending
+                                  ? 'Reenviar invitación'
+                                  : 'Reenviar pase'}
+                              </button>
+                            )}
+                            <button
+                              className="link-button"
+                              type="button"
+                              onClick={() => {
+                                setNotice(undefined);
+                                setChanging({
+                                  id: guest.id,
+                                  guestName: guest.name,
+                                });
+                              }}
+                            >
+                              Cambiar nombre
+                            </button>
+                          </span>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

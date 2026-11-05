@@ -5,7 +5,7 @@ import { asyncHandler } from '../../async-handler.js';
 import { prisma } from '../../database.js';
 import { AppError } from '../../errors.js';
 import { currentUser, requirePermission } from '../auth/auth.js';
-import { groupUrl } from '../passes/tokens.js';
+import { groupUrl, passUrl } from '../passes/tokens.js';
 
 const PAGE_SIZE = 50;
 const LAST_PERIOD_MS = 15 * 60 * 1000;
@@ -201,6 +201,10 @@ eventViewsRouter.get(
   asyncHandler(async (request, response) => {
     const eventId = eventIdOf(request);
     const { page, q, status, orderId } = guestQuerySchema.parse(request.query);
+    // La liga del pase da acceso al QR: solo para quien administra registros.
+    const showLinks = currentUser(request).permissions.includes(
+      'registrations.manage',
+    );
     const base: Prisma.RegistrationWhereInput = {
       eventId,
       status: { not: 'cancelled' },
@@ -286,6 +290,8 @@ eventViewsRouter.get(
           checkedInAt: checkin?.checkedInAt ?? null,
           accessPointName: checkin?.accessPoint.name ?? null,
           operatorName: checkin?.operator?.displayName ?? null,
+          passUrl: showLinks && pass ? passUrl(pass.id) : null,
+          passPending: pass?.status === 'pending_activation',
         };
       }),
       total,

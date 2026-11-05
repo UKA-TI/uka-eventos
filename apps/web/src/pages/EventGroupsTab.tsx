@@ -6,10 +6,10 @@ import {
   type EventGroup,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
-import { ReconciledOrderForm } from './ReconciledOrderForm.js';
 import { issuesToErrors } from './text.js';
 
 const shortDate = (value: string) =>
@@ -122,7 +122,6 @@ export function EventGroupsTab({
 }) {
   const queryClient = useQueryClient();
   const { can, csrfToken } = usePermissions();
-  const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{
     kind: 'ok' | 'error';
@@ -178,34 +177,14 @@ export function EventGroupsTab({
   return (
     <>
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-      {can('payments.manage') && event.status === 'active' && !creating && (
-        <div className="section-actions">
-          <button
-            className="button primary"
-            type="button"
-            onClick={() => {
-              setNotice(undefined);
-              setCreating(true);
-            }}
-          >
-            Registrar compra de mesa
-          </button>
-        </div>
-      )}
-      {creating && (
-        <ReconciledOrderForm
-          event={event}
-          onCancel={() => setCreating(false)}
-          onDone={async (reference) => {
-            await refresh();
-            setCreating(false);
-            setNotice({
-              kind: 'ok',
-              text: `Compra ${reference} registrada. La liga para registrar invitados ya está en la cola de correo.`,
-            });
-          }}
-        />
-      )}
+      <p className="muted form-note">
+        Aquí das seguimiento a quien registra a los invitados de cada mesa. Las
+        compras de mesa se registran en{' '}
+        <Link to={`/eventos/${event.id}?tab=registros`}>
+          Ventas › Compras y pagos
+        </Link>
+        .
+      </p>
 
       <div className="panel table-panel attendee-panel">
         <div className="panel-heading">
