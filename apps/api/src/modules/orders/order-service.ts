@@ -6,6 +6,7 @@ import {
   type OrderInput,
   type PaymentInput,
   type ReconciledOrderInput,
+  type RefundInput,
 } from '@uka/shared';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { prisma } from '../../database.js';
@@ -31,7 +32,7 @@ async function lockEvent(tx: Tx, eventId: string) {
   await tx.$queryRaw`SELECT id FROM events WHERE id = ${eventId} FOR UPDATE`;
 }
 
-async function lockOrder(tx: Tx, orderId: string) {
+export async function lockOrder(tx: Tx, orderId: string) {
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
 }
 
@@ -74,10 +75,24 @@ function buildAnswers(
   });
 }
 
+/** Con el evento cerrado los números ya se reportaron: moverlos exige reabrirlo. */
+export async function assertEventOpen(tx: Tx, eventId: string) {
+  const event = await tx.event.findUnique({
+    where: { id: eventId },
+    select: { status: true },
+  });
+  if (event?.status === 'closed') {
+    throw new AppError(
+      409,
+      'El evento está cerrado. Reábrelo para mover pagos, reembolsos o cancelaciones.',
+    );
+  }
+}
+
 /** Un pase sin activar existe, pero no muestra QR hasta que su dueño acepte el aviso. */
 const LIVE_PASS = { in: ['active', 'pending_activation'] };
 
-async function issuePass(
+export async function issuePass(
   tx: Tx,
   registrationId: string,
   status: 'active' | 'pending_activation' = 'active',
@@ -109,7 +124,7 @@ async function confirmOrder(tx: Tx, orderId: string) {
       buyer: true,
       registrations: {
         where: { status: { not: 'cancelled' } },
-        include: { guest: true, consents: { select: { id: true } } },
+        include: { guest: true, consents: { select: { guestId: true } } },
       },
     },
   });
@@ -130,7 +145,10 @@ async function confirmOrder(tx: Tx, orderId: string) {
     });
     // Al recuperar un pago, quien nunca aceptó el aviso sigue sin haberlo aceptado.
     const needsActivation =
-      usesPrivateLink(order) && registration.consents.length === 0;
+      usesPrivateLink(order) &&
+      !registration.consents.some(
+        (consent) => consent.guestId === registration.guestId,
+      );
     const passId = await issuePass(
       tx,
       registration.id,
@@ -523,6 +541,7 @@ export async function activatePass(
     await tx.consent.create({
       data: {
         registrationId: registration.id,
+        guestId: registration.guestId,
         purpose: 'event_registration',
         noticeVersion: PRIVACY_NOTICE_VERSION,
         granted: true,
@@ -588,6 +607,17 @@ export async function resendGroupGuest(token: string, registrationId: string) {
       toEmail: registration.guest.email,
     });
   }, TX_OPTIONS);
+}
+
+/** El plazo del evento, sin pasar de su fecha: después de empezar ya no hay a qué apartar. */
+function paymentDueDate(
+  event: { paymentTermDays: number; startsAt: Date | null },
+  now: Date,
+): Date {
+  const due = new Date(now.getTime() + event.paymentTermDays * 86_400_000);
+  return event.startsAt && event.startsAt > now && event.startsAt < due
+    ? event.startsAt
+    : due;
 }
 
 export async function createOrder(params: {
@@ -661,6 +691,13 @@ export async function createOrder(params: {
         amountDue: ticket.price,
         source,
         answers,
+        dueAt: ticket.price.toNumber() > 0 ? paymentDueDate(event, now) : null,
+        ...(input.fiscal
+          ? {
+              fiscalData: input.fiscal as Prisma.InputJsonValue,
+              invoiceStatus: 'requested',
+            }
+          : {}),
       },
     });
 
@@ -681,6 +718,7 @@ export async function createOrder(params: {
         await tx.consent.create({
           data: {
             registrationId: registration.id,
+            guestId: guest.id,
             purpose: 'event_registration',
             noticeVersion: PRIVACY_NOTICE_VERSION,
             granted: true,
@@ -709,7 +747,7 @@ export async function createOrder(params: {
 
 const moneyEquals = (a: number, b: number) => Math.abs(a - b) < 0.005;
 
-function activePaid(
+export function activePaid(
   payments: { amount: { toNumber(): number }; voidedAt: Date | null }[],
 ) {
   return payments
@@ -733,6 +771,7 @@ export async function recordPayment(params: {
     if (!order) {
       throw new AppError(404, 'El pedido no existe.');
     }
+    await assertEventOpen(tx, eventId);
     if (order.status === 'cancelled') {
       throw new AppError(409, 'Este pedido está cancelado.');
     }
@@ -775,7 +814,7 @@ export async function voidPayment(params: {
     await lockOrder(tx, orderId);
     const order = await tx.order.findFirst({
       where: { id: orderId, eventId },
-      include: { payments: true },
+      include: { payments: true, refunds: true },
     });
     const payment = order?.payments.find((item) => item.id === paymentId);
     if (!order || !payment) {
@@ -784,9 +823,17 @@ export async function voidPayment(params: {
     if (payment.voidedAt) {
       throw new AppError(409, 'Este pago ya estaba anulado.');
     }
+    await assertEventOpen(tx, eventId);
     const remaining = activePaid(
       order.payments.filter((item) => item.id !== paymentId),
     );
+    // Sin este pago, lo devuelto superaría lo cobrado: el dinero dejaría de cuadrar.
+    if (remaining + 0.005 < activePaid(order.refunds)) {
+      throw new AppError(
+        409,
+        'Esta compra tiene reembolsos que dependen de este pago. Anula primero el reembolso.',
+      );
+    }
     const stillPaid = moneyEquals(remaining, order.amountDue.toNumber());
     if (order.status === 'confirmed' && !stillPaid) {
       await revokePasses(tx, order.id, 'pending');
@@ -808,15 +855,62 @@ export async function voidPayment(params: {
   }, TX_OPTIONS);
 }
 
-export async function cancelOrder(eventId: string, orderId: string) {
+/**
+ * Cancelar deja el dinero registrado: lo cobrado no desaparece. Se devuelve con un
+ * reembolso, o se queda como importe retenido y sigue contando como ingreso.
+ */
+export async function cancelOrder(params: {
+  eventId: string;
+  orderId: string;
+  userId: string;
+  canHandleMoney: boolean;
+  reason?: string | null;
+  refund?: Omit<RefundInput, 'reason'> | null;
+}) {
+  const { eventId, orderId, userId, canHandleMoney, reason, refund } = params;
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, orderId);
-    const order = await tx.order.findFirst({ where: { id: orderId, eventId } });
+    const order = await tx.order.findFirst({
+      where: { id: orderId, eventId },
+      include: { payments: true, refunds: true },
+    });
     if (!order) {
       throw new AppError(404, 'El pedido no existe.');
     }
     if (order.status === 'cancelled') {
       throw new AppError(409, 'Este pedido ya estaba cancelado.');
+    }
+    await assertEventOpen(tx, eventId);
+    const net = activePaid(order.payments) - activePaid(order.refunds);
+    if (net > 0.005) {
+      if (!canHandleMoney) {
+        throw new AppError(
+          403,
+          'Esta compra ya tiene pagos. Cancelarla le corresponde a quien administra los reembolsos.',
+        );
+      }
+      if (!reason?.trim()) {
+        throw new AppError(400, 'Indica el motivo de la cancelación.');
+      }
+    }
+    if (refund) {
+      if (refund.amount > net + 0.005) {
+        throw new AppError(
+          409,
+          `El reembolso excede lo cobrado de ${net.toFixed(2)}.`,
+        );
+      }
+      await tx.refund.create({
+        data: {
+          orderId: order.id,
+          amount: refund.amount,
+          method: refund.method,
+          reference: refund.reference,
+          reason: reason?.trim() || 'Cancelación',
+          refundedAt: new Date(refund.refundedAt),
+          recordedById: userId,
+        },
+      });
     }
     await revokePasses(tx, order.id, 'cancelled');
     await releaseOrderSeats(tx, order.id);
@@ -825,6 +919,7 @@ export async function cancelOrder(eventId: string, orderId: string) {
       data: {
         status: 'cancelled',
         cancelledAt: new Date(),
+        cancellationReason: reason?.trim() || null,
         groupTokenHash: null,
       },
     });
@@ -921,6 +1016,7 @@ export async function addGroupGuest(token: string, input: GroupGuestInput) {
       await tx.consent.create({
         data: {
           registrationId: registration.id,
+          guestId: guest.id,
           purpose: 'event_registration',
           noticeVersion: PRIVACY_NOTICE_VERSION,
           granted: true,

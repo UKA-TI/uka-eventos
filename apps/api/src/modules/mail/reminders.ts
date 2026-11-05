@@ -1,3 +1,4 @@
+import { nextReminderStage } from '@uka/shared';
 import { prisma } from '../../database.js';
 
 const REMINDER_BEFORE_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +55,74 @@ export async function queueEventReminders(now = new Date()): Promise<number> {
         })),
       });
       return passes.length;
+    });
+  }
+  return queued;
+}
+
+const MANUAL_REST_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Recordatorios de cobro según su vencimiento. Nunca cancelan ni liberan lugares: solo
+ * avisan. Terminan al pagar, al cancelar o al empezar el evento. Si alguien del equipo
+ * acaba de recordar a mano, espera un día para no enviar dos correos seguidos.
+ */
+export async function queuePaymentReminders(now = new Date()): Promise<number> {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: 'pending_payment',
+      dueAt: { not: null },
+      reminderStage: { lt: 4 },
+      event: {
+        status: 'active',
+        paymentReminders: true,
+        OR: [{ startsAt: null }, { startsAt: { gt: now } }],
+      },
+      buyer: { email: { not: null } },
+    },
+    select: {
+      id: true,
+      eventId: true,
+      dueAt: true,
+      reminderStage: true,
+      lastReminderAt: true,
+      buyer: { select: { email: true } },
+    },
+  });
+  let queued = 0;
+  for (const order of orders) {
+    const stage = nextReminderStage(order.dueAt!, order.reminderStage, now);
+    if (stage === null) {
+      continue;
+    }
+    const rested =
+      !order.lastReminderAt ||
+      now.getTime() - order.lastReminderAt.getTime() >= MANUAL_REST_MS;
+    if (!rested) {
+      continue;
+    }
+    queued += await prisma.$transaction(async (tx) => {
+      // Reclamar la etapa impide repetir el correo si corren dos procesos.
+      const claim = await tx.order.updateMany({
+        where: {
+          id: order.id,
+          status: 'pending_payment',
+          reminderStage: order.reminderStage,
+        },
+        data: { reminderStage: stage, lastReminderAt: now },
+      });
+      if (claim.count === 0) {
+        return 0;
+      }
+      await tx.emailMessage.create({
+        data: {
+          eventId: order.eventId,
+          kind: 'payment_reminder',
+          refId: order.id,
+          toEmail: order.buyer.email ?? '',
+        },
+      });
+      return 1;
     });
   }
   return queued;

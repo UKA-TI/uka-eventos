@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  financialStatusLabels,
   orderInputSchema,
   orderListResponseSchema,
   paymentInputSchema,
@@ -8,18 +9,20 @@ import {
   type OrderRecord,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
 import { dateTimeInZoneToIso, toLocalDateTime } from './dates.js';
+import {
+  CancelOrderForm,
+  DueDateForm,
+  FiscalForm,
+  NameChangeForm,
+  RefundForm,
+} from './OrderFinanceForms.js';
 import { ReconciledOrderForm } from './ReconciledOrderForm.js';
-import { formatMoney, issuesToErrors } from './text.js';
-
-const orderStatus: Record<string, [string, string]> = {
-  pending_payment: ['Pendiente de pago', 'warn'],
-  confirmed: ['Confirmado', 'ok'],
-  cancelled: ['Cancelado', 'bad'],
-};
+import { formatAmount, formatMoney, issuesToErrors } from './text.js';
 
 const emailStatus: Record<string, string> = {
   pending: 'Correo en cola',
@@ -331,7 +334,17 @@ export function EventRegistrationsTab({
   const { can, csrfToken } = usePermissions();
   const canManage = can('registrations.manage');
   const canPay = can('payments.manage');
-  const [search, setSearch] = useState('');
+  const canCollect = can('payments.manage', 'finance.manage');
+  const canRefund = can('refunds.manage');
+  const isClosed = event.status === 'closed';
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
+  const [panel, setPanel] = useState<{
+    kind: 'refund' | 'cancel' | 'due' | 'fiscal' | 'name';
+    orderId: string;
+    registrationId?: string;
+  } | null>(null);
+  const [openIdFromLink] = useState(() => searchParams.get('q'));
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
@@ -408,22 +421,25 @@ export function EventRegistrationsTab({
           <strong>{summary.seatsToRegister.toLocaleString('es-MX')}</strong>
         </article>
         <article className="stat">
-          <span>Cobrado</span>
+          <span>Cobrado neto</span>
           <strong>
-            {summary.amountCollected.toLocaleString('es-MX', {
-              style: 'currency',
-              currency: event.currency,
-            })}
+            {formatAmount(summary.amountCollected, event.currency)}
           </strong>
+          {summary.amountRefunded > 0 && (
+            <small>
+              Tras {formatAmount(summary.amountRefunded, event.currency)} de
+              reembolsos
+            </small>
+          )}
         </article>
         <article className="stat">
           <span>Por cobrar</span>
-          <strong>
-            {summary.amountPending.toLocaleString('es-MX', {
-              style: 'currency',
-              currency: event.currency,
-            })}
-          </strong>
+          <strong>{formatAmount(summary.amountPending, event.currency)}</strong>
+          {summary.amountOverdue > 0 && (
+            <small>
+              {formatAmount(summary.amountOverdue, event.currency)} vencido
+            </small>
+          )}
         </article>
       </div>
 
@@ -525,9 +541,11 @@ export function EventRegistrationsTab({
           }}
         >
           <option value="">Todos los estados</option>
-          <option value="pending_payment">Pendiente de pago</option>
-          <option value="confirmed">Confirmado</option>
-          <option value="cancelled">Cancelado</option>
+          <option value="pending_payment">Con saldo</option>
+          <option value="partial">Pagada parcial</option>
+          <option value="overdue">Vencida</option>
+          <option value="confirmed">Confirmada</option>
+          <option value="cancelled">Cancelada</option>
         </select>
         {can('payments.manage') &&
           event.status === 'active' &&
@@ -573,16 +591,29 @@ export function EventRegistrationsTab({
                   <th>Referencia</th>
                   <th>Comprador</th>
                   <th>Boleto</th>
-                  <th>Lugares</th>
                   <th>Pagado</th>
                   <th>Estado</th>
                   <th aria-label="Acciones" />
                 </tr>
               </thead>
               {orders.data.orders.map((order) => {
-                const [label, tone] = orderStatus[order.status]!;
-                const open = openId === order.id;
-                const remaining = order.amountDue - order.amountPaid;
+                const [label, tone] = financialStatusLabels[
+                  order.financialStatus
+                ] ?? [order.financialStatus, 'neutral'];
+                const open =
+                  openId === order.id ||
+                  (openId === null && openIdFromLink === order.reference);
+                const remaining = order.balance;
+                const overdue =
+                  order.status === 'pending_payment' &&
+                  order.dueAt !== null &&
+                  new Date(order.dueAt) < new Date();
+                const net = order.amountPaid - order.amountRefunded;
+                const finishPanel = async (text: string) => {
+                  await refresh();
+                  setPanel(null);
+                  setNotice({ kind: 'ok', text });
+                };
                 return (
                   <tbody key={order.id}>
                     <tr>
@@ -595,9 +626,12 @@ export function EventRegistrationsTab({
                           {order.buyer.organization ?? order.buyer.email}
                         </small>
                       </td>
-                      <td>{order.ticketName}</td>
                       <td>
-                        {order.seats}
+                        {order.ticketName}
+                        <small className="cell-note">
+                          {order.seats}{' '}
+                          {order.seats === 1 ? 'lugar' : 'lugares'}
+                        </small>
                         {order.status === 'confirmed' &&
                           (order.seats > 1 ||
                             order.source === 'reconciled') && (
@@ -612,15 +646,38 @@ export function EventRegistrationsTab({
                           )}
                       </td>
                       <td>
-                        {order.amountDue === 0
-                          ? 'Gratis'
-                          : `${order.amountPaid.toLocaleString('es-MX', { style: 'currency', currency: event.currency })} de ${formatMoney(order.amountDue, event.currency)}`}
+                        {order.amountDue === 0 ? (
+                          'Gratis'
+                        ) : (
+                          <>
+                            {formatAmount(order.amountPaid, event.currency)}
+                            <small className="cell-note">
+                              De {formatAmount(order.amountDue, event.currency)}
+                            </small>
+                          </>
+                        )}
+                        {order.amountRefunded > 0 && (
+                          <small className="cell-note">
+                            Devuelto{' '}
+                            {formatAmount(order.amountRefunded, event.currency)}
+                          </small>
+                        )}
+                        {order.dueAt && order.status === 'pending_payment' && (
+                          <small className="cell-note">
+                            {overdue ? 'Venció el ' : 'Vence el '}
+                            {new Date(order.dueAt).toLocaleDateString('es-MX', {
+                              timeZone: event.timeZone,
+                              dateStyle: 'medium',
+                            })}
+                          </small>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${tone}`}>{label}</span>
                       </td>
                       <td className="row-actions">
                         {canPay &&
+                          !isClosed &&
                           order.status === 'pending_payment' &&
                           remaining > 0 && (
                             <button
@@ -640,8 +697,9 @@ export function EventRegistrationsTab({
                           type="button"
                           aria-expanded={open}
                           onClick={() => {
-                            setOpenId(open ? null : order.id);
+                            setOpenId(open ? '' : order.id);
                             setPayingId(null);
+                            setPanel(null);
                           }}
                         >
                           {open ? 'Ocultar' : 'Ver'}
@@ -650,7 +708,7 @@ export function EventRegistrationsTab({
                     </tr>
                     {open && (
                       <tr className="detail-row">
-                        <td colSpan={7}>
+                        <td colSpan={6}>
                           <div className="order-detail">
                             {payingId === order.id && (
                               <PaymentForm
@@ -669,6 +727,59 @@ export function EventRegistrationsTab({
                                 }}
                               />
                             )}
+                            {panel?.orderId === order.id &&
+                              panel.kind === 'refund' && (
+                                <RefundForm
+                                  event={event}
+                                  order={order}
+                                  onCancel={() => setPanel(null)}
+                                  onDone={finishPanel}
+                                />
+                              )}
+                            {panel?.orderId === order.id &&
+                              panel.kind === 'cancel' && (
+                                <CancelOrderForm
+                                  event={event}
+                                  order={order}
+                                  onCancel={() => setPanel(null)}
+                                  onDone={finishPanel}
+                                />
+                              )}
+                            {panel?.orderId === order.id &&
+                              panel.kind === 'due' && (
+                                <DueDateForm
+                                  orderId={order.id}
+                                  eventId={event.id}
+                                  timeZone={event.timeZone}
+                                  dueAt={order.dueAt}
+                                  onCancel={() => setPanel(null)}
+                                  onDone={finishPanel}
+                                />
+                              )}
+                            {panel?.orderId === order.id &&
+                              panel.kind === 'fiscal' && (
+                                <FiscalForm
+                                  event={event}
+                                  order={order}
+                                  onCancel={() => setPanel(null)}
+                                  onDone={finishPanel}
+                                />
+                              )}
+                            {panel?.orderId === order.id &&
+                              panel.kind === 'name' &&
+                              order.registrations
+                                .filter(
+                                  (item) => item.id === panel.registrationId,
+                                )
+                                .map((registration) => (
+                                  <NameChangeForm
+                                    key={registration.id}
+                                    event={event}
+                                    registration={registration}
+                                    onCancel={() => setPanel(null)}
+                                    onDone={finishPanel}
+                                  />
+                                ))}
                             <div className="detail-columns">
                               <div>
                                 <h3>Contacto</h3>
@@ -677,6 +788,39 @@ export function EventRegistrationsTab({
                                   <br />
                                   {order.buyer.phone ?? 'Sin teléfono'}
                                 </p>
+                                <h3>Factura</h3>
+                                {order.fiscal ? (
+                                  <p>
+                                    <strong>{order.fiscal.rfc}</strong>
+                                    <br />
+                                    {order.fiscal.legalName}
+                                    <small className="cell-note">
+                                      {order.invoiceStatus === 'issued'
+                                        ? `Factura ${order.invoiceFolio}`
+                                        : 'Factura solicitada'}
+                                    </small>
+                                  </p>
+                                ) : (
+                                  <p className="muted">No solicitada.</p>
+                                )}
+                                {canCollect &&
+                                  order.invoiceStatus !== 'issued' && (
+                                    <button
+                                      className="link-button"
+                                      type="button"
+                                      onClick={() => {
+                                        setNotice(undefined);
+                                        setPanel({
+                                          kind: 'fiscal',
+                                          orderId: order.id,
+                                        });
+                                      }}
+                                    >
+                                      {order.fiscal
+                                        ? 'Editar datos fiscales'
+                                        : 'Agregar datos fiscales'}
+                                    </button>
+                                  )}
                                 {order.answers.length > 0 && (
                                   <>
                                     <h3>Respuestas</h3>
@@ -746,6 +890,27 @@ export function EventRegistrationsTab({
                                             )}
                                           </span>
                                         )}
+                                        {canManage &&
+                                          registration.status !==
+                                            'cancelled' && (
+                                            <span className="inline-actions">
+                                              <button
+                                                className="link-button"
+                                                type="button"
+                                                onClick={() => {
+                                                  setNotice(undefined);
+                                                  setPanel({
+                                                    kind: 'name',
+                                                    orderId: order.id,
+                                                    registrationId:
+                                                      registration.id,
+                                                  });
+                                                }}
+                                              >
+                                                Cambiar nombre
+                                              </button>
+                                            </span>
+                                          )}
                                       </li>
                                     ))}
                                   </ul>
@@ -814,56 +979,174 @@ export function EventRegistrationsTab({
                                             ? ` · ${payment.recordedBy}`
                                             : ''}
                                         </small>
-                                        {canPay && !payment.voidedAt && (
-                                          <button
-                                            className="link-button danger"
-                                            type="button"
-                                            disabled={act.isPending}
-                                            onClick={() => {
-                                              if (
-                                                window.confirm(
-                                                  'Si este pago deja el pedido incompleto, sus pases dejarán de ser válidos. ¿Anular el pago?',
-                                                )
-                                              ) {
-                                                setNotice(undefined);
-                                                act.mutate({
-                                                  path: `${order.id}/payments/${payment.id}/void`,
-                                                  success: 'Pago anulado.',
-                                                });
-                                              }
-                                            }}
-                                          >
-                                            Anular
-                                          </button>
-                                        )}
+                                        {canPay &&
+                                          !payment.voidedAt &&
+                                          !isClosed && (
+                                            <button
+                                              className="link-button danger"
+                                              type="button"
+                                              disabled={act.isPending}
+                                              onClick={() => {
+                                                if (
+                                                  window.confirm(
+                                                    'Si este pago deja el pedido incompleto, sus pases dejarán de ser válidos. ¿Anular el pago?',
+                                                  )
+                                                ) {
+                                                  setNotice(undefined);
+                                                  act.mutate({
+                                                    path: `${order.id}/payments/${payment.id}/void`,
+                                                    success: 'Pago anulado.',
+                                                  });
+                                                }
+                                              }}
+                                            >
+                                              Anular
+                                            </button>
+                                          )}
                                       </li>
                                     ))}
                                   </ul>
                                 )}
+                                {order.refunds.length > 0 && (
+                                  <>
+                                    <h3>Reembolsos</h3>
+                                    <ul className="compact-list">
+                                      {order.refunds.map((refund) => (
+                                        <li
+                                          key={refund.id}
+                                          className={
+                                            refund.voidedAt
+                                              ? 'voided'
+                                              : undefined
+                                          }
+                                        >
+                                          <strong>
+                                            {formatAmount(
+                                              refund.amount,
+                                              event.currency,
+                                            )}
+                                          </strong>{' '}
+                                          · {methodLabels[refund.method]}
+                                          {refund.voidedAt && ' · Anulado'}
+                                          <small className="cell-note">
+                                            {new Date(
+                                              refund.refundedAt,
+                                            ).toLocaleDateString('es-MX', {
+                                              timeZone: event.timeZone,
+                                              dateStyle: 'medium',
+                                            })}{' '}
+                                            · {refund.reason}
+                                            {refund.recordedBy
+                                              ? ` · ${refund.recordedBy}`
+                                              : ''}
+                                          </small>
+                                          {canRefund &&
+                                            !refund.voidedAt &&
+                                            !isClosed && (
+                                              <button
+                                                className="link-button danger"
+                                                type="button"
+                                                disabled={act.isPending}
+                                                onClick={() => {
+                                                  if (
+                                                    window.confirm(
+                                                      'Anula un reembolso solo si se capturó por error. ¿Anularlo?',
+                                                    )
+                                                  ) {
+                                                    setNotice(undefined);
+                                                    act.mutate({
+                                                      path: `${order.id}/refunds/${refund.id}/void`,
+                                                      success:
+                                                        'Reembolso anulado.',
+                                                    });
+                                                  }
+                                                }}
+                                              >
+                                                Anular
+                                              </button>
+                                            )}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </>
+                                )}
+                                {order.cancellationReason && (
+                                  <p>
+                                    <small className="cell-note">
+                                      Motivo de cancelación:{' '}
+                                      {order.cancellationReason}
+                                    </small>
+                                  </p>
+                                )}
                               </div>
                             </div>
-                            {canManage && order.status !== 'cancelled' && (
+                            {!isClosed && (
                               <div className="form-actions">
-                                <button
-                                  className="button secondary small danger"
-                                  type="button"
-                                  disabled={act.isPending}
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `¿Cancelar ${order.reference}? Sus pases dejarán de ser válidos y se liberarán sus lugares.`,
-                                      )
-                                    ) {
+                                {canCollect &&
+                                  order.status === 'pending_payment' && (
+                                    <>
+                                      <button
+                                        className="button secondary small"
+                                        type="button"
+                                        disabled={act.isPending}
+                                        onClick={() => {
+                                          setNotice(undefined);
+                                          act.mutate({
+                                            path: `${order.id}/remind`,
+                                            success:
+                                              'El recordatorio está en la cola de correo.',
+                                          });
+                                        }}
+                                      >
+                                        Enviar recordatorio
+                                      </button>
+                                      <button
+                                        className="button secondary small"
+                                        type="button"
+                                        onClick={() => {
+                                          setNotice(undefined);
+                                          setPanel({
+                                            kind: 'due',
+                                            orderId: order.id,
+                                          });
+                                        }}
+                                      >
+                                        Cambiar vencimiento
+                                      </button>
+                                    </>
+                                  )}
+                                {canRefund &&
+                                  order.status !== 'pending_payment' &&
+                                  net > 0 && (
+                                    <button
+                                      className="button secondary small"
+                                      type="button"
+                                      onClick={() => {
+                                        setNotice(undefined);
+                                        setPanel({
+                                          kind: 'refund',
+                                          orderId: order.id,
+                                        });
+                                      }}
+                                    >
+                                      Registrar reembolso
+                                    </button>
+                                  )}
+                                {canManage && order.status !== 'cancelled' && (
+                                  <button
+                                    className="button secondary small danger"
+                                    type="button"
+                                    onClick={() => {
                                       setNotice(undefined);
-                                      act.mutate({
-                                        path: `${order.id}/cancel`,
-                                        success: 'Pedido cancelado.',
+                                      setPanel({
+                                        kind: 'cancel',
+                                        orderId: order.id,
                                       });
-                                    }
-                                  }}
-                                >
-                                  Cancelar pedido
-                                </button>
+                                    }}
+                                  >
+                                    Cancelar compra
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>

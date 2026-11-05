@@ -16,6 +16,7 @@ import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
 import { dateTimeInZoneToIso } from './dates.js';
 import { EventCheckinTab } from './EventCheckinTab.js';
+import { ClosingDialog, EventFinanceTab } from './EventFinanceTab.js';
 import { EventOperatorsTab } from './EventOperatorsTab.js';
 import { EventDashboardTab } from './EventDashboardTab.js';
 import { EventGroupsTab } from './EventGroupsTab.js';
@@ -35,6 +36,7 @@ const tabs = [
   ['mesas', 'Mesas'],
   ['acomodo', 'Acomodo'],
   ['registros', 'Compras'],
+  ['finanzas', 'Finanzas'],
   ['checkin', 'Check-in'],
   ['operadores', 'Operadores'],
   ['boletos', 'Boletos'],
@@ -170,6 +172,7 @@ export function EventDetailPage() {
   const queryClient = useQueryClient();
   const { can, csrfToken } = usePermissions();
   const [searchParams] = useSearchParams();
+  const [closing, setClosing] = useState(false);
   const [chosenTab, setTab] = useState<Tab | null>(() => {
     // Otras pantallas pueden enlazar directo a una pestaña.
     const requested = searchParams.get('tab');
@@ -200,14 +203,22 @@ export function EventDetailPage() {
   };
 
   const changeStatus = useMutation({
-    mutationFn: async (status: string) =>
+    mutationFn: async ({
+      status,
+      note,
+    }: {
+      status: string;
+      note?: string | null;
+    }) =>
       eventDetailResponseSchema.parse(
         await apiRequest(
           `/api/events/${id}/status`,
-          jsonRequest('POST', { status }, csrfToken),
+          jsonRequest('POST', { status, note }, csrfToken),
         ),
       ),
     onSuccess: async (saved) => {
+      setClosing(false);
+      await queryClient.invalidateQueries({ queryKey: ['finance', id] });
       await refresh(saved);
       setNotice({ kind: 'ok', text: 'Estado actualizado.' });
     },
@@ -255,7 +266,7 @@ export function EventDetailPage() {
   const canEdit = can('events.edit');
   const setStatus = (status: string) => {
     setNotice(undefined);
-    changeStatus.mutate(status);
+    changeStatus.mutate({ status });
   };
 
   return (
@@ -304,13 +315,8 @@ export function EventDetailPage() {
               type="button"
               disabled={changeStatus.isPending}
               onClick={() => {
-                if (
-                  window.confirm(
-                    `¿Cerrar "${event.name}"? Podrás reabrirlo después.`,
-                  )
-                ) {
-                  setStatus('closed');
-                }
+                setNotice(undefined);
+                setClosing(true);
               }}
             >
               Cerrar evento
@@ -353,6 +359,20 @@ export function EventDetailPage() {
         <NewEditionForm event={event} onCancel={() => setNewEdition(false)} />
       )}
 
+      {closing && (
+        <ClosingDialog
+          event={event}
+          pending={changeStatus.isPending}
+          error={
+            changeStatus.isError
+              ? errorText(changeStatus.error, 'No se pudo cerrar.')
+              : ''
+          }
+          onClose={() => setClosing(false)}
+          onConfirm={(note) => changeStatus.mutate({ status: 'closed', note })}
+        />
+      )}
+
       <div
         className="tabs event-tabs"
         role="tablist"
@@ -367,6 +387,7 @@ export function EventDetailPage() {
                   'registrations.manage',
                   'payments.manage',
                 )) &&
+              (value !== 'finanzas' || can('finance.view', 'finance.manage')) &&
               (value !== 'checkin' ||
                 can('checkin.operate', 'checkin.manage')) &&
               (value !== 'operadores' ||
@@ -430,6 +451,7 @@ export function EventDetailPage() {
       {tab === 'registros' && (
         <EventRegistrationsTab event={event} onChanged={() => refresh()} />
       )}
+      {tab === 'finanzas' && <EventFinanceTab event={event} />}
       {tab === 'checkin' && <EventCheckinTab event={event} />}
       {tab === 'operadores' && <EventOperatorsTab event={event} />}
       {tab === 'boletos' && (

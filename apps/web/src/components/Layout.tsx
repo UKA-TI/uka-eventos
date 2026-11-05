@@ -171,6 +171,15 @@ export function Shell({
               Donativos
             </NavLink>
           )}
+          {can('finance.view', 'finance.manage') && (
+            <small className="nav-heading">Finanzas</small>
+          )}
+          {can('finance.view', 'finance.manage') && (
+            <NavLink className={linkClass} to="/cobranza">
+              <Icon name="wallet" />
+              Cobranza
+            </NavLink>
+          )}
           {(can('users.view', 'users.manage') ||
             can('roles.view', 'roles.manage') ||
             can('audit.view', 'consents.view')) && (

@@ -28,6 +28,7 @@ import { UnsubscribePage } from './pages/public/UnsubscribePage.js';
 import { ReportsPage } from './pages/reports/ReportsPage.js';
 import { RolesPage } from './pages/RolesPage.js';
 import { AuditPage } from './pages/AuditPage.js';
+import { CollectionsPage } from './pages/CollectionsPage.js';
 import { ConsentsPage } from './pages/ConsentsPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 import { UsersPage } from './pages/UsersPage.js';
@@ -207,6 +208,14 @@ export default function App() {
           element={
             <Guard any={['roles.view', 'roles.manage']}>
               <RolesPage />
+            </Guard>
+          }
+        />
+        <Route
+          path="cobranza"
+          element={
+            <Guard any={['finance.view', 'finance.manage']}>
+              <CollectionsPage />
             </Guard>
           }
         />

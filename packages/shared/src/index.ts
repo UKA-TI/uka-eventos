@@ -84,6 +84,18 @@ export const permissionCatalog = [
     ],
   },
   {
+    key: 'finance',
+    label: 'Finanzas',
+    actions: [
+      { code: 'finance.view', label: 'Ver finanzas y cobranza' },
+      {
+        code: 'finance.manage',
+        label: 'Meta, presupuesto, políticas y facturas',
+      },
+      { code: 'refunds.manage', label: 'Registrar reembolsos' },
+    ],
+  },
+  {
     key: 'compliance',
     label: 'Control y privacidad',
     actions: [
@@ -313,7 +325,11 @@ export type SeriesRecord = z.infer<typeof seriesResponseSchema>;
 
 export const eventStatusSchema = z.enum(['draft', 'active', 'closed']);
 
-export const eventStatusInputSchema = z.object({ status: eventStatusSchema });
+export const eventStatusInputSchema = z.object({
+  status: eventStatusSchema,
+  // Quien cierra con pendientes explica por qué: queda en la bitácora.
+  note: z.string().trim().max(500).nullish(),
+});
 
 const slugSchema = z
   .string()
@@ -517,8 +533,55 @@ const answersSchema = z.record(
   z.union([z.string().trim().max(1000), z.boolean()]),
 );
 
+/** Catálogos del SAT más comunes. El CRM guarda estos datos; la factura se emite aparte. */
+export const fiscalRegimes = [
+  { key: '601', label: '601 General de Ley Personas Morales' },
+  { key: '603', label: '603 Personas Morales con Fines no Lucrativos' },
+  { key: '605', label: '605 Sueldos y Salarios' },
+  { key: '606', label: '606 Arrendamiento' },
+  { key: '612', label: '612 Actividades Empresariales y Profesionales' },
+  { key: '616', label: '616 Sin obligaciones fiscales' },
+  { key: '626', label: '626 Régimen Simplificado de Confianza' },
+] as const;
+
+export const cfdiUses = [
+  { key: 'G03', label: 'G03 Gastos en general' },
+  { key: 'D04', label: 'D04 Donativos' },
+  { key: 'S01', label: 'S01 Sin efectos fiscales' },
+] as const;
+
+export const fiscalDataSchema = z.object({
+  rfc: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, 'Escribe un RFC válido.'),
+  legalName: z.string().trim().min(2, 'Escribe la razón social.').max(250),
+  regime: z.enum(
+    fiscalRegimes.map(({ key }) => key),
+    'Elige el régimen.',
+  ),
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, 'El código postal lleva 5 dígitos.'),
+  cfdiUse: z.enum(
+    cfdiUses.map(({ key }) => key),
+    'Elige el uso del CFDI.',
+  ),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Escribe un correo válido.')
+    .max(254),
+});
+
+export type FiscalData = z.infer<typeof fiscalDataSchema>;
+
 export const orderInputSchema = z.object({
   ...personFields,
+  fiscal: fiscalDataSchema.nullish(),
   organization: z.string().trim().max(180).nullable(),
   ticketTypeId: z.string().min(1, 'Selecciona un boleto.').max(30),
   answers: answersSchema,
@@ -641,6 +704,15 @@ export const orderResponseSchema = z.object({
   notes: z.string().nullable(),
   amountDue: z.number(),
   amountPaid: z.number(),
+  amountRefunded: z.number(),
+  balance: z.number(),
+  financialStatus: z.string(),
+  dueAt: z.string().nullable(),
+  lastReminderAt: z.string().nullable(),
+  fiscal: fiscalDataSchema.nullable(),
+  invoiceStatus: z.string(),
+  invoiceFolio: z.string().nullable(),
+  cancellationReason: z.string().nullable(),
   createdAt: z.string(),
   confirmedAt: z.string().nullable(),
   ticketName: z.string(),
@@ -676,6 +748,18 @@ export const orderResponseSchema = z.object({
       voidedAt: z.string().nullable(),
     }),
   ),
+  refunds: z.array(
+    z.object({
+      id: z.string(),
+      amount: z.number(),
+      method: z.string(),
+      reference: z.string().nullable(),
+      reason: z.string(),
+      refundedAt: z.string(),
+      recordedBy: z.string().nullable(),
+      voidedAt: z.string().nullable(),
+    }),
+  ),
 });
 
 export type OrderRecord = z.infer<typeof orderResponseSchema>;
@@ -691,7 +775,9 @@ export const orderListResponseSchema = z.object({
     seatsToRegister: z.number(),
     pendingOrders: z.number(),
     amountCollected: z.number(),
+    amountRefunded: z.number(),
     amountPending: z.number(),
+    amountOverdue: z.number(),
     emailsQueued: z.number(),
     emailsFailed: z.number(),
     mailProblem: z.string().nullable(),
@@ -710,6 +796,7 @@ export const publicEventResponseSchema = z.object({
   mapUrl: z.string().nullable(),
   currency: z.string(),
   privacyUrl: z.string(),
+  cancellationPolicy: z.string().nullable(),
   tickets: z.array(
     z.object({
       id: z.string(),
@@ -1550,7 +1637,7 @@ export const auditCategories = [
   {
     key: 'compras',
     label: 'Compras y pagos',
-    prefixes: ['order.', 'payment.', 'pass.'],
+    prefixes: ['order.', 'payment.', 'pass.', 'refund.', 'registration.'],
   },
   {
     key: 'recepcion',
@@ -1570,6 +1657,11 @@ export const auditCategories = [
       'donation.',
       'email.',
     ],
+  },
+  {
+    key: 'finanzas',
+    label: 'Finanzas',
+    prefixes: ['budget.', 'finance.', 'policy.'],
   },
   { key: 'reportes', label: 'Descargas', prefixes: ['report.'] },
 ] as const;
@@ -1675,3 +1767,339 @@ export function matchesFolio(folio: string, typed: string): boolean {
   const consecutive = Number(whole.split('-').at(-1));
   return /^\d+$/.test(input) && Number(input) === consecutive;
 }
+
+// ---------------------------------------------------------------------------
+// Finanzas
+// ---------------------------------------------------------------------------
+
+const moneyAmount = z
+  .number('Escribe el monto.')
+  .positive('Debe ser mayor a cero.')
+  .max(99_999_999, 'El monto es demasiado alto.');
+
+const refundFields = {
+  amount: moneyAmount,
+  method: z.enum(['transfer', 'cash', 'card', 'other']),
+  reference: z.string().trim().max(120).nullable(),
+  refundedAt: z.string().datetime({ offset: true }),
+};
+
+export const refundInputSchema = z.object({
+  ...refundFields,
+  reason: z.string().trim().min(3, 'Escribe el motivo.').max(500),
+});
+
+export type RefundInput = z.infer<typeof refundInputSchema>;
+
+export const orderCancelSchema = z.object({
+  reason: z.string().trim().max(500).nullish(),
+  refund: z.object(refundFields).nullish(),
+});
+
+export const orderDueDateSchema = z.object({
+  dueAt: z.string().datetime({ offset: true }),
+});
+
+export const orderFiscalSchema = z.object({
+  fiscal: fiscalDataSchema.nullable(),
+});
+
+export const orderInvoiceSchema = z.object({
+  invoiceFolio: z.string().trim().min(1, 'Escribe el folio.').max(60),
+});
+
+export const nameCorrectionSchema = z.object({
+  firstName: personFields.firstName,
+  lastName: personFields.lastName,
+  reason: z.string().trim().min(3, 'Escribe el motivo.').max(500),
+});
+
+export const passTransferSchema = z.object({
+  firstName: personFields.firstName,
+  lastName: personFields.lastName,
+  email: personFields.email,
+  reason: z.string().trim().min(3, 'Escribe el motivo.').max(500),
+});
+
+const moneyEqual = (a: number, b: number) => Math.abs(a - b) < 0.005;
+
+export const financialStatusLabels: Record<string, [string, string]> = {
+  pending: ['Pendiente de pago', 'warn'],
+  partial: ['Pagada parcial', 'warn'],
+  paid: ['Pagada', 'ok'],
+  free: ['Sin costo', 'ok'],
+  partially_refunded: ['Reembolso parcial', 'neutral'],
+  refunded: ['Reembolsada', 'neutral'],
+  cancelled: ['Cancelada', 'bad'],
+  cancelled_refunded: ['Cancelada y reembolsada', 'bad'],
+  cancelled_retained: ['Cancelada con retención', 'bad'],
+};
+
+/** El estado financiero se calcula de los pagos: así nunca contradice al dinero. */
+export function orderFinancialStatus(order: {
+  status: string;
+  amountDue: number;
+  amountPaid: number;
+  amountRefunded: number;
+}): string {
+  const { status, amountDue, amountPaid, amountRefunded } = order;
+  const net = amountPaid - amountRefunded;
+  if (status === 'cancelled') {
+    if (net > 0.005) {
+      return 'cancelled_retained';
+    }
+    return amountRefunded > 0 ? 'cancelled_refunded' : 'cancelled';
+  }
+  if (status === 'pending_payment') {
+    return amountPaid > 0 ? 'partial' : 'pending';
+  }
+  if (amountRefunded > 0) {
+    return moneyEqual(net, 0) ? 'refunded' : 'partially_refunded';
+  }
+  return amountDue === 0 ? 'free' : 'paid';
+}
+
+const DAY_MS = 86_400_000;
+
+export const agingBuckets = [
+  { key: 'current', label: 'Por vencer' },
+  { key: 'd1_7', label: 'Vencido 1 a 7 días' },
+  { key: 'd8_30', label: 'Vencido 8 a 30 días' },
+  { key: 'd31', label: 'Vencido más de 30 días' },
+  { key: 'no_date', label: 'Sin fecha de vencimiento' },
+] as const;
+
+export type AgingBucket = (typeof agingBuckets)[number]['key'];
+
+export function daysOverdue(dueAt: Date, now: Date): number {
+  return Math.ceil((now.getTime() - dueAt.getTime()) / DAY_MS);
+}
+
+export function agingBucket(dueAt: Date | null, now: Date): AgingBucket {
+  if (!dueAt) {
+    return 'no_date';
+  }
+  const days = daysOverdue(dueAt, now);
+  if (days <= 0) {
+    return 'current';
+  }
+  if (days <= 7) {
+    return 'd1_7';
+  }
+  return days <= 30 ? 'd8_30' : 'd31';
+}
+
+/** Días respecto al vencimiento: tres antes, el mismo día, y dos insistencias después. */
+export const REMINDER_OFFSETS_DAYS = [-3, 0, 3, 7] as const;
+
+/**
+ * La siguiente etapa de recordatorio, o null si aún no toca. Si pasaron varias de golpe,
+ * por ejemplo tras una caída del servidor, salta a la última: un solo correo, no varios.
+ */
+export function nextReminderStage(
+  dueAt: Date,
+  stage: number,
+  now: Date,
+): number | null {
+  let next: number | null = null;
+  REMINDER_OFFSETS_DAYS.forEach((offset, index) => {
+    if (index >= stage && now.getTime() >= dueAt.getTime() + offset * DAY_MS) {
+      next = index + 1;
+    }
+  });
+  return next;
+}
+
+export const cancellationTierSchema = z.object({
+  daysBefore: z
+    .number('Escribe los días.')
+    .int('Escribe días completos.')
+    .min(0, 'No puede ser negativo.')
+    .max(730),
+  percent: z
+    .number('Escribe el porcentaje.')
+    .int('Escribe un porcentaje entero.')
+    .min(0, 'Va de 0 a 100.')
+    .max(100, 'Va de 0 a 100.'),
+});
+
+export type CancellationTier = z.infer<typeof cancellationTierSchema>;
+
+export const cancellationPolicyInputSchema = z.object({
+  eventType: z.string().trim().min(2, 'Indica el tipo de evento.').max(60),
+  text: z
+    .string()
+    .trim()
+    .min(10, 'Escribe la política que verá quien compra.')
+    .max(2000),
+  tiers: z.array(cancellationTierSchema).max(6),
+});
+
+export const cancellationPolicySchema = z.object({
+  eventType: z.string(),
+  text: z.string(),
+  tiers: z.array(cancellationTierSchema),
+  updatedAt: z.string(),
+  updatedBy: z.string().nullable(),
+});
+
+export const cancellationPolicyListSchema = z.object({
+  policies: z.array(cancellationPolicySchema),
+  eventTypes: z.array(z.string()),
+});
+
+export const orderPolicySchema = z.object({
+  text: z.string(),
+  tiers: z.array(cancellationTierSchema),
+  suggestedPercent: z.number().nullable(),
+  daysLeft: z.number().nullable(),
+});
+
+/** El porcentaje que marca la política: el del primer plazo que todavía se cumple. */
+export function suggestedRefundPercent(
+  tiers: CancellationTier[],
+  startsAt: Date | null,
+  now: Date,
+): number | null {
+  if (!startsAt || tiers.length === 0) {
+    return null;
+  }
+  const daysLeft = Math.floor((startsAt.getTime() - now.getTime()) / DAY_MS);
+  const tier = [...tiers]
+    .sort((a, b) => b.daysBefore - a.daysBefore)
+    .find(({ daysBefore }) => daysLeft >= daysBefore);
+  return tier?.percent ?? 0;
+}
+
+export const budgetCategories = [
+  { key: 'venue', label: 'Sede' },
+  { key: 'catering', label: 'Banquete' },
+  { key: 'production', label: 'Producción' },
+  { key: 'fees', label: 'Comisiones' },
+  { key: 'other', label: 'Otros' },
+] as const;
+
+export const budgetItemInputSchema = z.object({
+  category: z.enum(budgetCategories.map(({ key }) => key)),
+  concept: z.string().trim().min(2, 'Escribe el concepto.').max(160),
+  budgeted: z
+    .number('Escribe el presupuesto.')
+    .min(0, 'No puede ser negativo.')
+    .max(9_999_999_999),
+  actual: z
+    .number('Escribe el costo real.')
+    .min(0, 'No puede ser negativo.')
+    .max(9_999_999_999)
+    .nullable(),
+  notes: z.string().trim().max(500).nullable(),
+});
+
+export const eventFinanceSettingsSchema = z.object({
+  fundraisingGoal: z
+    .number('Escribe la meta.')
+    .positive('Debe ser mayor a cero.')
+    .max(9_999_999_999)
+    .nullable(),
+  paymentTermDays: z
+    .number('Escribe los días.')
+    .int('Escribe días completos.')
+    .min(0, 'No puede ser negativo.')
+    .max(180, 'Máximo 180 días.'),
+  paymentReminders: z.boolean(),
+});
+
+const financeTotals = z.object({
+  grossCollected: z.number(),
+  refunded: z.number(),
+  netCollected: z.number(),
+  retainedFromCancelled: z.number(),
+  donations: z.number(),
+  totalIncome: z.number(),
+  receivable: z.number(),
+  overdue: z.number(),
+  goal: z.number().nullable(),
+  goalProgress: z.number().nullable(),
+  budgeted: z.number(),
+  actualCosts: z.number(),
+  costsMissing: z.number(),
+  result: z.number(),
+  projectedResult: z.number(),
+});
+
+export type FinanceTotals = z.infer<typeof financeTotals>;
+
+export const closingCheckSchema = z.object({
+  issues: z.array(z.object({ key: z.string(), text: z.string() })),
+});
+
+export const eventFinanceSchema = z.object({
+  currency: z.string(),
+  paymentTermDays: z.number(),
+  paymentReminders: z.boolean(),
+  totals: financeTotals,
+  byMethod: z.array(z.object({ method: z.string(), amount: z.number() })),
+  budget: z.array(
+    z.object({
+      id: z.string(),
+      category: z.string(),
+      concept: z.string(),
+      budgeted: z.number(),
+      actual: z.number().nullable(),
+      notes: z.string().nullable(),
+    }),
+  ),
+  closing: z
+    .object({
+      closedAt: z.string(),
+      closedBy: z.string().nullable(),
+      note: z.string().nullable(),
+      totals: financeTotals,
+    })
+    .nullable(),
+});
+
+export const receivablesSchema = z.object({
+  total: z.number(),
+  buckets: z.array(
+    z.object({ key: z.string(), count: z.number(), amount: z.number() }),
+  ),
+  rows: z.array(
+    z.object({
+      orderId: z.string(),
+      eventId: z.string(),
+      eventName: z.string(),
+      timeZone: z.string(),
+      currency: z.string(),
+      reference: z.string(),
+      buyerName: z.string(),
+      buyerEmail: z.string().nullable(),
+      organization: z.string().nullable(),
+      ticketName: z.string(),
+      amountDue: z.number(),
+      amountPaid: z.number(),
+      balance: z.number(),
+      dueAt: z.string().nullable(),
+      daysOverdue: z.number().nullable(),
+      bucket: z.string(),
+      lastReminderAt: z.string().nullable(),
+      remindersOn: z.boolean(),
+    }),
+  ),
+  events: z.array(z.object({ id: z.string(), name: z.string() })),
+});
+
+export const invoiceQueueSchema = z.array(
+  z.object({
+    orderId: z.string(),
+    eventId: z.string(),
+    eventName: z.string(),
+    reference: z.string(),
+    buyerName: z.string(),
+    financialStatus: z.string(),
+    amountPaid: z.number(),
+    amountRefunded: z.number(),
+    fiscal: fiscalDataSchema,
+    invoiceStatus: z.string(),
+    invoiceFolio: z.string().nullable(),
+  }),
+);

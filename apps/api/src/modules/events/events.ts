@@ -7,7 +7,11 @@ import {
   isEventModuleKey,
   type EventInput,
 } from '@uka/shared';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import {
+  closingCheck,
+  eventFinanceTotals,
+} from '../finance/finance-service.js';
 import { asyncHandler } from '../../async-handler.js';
 import { recordAudit } from '../../audit.js';
 import { prisma } from '../../database.js';
@@ -19,6 +23,7 @@ import {
   requirePermission,
 } from '../auth/auth.js';
 import { eventCheckinRouter } from '../checkin/checkin.js';
+import { eventFinanceRouter } from '../finance/finance.js';
 import { seatingRouter } from '../seating/seating.js';
 import { eventViewsRouter } from './event-views.js';
 import { ordersRouter } from '../orders/orders.js';
@@ -254,8 +259,9 @@ eventsRouter.post(
   requirePermission('events.edit'),
   requireCsrf,
   asyncHandler(async (request, response) => {
-    const { status } = eventStatusInputSchema.parse(request.body);
+    const { status, note } = eventStatusInputSchema.parse(request.body);
     const current = await loadDetail(request.params.id);
+    const user = currentUser(request);
     if (status === 'active') {
       const issues = activationIssues(current);
       if (issues.length > 0) {
@@ -268,17 +274,44 @@ eventsRouter.post(
         'Este evento ya tiene registros y no puede volver a borrador.',
       );
     }
+    let closing = {};
+    if (status === 'closed') {
+      const { issues } = await closingCheck(current.id);
+      if (issues.length > 0 && !note?.trim()) {
+        throw new AppError(
+          409,
+          `Para cerrar con pendientes explica el motivo: ${issues.map(({ text }) => text).join(' ')}`,
+        );
+      }
+      const finance = await eventFinanceTotals(current.id);
+      closing = {
+        closedAt: new Date(),
+        closedById: user.id,
+        // Los números quedan como estaban el día del cierre, aunque se reabra después.
+        closingSummary: { totals: finance, note: note?.trim() || null, issues },
+      };
+    } else if (current.status === 'closed') {
+      closing = {
+        closedAt: null,
+        closedById: null,
+        closingSummary: Prisma.DbNull,
+      };
+    }
     await prisma.event.update({
       where: { id: current.id },
-      data: { status },
+      data: { status, ...closing },
     });
     await recordAudit({
-      userId: currentUser(request).id,
+      userId: user.id,
       action: 'event.status',
       entityType: 'event',
       entityId: current.id,
       eventId: current.id,
-      details: { previous: current.status, status },
+      details: {
+        previous: current.status,
+        status,
+        ...(note?.trim() ? { reason: note.trim() } : {}),
+      },
     });
     response.json(detailView(await loadDetail(current.id)));
   }),
@@ -307,6 +340,8 @@ eventsRouter.post(
         venue: source.venue,
         mapUrl: source.mapUrl,
         paymentInstructions: source.paymentInstructions,
+        paymentTermDays: source.paymentTermDays,
+        paymentReminders: source.paymentReminders,
         capacity: source.capacity,
         folioPrefix: source.folioPrefix,
         currency: source.currency,
@@ -381,5 +416,6 @@ eventsRouter.use('/:eventId/tickets', ticketTypesRouter);
 eventsRouter.use('/:eventId/fields', formFieldsRouter);
 eventsRouter.use('/:eventId/orders', ordersRouter);
 eventsRouter.use('/:eventId/checkin', eventCheckinRouter);
+eventsRouter.use('/:eventId/finance', eventFinanceRouter);
 eventsRouter.use('/:eventId/seating', seatingRouter);
 eventsRouter.use('/:eventId', eventViewsRouter);

@@ -28,6 +28,7 @@ import {
 } from './modules/contacts/contacts.js';
 import { donationsRouter } from './modules/donations/donations.js';
 import { eventsRouter } from './modules/events/events.js';
+import { financeRouter } from './modules/finance/finance.js';
 import { publicRouter } from './modules/public/public.js';
 import { reportsRouter } from './modules/reports/reports.js';
 import { rolesRouter } from './modules/roles/roles.js';
@@ -119,6 +120,7 @@ export function createApp(
   app.use('/api/campaigns', campaignsRouter);
   app.use('/api/donations', donationsRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/finance', financeRouter);
   app.use('/api/audit', auditRouter);
   app.use('/api/consents', consentsRouter);
   app.use('/api/public', publicRouter);

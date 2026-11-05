@@ -170,6 +170,15 @@ publicRouter.get(
         ? Number.POSITIVE_INFINITY
         : event.capacity - (seats._sum.seats ?? 0);
 
+    const series = await prisma.eventSeries.findUniqueOrThrow({
+      where: { id: event.seriesId },
+      select: { type: true },
+    });
+    const policy = await prisma.cancellationPolicy.findUnique({
+      where: { eventType: series.type.trim().toLowerCase() },
+      select: { text: true },
+    });
+
     response.json({
       name: event.name,
       description: event.description,
@@ -181,6 +190,7 @@ publicRouter.get(
       mapUrl: event.mapUrl,
       currency: event.currency,
       privacyUrl: PRIVACY_NOTICE_URL,
+      cancellationPolicy: policy?.text ?? null,
       tickets: event.ticketTypes
         .filter(
           (ticket) =>

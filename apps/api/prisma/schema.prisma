@@ -78,12 +78,20 @@ model Event {
   reminderSentAt      DateTime?           @map("reminder_sent_at") @db.DateTime(3)
   seatingPublishedAt  DateTime?           @map("seating_published_at") @db.DateTime(3)
   paymentInstructions String?             @map("payment_instructions") @db.Text
+  paymentTermDays     Int                 @default(7) @map("payment_term_days") @db.UnsignedSmallInt
+  paymentReminders    Boolean             @default(true) @map("payment_reminders")
+  fundraisingGoal     Decimal?            @map("fundraising_goal") @db.Decimal(12, 2)
+  closedAt            DateTime?           @map("closed_at") @db.DateTime(3)
+  closedById          String?             @map("closed_by_id") @db.VarChar(30)
+  closingSummary      Json?               @map("closing_summary")
   capacity            Int?                @db.UnsignedInt
   folioPrefix         String?             @map("folio_prefix") @db.VarChar(3)
   currency            String              @default("MXN") @db.Char(3)
   createdAt           DateTime            @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt           DateTime            @updatedAt @map("updated_at") @db.DateTime(3)
   series              EventSeries         @relation(fields: [seriesId], references: [id])
+  closedBy            User?               @relation("EventCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  budgetItems         BudgetItem[]
   ticketTypes         TicketType[]
   formFields          EventFormField[]
   counters            EventCounter[]
@@ -123,6 +131,14 @@ model Order {
   delegateEmail        String?           @map("delegate_email") @db.VarChar(254)
   registrationDeadline DateTime?         @map("registration_deadline") @db.DateTime(3)
   notes                String?           @db.VarChar(255)
+  dueAt                DateTime?         @map("due_at") @db.DateTime(3)
+  reminderStage        Int               @default(0) @map("reminder_stage") @db.UnsignedTinyInt
+  lastReminderAt       DateTime?         @map("last_reminder_at") @db.DateTime(3)
+  fiscalData           Json?             @map("fiscal_data")
+  invoiceStatus        String            @default("none") @map("invoice_status") @db.VarChar(16)
+  invoiceFolio         String?           @map("invoice_folio") @db.VarChar(60)
+  invoicedAt           DateTime?         @map("invoiced_at") @db.DateTime(3)
+  cancellationReason   String?           @map("cancellation_reason") @db.VarChar(500)
   confirmedAt          DateTime?         @map("confirmed_at") @db.DateTime(3)
   cancelledAt          DateTime?         @map("cancelled_at") @db.DateTime(3)
   createdAt            DateTime          @default(now()) @map("created_at") @db.DateTime(3)
@@ -133,12 +149,15 @@ model Order {
   createdBy            User?             @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
   registrations        Registration[]
   payments             Payment[]
+  refunds              Refund[]
   allocations          TableAllocation[]
 
   @@unique([eventId, reference])
   @@index([eventId, status])
   @@index([ticketTypeId, status])
   @@index([buyerGuestId])
+  @@index([status, dueAt])
+  @@index([invoiceStatus])
   @@map("orders")
 }
 
@@ -150,6 +169,8 @@ model Payment {
   reference    String?   @db.VarChar(120)
   notes        String?   @db.VarChar(500)
   paidAt       DateTime  @map("paid_at") @db.DateTime(3)
+  source       String    @default("manual") @db.VarChar(16)
+  externalId   String?   @unique @map("external_id") @db.VarChar(120)
   recordedById String?   @map("recorded_by_id") @db.VarChar(30)
   voidedAt     DateTime? @map("voided_at") @db.DateTime(3)
   voidedById   String?   @map("voided_by_id") @db.VarChar(30)
@@ -160,6 +181,55 @@ model Payment {
 
   @@index([orderId])
   @@map("payments")
+}
+
+model Refund {
+  id           String    @id @default(cuid()) @db.VarChar(30)
+  orderId      String    @map("order_id") @db.VarChar(30)
+  amount       Decimal   @db.Decimal(10, 2)
+  method       String    @db.VarChar(16)
+  reference    String?   @db.VarChar(120)
+  reason       String    @db.VarChar(500)
+  refundedAt   DateTime  @map("refunded_at") @db.DateTime(3)
+  source       String    @default("manual") @db.VarChar(16)
+  externalId   String?   @unique @map("external_id") @db.VarChar(120)
+  recordedById String?   @map("recorded_by_id") @db.VarChar(30)
+  voidedAt     DateTime? @map("voided_at") @db.DateTime(3)
+  voidedById   String?   @map("voided_by_id") @db.VarChar(30)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  order        Order     @relation(fields: [orderId], references: [id])
+  recordedBy   User?     @relation("RefundRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  voidedBy     User?     @relation("RefundVoider", fields: [voidedById], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("refunds")
+}
+
+model BudgetItem {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  eventId   String   @map("event_id") @db.VarChar(30)
+  category  String   @db.VarChar(20)
+  concept   String   @db.VarChar(160)
+  budgeted  Decimal  @db.Decimal(12, 2)
+  actual    Decimal? @db.Decimal(12, 2)
+  notes     String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("budget_items")
+}
+
+model CancellationPolicy {
+  eventType   String   @id @map("event_type") @db.VarChar(60)
+  text        String   @db.VarChar(2000)
+  tiers       Json
+  updatedById String?  @map("updated_by_id") @db.VarChar(30)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("cancellation_policies")
 }
 
 model EmailMessage {
@@ -258,6 +328,7 @@ model Guest {
   contact       Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
   registrations Registration[]
   orders        Order[]        @relation("OrderBuyer")
+  consents      Consent[]
 
   @@index([contactId])
   @@index([email])
@@ -387,6 +458,10 @@ model User {
   ordersCreated     Order[]       @relation("OrderCreator")
   paymentsRecorded  Payment[]     @relation("PaymentRecorder")
   paymentsVoided    Payment[]     @relation("PaymentVoider")
+  refundsRecorded   Refund[]      @relation("RefundRecorder")
+  refundsVoided     Refund[]      @relation("RefundVoider")
+  eventsClosed      Event[]       @relation("EventCloser")
+  policiesUpdated   CancellationPolicy[]
   auditLogs         AuditLog[]
   contactNotes      ContactNote[]
   segments          Segment[]
@@ -453,14 +528,17 @@ model AccessPoint {
 model Consent {
   id             String       @id @default(cuid()) @db.VarChar(30)
   registrationId String       @map("registration_id") @db.VarChar(30)
+  guestId        String       @map("guest_id") @db.VarChar(30)
   purpose        String       @db.VarChar(80)
   noticeVersion  String       @map("notice_version") @db.VarChar(40)
   granted        Boolean
   consentedAt    DateTime     @map("consented_at") @db.DateTime(3)
   withdrawnAt    DateTime?    @map("withdrawn_at") @db.DateTime(3)
   registration   Registration @relation(fields: [registrationId], references: [id])
+  guest          Guest        @relation(fields: [guestId], references: [id])
 
   @@index([registrationId, purpose, consentedAt])
+  @@index([guestId])
   @@map("consents")
 }
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
+  fiscalDataSchema,
   publicEventResponseSchema,
   publicRegistrationResultSchema,
   publicRegistrationSchema,
@@ -7,6 +8,8 @@ import {
   type PublicRegistrationResult,
 } from '@uka/shared';
 import { useState, type FormEvent } from 'react';
+import { emptyFiscal, type FiscalDraft } from '../fiscal-draft.js';
+import { FiscalFields } from '../OrderFinanceForms.js';
 import { useParams, Link } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
@@ -82,6 +85,9 @@ export function PublicRegisterPage() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [website, setWebsite] = useState('');
+  const [wantsInvoice, setWantsInvoice] = useState(false);
+  const [fiscal, setFiscal] = useState<FiscalDraft>(emptyFiscal);
+  const [fiscalErrors, setFiscalErrors] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const event = useQuery({
@@ -140,6 +146,7 @@ export function PublicRegisterPage() {
       ...form,
       ticketTypeId: selected,
       organization: form.organization.trim() || null,
+      fiscal: wantsInvoice ? fiscal : null,
       answers,
       privacyAccepted,
       marketingConsent,
@@ -148,6 +155,14 @@ export function PublicRegisterPage() {
     if (!parsed.success) {
       Object.assign(problems, issuesToErrors(parsed.error.issues));
     }
+    const fiscalCheck = wantsInvoice
+      ? fiscalDataSchema.safeParse(fiscal)
+      : null;
+    setFiscalErrors(
+      fiscalCheck && !fiscalCheck.success
+        ? issuesToErrors(fiscalCheck.error.issues)
+        : {},
+    );
     setErrors(problems);
     if (parsed.success && Object.keys(problems).length === 0) {
       register.mutate(parsed.data);
@@ -334,6 +349,32 @@ export function PublicRegisterPage() {
               />
             </label>
           </div>
+
+          {data.tickets.find((ticket) => ticket.id === selected)?.price ? (
+            <>
+              <label className="check-field">
+                <input
+                  type="checkbox"
+                  checked={wantsInvoice}
+                  onChange={(e) => setWantsInvoice(e.target.checked)}
+                />
+                <span>Requiero factura</span>
+              </label>
+              {wantsInvoice && (
+                <FiscalFields
+                  value={fiscal}
+                  errors={fiscalErrors}
+                  onChange={setFiscal}
+                />
+              )}
+              {data.cancellationPolicy && (
+                <details className="policy-note">
+                  <summary>Política de cancelación</summary>
+                  <p>{data.cancellationPolicy}</p>
+                </details>
+              )}
+            </>
+          ) : null}
 
           <label className="check-field privacy-check">
             <input

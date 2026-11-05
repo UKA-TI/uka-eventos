@@ -1072,6 +1072,128 @@ span.row-actions {
   font-size: 0.84rem;
 }
 
+.table-panel > .table-note {
+  margin: 0;
+  padding: 10px 18px 16px;
+}
+
+.goal-meter {
+  display: grid;
+  gap: 8px;
+}
+
+.goal-meter-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  color: var(--tenue);
+  font-size: 0.88rem;
+}
+
+.goal-meter-label strong {
+  color: var(--tinta);
+  font-size: 1rem;
+}
+
+.goal-meter-track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: #e9ecf0;
+}
+
+.goal-meter-track i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #0077c9;
+}
+
+.finance-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.closing-issues {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.stat small {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.stat-button {
+  border: 1px solid var(--linea);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stat-button:hover {
+  border-color: var(--azul);
+}
+
+.stat-button.active {
+  border-color: var(--azul);
+  box-shadow: var(--anillo);
+}
+
+.overdue-badge {
+  display: flex;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.tier-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tier-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-row input {
+  width: 80px;
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--r);
+}
+
+.policy-note {
+  margin: 12px 0;
+  color: var(--tenue);
+  font-size: 0.88rem;
+}
+
+.policy-note summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.policy-note p {
+  white-space: pre-line;
+}
+
 .nowrap {
   white-space: nowrap;
 }
@@ -1103,7 +1225,9 @@ td.numeric {
   font-size: 0.84rem;
 }
 
+/* El detalle ocupa el ancho de las columnas; sin esto, sus formularios ensanchan la tabla. */
 .detail-row > td {
+  max-width: 0;
   padding: 0;
   background: var(--fondo-suave);
   white-space: normal;
@@ -2892,6 +3016,10 @@ a.link-button {
   .content-bare .station {
     min-height: calc(100vh - 53px);
     min-height: calc(100dvh - 53px);
+  }
+
+  .finance-columns {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .filters select {

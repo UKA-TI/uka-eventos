@@ -239,10 +239,46 @@ los teléfonos cuyo navegador permite controlarla.
 - **Permisos propios:** `audit.view` y `consents.view` son aparte porque muestran datos de todas las
   personas. Solo Administrador los trae de inicio.
 
+## Reglas financieras
+
+- **El estado financiero se calcula, no se captura:** pendiente, pagada parcial, pagada, reembolso
+  parcial, reembolsada y cancelada salen de los pagos y reembolsos. Así nunca contradicen al dinero.
+- **Vencer no cancela:** la fecha límite solo activa recordatorios y el reporte de cobranza. No libera
+  lugares. El vencimiento se fija con el plazo del evento (7 días de inicio) sin pasar de su fecha.
+- **Recordatorios:** 3 días antes, el día que vence, y 3 y 7 días después. Terminan al pagar, cancelar
+  o empezar el evento. Si alguien recuerda a mano, el automático espera un día.
+- **Anular no es reembolsar:** anular corrige una captura equivocada, como si nunca hubiera pasado.
+  Un reembolso es dinero que de verdad salió y queda como movimiento propio, con motivo y responsable.
+- **Cancelar no borra el dinero:** lo cobrado se devuelve con un reembolso o se queda como importe
+  retenido, que sigue contando como ingreso. Antes de esta regla desaparecía de los reportes.
+- **Compra activa con saldo:** no admite reembolso. Para devolver un anticipo se cancela.
+- **Quién puede:** cancelar una compra con pagos o reembolsar requiere `refunds.manage`, separado de
+  `payments.manage`, para que quien registra cobros no sea necesariamente quien devuelve dinero.
+- **Política de cancelación por tipo de evento:** quien compra la ve antes de pagar. Los plazos solo
+  sugieren el porcentaje; la decisión es de finanzas y queda en la bitácora.
+- **Cambio de nombre:** corregir es la misma persona, con el mismo QR. Ceder es otra persona: conserva
+  folio y mesa, el QR anterior deja de valer y la nueva persona acepta el aviso por sí misma. La
+  aceptación del aviso queda ligada a quien aceptó, no al lugar.
+- **Datos fiscales:** el CRM los guarda y lleva el control de lo facturado; no emite CFDI. Los catálogos
+  de régimen y uso son los más comunes y debe validarlos contabilidad.
+- **Meta y resultado:** ingreso total es boletos netos más donativos. Resultado es ingreso menos costos
+  reales. La proyección suma lo que falta cobrar y usa el presupuesto donde aún no hay costo real.
+- **Cierre:** avisa pendientes y exige motivo si se cierra con ellos. Guarda los números de ese día y
+  bloquea pagos, reembolsos, cancelaciones y presupuesto. Los donativos no se bloquean, porque pueden
+  llegar después; quedan fuera de los números guardados. Se puede reabrir.
+- **Catálogo:** los productos son los tipos de boleto actuales; no hay marca de deducible.
+
+## Preparado para pasarela y archivo bancario
+
+Pagos y reembolsos ya guardan su origen (`manual` hoy) y un identificador externo único. Cuando llegue
+la pasarela o el archivo del banco, un mismo aviso repetido no podrá registrar dos veces el dinero, y
+entrará por las mismas reglas de arriba. El crédito autorizado también se decidirá en esa etapa.
+
 ## Pendiente frente al mockup
 
 Revisado contra `uka-eventos-mockup-gala.html`.
 
 - WhatsApp: para una etapa futura.
 - Probar el acomodo con el plano real de la sede, cuando se tenga.
+- Pasarela de pago, conciliación por archivo bancario y crédito autorizado.
 - Landing de la Gala, importador de Excel y publicación en GoDaddy.

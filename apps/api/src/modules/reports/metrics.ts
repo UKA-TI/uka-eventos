@@ -41,64 +41,73 @@ function addTo(map: Map<string, number>, key: string, amount: number) {
  */
 export async function eventMetrics(): Promise<EventMetrics[]> {
   const published = { event: { status: { not: 'draft' } } };
-  const [events, registrations, orders, checkins, payments, donations] =
-    await Promise.all([
-      prisma.event.findMany({
-        where: { status: { not: 'draft' } },
-        include: { series: { select: { name: true, type: true } } },
-      }),
-      prisma.registration.findMany({
-        where: { ...published, status: { not: 'cancelled' } },
-        select: {
-          eventId: true,
-          status: true,
-          guest: {
-            select: {
-              contactId: true,
-              contact: { select: { companyId: true } },
-            },
+  const [
+    events,
+    registrations,
+    orders,
+    checkins,
+    payments,
+    refunds,
+    donations,
+  ] = await Promise.all([
+    prisma.event.findMany({
+      where: { status: { not: 'draft' } },
+      include: { series: { select: { name: true, type: true } } },
+    }),
+    prisma.registration.findMany({
+      where: { ...published, status: { not: 'cancelled' } },
+      select: {
+        eventId: true,
+        status: true,
+        guest: {
+          select: {
+            contactId: true,
+            contact: { select: { companyId: true } },
           },
         },
-      }),
-      prisma.order.findMany({
-        where: { ...published, status: { not: 'cancelled' } },
-        select: {
-          id: true,
-          eventId: true,
-          status: true,
-          seats: true,
-          amountDue: true,
-          buyer: {
-            select: {
-              contactId: true,
-              contact: { select: { companyId: true } },
-            },
+      },
+    }),
+    prisma.order.findMany({
+      where: { ...published, status: { not: 'cancelled' } },
+      select: {
+        id: true,
+        eventId: true,
+        status: true,
+        seats: true,
+        amountDue: true,
+        buyer: {
+          select: {
+            contactId: true,
+            contact: { select: { companyId: true } },
           },
         },
-      }),
-      prisma.checkin.groupBy({
-        by: ['eventId'],
-        where: published,
-        _count: { _all: true },
-      }),
-      prisma.payment.findMany({
-        where: {
-          voidedAt: null,
-          order: { ...published, status: { not: 'cancelled' } },
-        },
-        select: {
-          amount: true,
-          orderId: true,
-          order: { select: { eventId: true } },
-        },
-      }),
-      prisma.donation.groupBy({
-        by: ['eventId'],
-        where: { voidedAt: null, eventId: { not: null } },
-        _sum: { amount: true },
-        _count: { _all: true },
-      }),
-    ]);
+      },
+    }),
+    prisma.checkin.groupBy({
+      by: ['eventId'],
+      where: published,
+      _count: { _all: true },
+    }),
+    prisma.payment.findMany({
+      // Una compra cancelada no borra su dinero: lo no devuelto sigue siendo ingreso.
+      where: { voidedAt: null, order: published },
+      select: {
+        amount: true,
+        orderId: true,
+        order: { select: { eventId: true } },
+      },
+    }),
+    prisma.refund.findMany({
+      where: { voidedAt: null, order: published },
+      select: { amount: true, order: { select: { eventId: true } } },
+    }),
+    prisma.donation.groupBy({
+      by: ['eventId'],
+      where: { voidedAt: null, eventId: { not: null } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+  ]);
 
   const income = new Map<string, number>();
   const paidByOrder = new Map<string, number>();
@@ -106,6 +115,10 @@ export async function eventMetrics(): Promise<EventMetrics[]> {
     const amount = payment.amount.toNumber();
     addTo(income, payment.order.eventId, amount);
     addTo(paidByOrder, payment.orderId, amount);
+  }
+
+  for (const refund of refunds) {
+    addTo(income, refund.order.eventId, -refund.amount.toNumber());
   }
 
   const seatsTaken = new Map<string, number>();

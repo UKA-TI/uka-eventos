@@ -1,4 +1,10 @@
 const paths = {
+  wallet: (
+    <>
+      <rect x="3" y="6" width="18" height="14" rx="2" />
+      <path d="M3 10h18M16 15h2" />
+    </>
+  ),
   flash: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
   list: (
     <>

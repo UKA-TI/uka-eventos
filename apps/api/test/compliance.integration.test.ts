@@ -84,6 +84,7 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('control screens', () => {
       await prisma.consent.create({
         data: {
           registrationId: registration.id,
+          guestId: guest.id,
           purpose: 'event_registration',
           noticeVersion: '2026-11',
           granted: true,

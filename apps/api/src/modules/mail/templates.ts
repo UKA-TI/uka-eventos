@@ -378,12 +378,89 @@ ${button(passUrl(pass.id), 'Confirmar y activar mi pase')}
   };
 }
 
+/** La política vigente para el tipo de evento, para que quien compra la conozca antes de pagar. */
+async function policyBlock(eventType: string): Promise<string> {
+  const policy = await prisma.cancellationPolicy.findUnique({
+    where: { eventType: eventType.trim().toLowerCase() },
+  });
+  return policy
+    ? `<p style="margin:14px 0 4px;font-weight:bold">Política de cancelación</p>
+<p style="margin:0 0 14px;color:#5e6b79;font-size:13px;white-space:pre-line">${escapeHtml(policy.text)}</p>`
+    : '';
+}
+
+function dueRows(order: {
+  dueAt: Date | null;
+  event: { timeZone: string };
+}): [string, string][] {
+  return order.dueAt
+    ? [
+        [
+          'Fecha límite',
+          order.dueAt.toLocaleDateString('es-MX', {
+            timeZone: order.event.timeZone,
+            dateStyle: 'long',
+          }),
+        ],
+      ]
+    : [];
+}
+
+async function renderPaymentReminder(
+  refId: string,
+): Promise<EmailContent | null> {
+  const order = await prisma.order.findUnique({
+    where: { id: refId },
+    include: {
+      buyer: true,
+      event: { include: { series: { select: { type: true } } } },
+      ticketType: { select: { name: true } },
+      payments: { where: { voidedAt: null }, select: { amount: true } },
+    },
+  });
+  // Se decide al enviar: si ya pagó o canceló mientras esperaba en la cola, no sale.
+  if (!order || order.status !== 'pending_payment') {
+    return null;
+  }
+  const paid = order.payments.reduce(
+    (sum, payment) => sum + payment.amount.toNumber(),
+    0,
+  );
+  const money = (value: number) =>
+    value.toLocaleString('es-MX', {
+      style: 'currency',
+      currency: order.event.currency,
+    });
+  const overdue = order.dueAt !== null && order.dueAt < new Date();
+  const instructions = order.event.paymentInstructions
+    ? `<p style="margin:0 0 6px;font-weight:bold">Cómo pagar</p>
+<p style="margin:0 0 14px;white-space:pre-line">${escapeHtml(order.event.paymentInstructions)}</p>`
+    : '';
+  return {
+    subject: `Recordatorio de pago para ${order.event.name} (${order.reference})`,
+    html: layout(
+      overdue ? 'Tu pago sigue pendiente' : 'Recordatorio de pago',
+      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. Tu lugar sigue apartado. Te enviaremos tu pase con código QR en cuanto registremos tu pago.</p>
+${details([
+  ['Evento', order.event.name],
+  ['Boleto', order.ticketType.name],
+  ['Referencia', order.reference],
+  ...(paid > 0 ? ([['Ya pagado', money(paid)]] as [string, string][]) : []),
+  ['Saldo por pagar', money(order.amountDue.toNumber() - paid)],
+  ...dueRows(order),
+])}
+${instructions}
+<p style="margin:0;color:#6b6b6b;font-size:13px">Si ya realizaste tu pago, puedes ignorar este mensaje; lo registraremos pronto. Usa tu referencia al pagar.</p>${await policyBlock(order.event.series.type)}`,
+    ),
+  };
+}
+
 async function renderOrderPending(refId: string): Promise<EmailContent | null> {
   const order = await prisma.order.findUnique({
     where: { id: refId },
     include: {
       buyer: true,
-      event: true,
+      event: { include: { series: { select: { type: true } } } },
       ticketType: { select: { name: true } },
     },
   });
@@ -408,8 +485,9 @@ ${details([
   ['Boleto', order.ticketType.name],
   ['Referencia', order.reference],
   ['Total a pagar', amount],
+  ...dueRows(order),
 ])}
-${instructions}`,
+${instructions}${await policyBlock(order.event.series.type)}`,
     ),
   };
 }
@@ -626,6 +704,8 @@ function renderContent(
       return renderPass(refId, true);
     case 'order_pending':
       return renderOrderPending(refId);
+    case 'payment_reminder':
+      return renderPaymentReminder(refId);
     case 'group_link':
       return renderGroupLink(refId);
     case 'pass_activation':

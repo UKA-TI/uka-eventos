@@ -378,6 +378,18 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('pass tools and consent', () => {
   });
 
   it('reminds once, only events about to start, skipping who already came', async () => {
+    // Fuera de la ventana mientras se registran: el proceso de correo de una app
+    // de desarrollo abierta podría reclamar el evento a medias.
+    await prisma.event.update({
+      where: { id: soonId },
+      data: {
+        startsAt: new Date(Date.now() + 3 * 86_400_000),
+        reminderSentAt: null,
+      },
+    });
+    await prisma.emailMessage.deleteMany({
+      where: { eventId: soonId, kind: 'event_reminder' },
+    });
     await register('pronto', {}, `pron-${run}`);
     const entered = await register('yaentro', {}, `pron-${run}`);
     expect(entered.status).toBe(201);
@@ -387,6 +399,10 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('pass tools and consent', () => {
     });
     await prisma.checkin.create({
       data: { eventId: soonId, passId: inside.id, accessPointId: door.id },
+    });
+    await prisma.event.update({
+      where: { id: soonId },
+      data: { startsAt: new Date(Date.now() + 12 * 3_600_000) },
     });
 
     await queueEventReminders();

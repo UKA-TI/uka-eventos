@@ -155,9 +155,9 @@ consentsRouter.get(
         ...inEvent,
         AND: everyWord(query.q, (word) => [
           { folio: { contains: word } },
-          { guest: { firstName: { contains: word } } },
-          { guest: { lastName: { contains: word } } },
-          { guest: { email: { contains: word } } },
+          { consents: { some: { guest: { firstName: { contains: word } } } } },
+          { consents: { some: { guest: { lastName: { contains: word } } } } },
+          { consents: { some: { guest: { email: { contains: word } } } } },
         ]),
       },
     };
@@ -176,12 +176,11 @@ consentsRouter.get(
           registration: {
             select: {
               folio: true,
-              guest: {
-                select: { firstName: true, lastName: true, email: true },
-              },
               event: { select: { name: true } },
             },
           },
+          // Quien aceptó, no quien tiene hoy el lugar: un pase cedido no cambia la evidencia.
+          guest: { select: { firstName: true, lastName: true, email: true } },
         },
       }),
     ]);
@@ -191,10 +190,10 @@ consentsRouter.get(
       pageSize: PAGE_SIZE,
       accepted,
       pending,
-      rows: rows.map(({ registration, ...consent }) => ({
+      rows: rows.map(({ registration, guest, ...consent }) => ({
         id: consent.id,
-        guestName: `${registration.guest.firstName} ${registration.guest.lastName}`,
-        email: registration.guest.email,
+        guestName: `${guest.firstName} ${guest.lastName}`,
+        email: guest.email,
         eventName: registration.event.name,
         folio: registration.folio,
         purpose: consent.purpose,
