@@ -159,9 +159,8 @@ code {
 }
 
 /*
- * Foto de fondo de img/ispark.png. Es más alta que el panel y arranca desde arriba para
- * dejar fuera el logotipo blanco de la imagen, que quedaría debajo del texto. Va como
- * fondo y no como <img>: en el teléfono, donde este panel no se muestra, no se descarga.
+ * Foto de fondo de img/ispark.webp. Es más alta que el panel y arranca desde arriba para
+ * dejar fuera el logotipo blanco de la imagen, que quedaría debajo del texto.
  */
 .login-aside::before {
   position: absolute;
@@ -169,7 +168,7 @@ code {
   left: 0;
   width: 100%;
   height: 125%;
-  background: url('../../../img/ispark.png') left top / cover no-repeat;
+  background: url('../../../img/ispark.webp') left top / cover no-repeat;
   content: '';
 }
 
@@ -2957,10 +2956,48 @@ a.link-button {
 @media (max-width: 860px) {
   .login-page {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
+  /* En el teléfono la foto es un encabezado: el botón de acceso sigue a la vista. */
   .login-aside {
+    min-height: clamp(190px, 30vw, 280px);
+    padding: 20px;
+  }
+
+  /* Acercada a la gente: sin esto se verían el techo y la pared de patrocinadores. */
+  .login-aside::before {
+    height: 100%;
+    background-position: 0 55%;
+    background-size: 220vw auto;
+  }
+
+  /* Aquí el texto ocupa casi toda la foto: necesita más contraste. */
+  .login-aside::after {
+    background: linear-gradient(
+      to top,
+      rgb(4 53 92 / 96%) 0%,
+      rgb(4 53 92 / 88%) 58%,
+      rgb(4 53 92 / 12%) 100%
+    );
+  }
+
+  .login-aside h2 {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+  }
+
+  .login-aside p:last-child {
     display: none;
+  }
+
+  .login-kicker {
+    margin-bottom: 6px;
+  }
+
+  .login-main {
+    padding: 20px 24px 32px;
+    place-items: start center;
   }
 
   .login-logo {
