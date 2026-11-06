@@ -26,7 +26,15 @@ import { QrScanner } from '../../checkin/QrScanner.js';
 import { useStation, type StationOutcome } from '../../checkin/useStation.js';
 import { Shell } from '../../components/Layout.js';
 import { Loading, Notice, PageHeading } from '../../components/ui.js';
+import { Icon } from '../../components/icons.js';
 import { formatEventDate } from '../text.js';
+import { ModuleNavigation } from '../../components/ModuleNavigation.js';
+
+const receptionSections = [
+  ['scan', 'Escanear'],
+  ['search', 'Buscar'],
+  ['incident', 'Incidencia'],
+] as const;
 
 const RESULT_MS = 3500;
 const SAME_CODE_MS = 6000;
@@ -679,26 +687,36 @@ function Station({
       )}
       {error && <Notice>{error}</Notice>}
 
-      <div className="tabs station-tabs" role="tablist">
-        {(
-          [
-            ['scan', 'Escanear'],
-            ['search', 'Buscar'],
-            ['incident', 'Incidencia'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={mode === value}
-            className={mode === value ? 'tab active' : 'tab'}
-            onClick={() => setMode(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ModuleNavigation
+        label="Recepción"
+        current={mode}
+        items={receptionSections}
+        onSelect={(value) => setMode(value)}
+      >
+        <div className="tabs station-tabs" role="tablist">
+          {receptionSections.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={mode === value}
+              className={mode === value ? 'tab active' : 'tab'}
+              onClick={() => setMode(value)}
+            >
+              <Icon
+                name={
+                  value === 'scan'
+                    ? 'scan'
+                    : value === 'search'
+                      ? 'search'
+                      : 'alert'
+                }
+              />
+              {label}
+            </button>
+          ))}
+        </div>
+      </ModuleNavigation>
 
       {mode === 'scan' && (
         <>

@@ -11,6 +11,13 @@ import { z } from 'zod';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, PageHeading } from '../components/ui.js';
+import { Icon } from '../components/icons.js';
+import { ModuleNavigation } from '../components/ModuleNavigation.js';
+
+const roleSections = [
+  ['profile', 'Por perfil'],
+  ['compare', 'Comparar perfiles'],
+] as const;
 
 interface Draft {
   id: string | null;
@@ -344,28 +351,34 @@ export function RolesPage() {
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
       {roles.isError && <Notice>{roles.error.message}</Notice>}
 
-      <div className="tabs" role="tablist">
-        {(
-          [
-            ['profile', 'Por perfil'],
-            ['compare', 'Comparar perfiles'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={view === value}
-            className={view === value ? 'tab active' : 'tab'}
-            onClick={() => {
-              setDraft(null);
-              setView(value);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ModuleNavigation
+        label="Perfiles y permisos"
+        current={view}
+        items={roleSections}
+        onSelect={(value) => {
+          setDraft(null);
+          setView(value);
+        }}
+      >
+        <div className="tabs" role="tablist">
+          {roleSections.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={view === value}
+              className={view === value ? 'tab active' : 'tab'}
+              onClick={() => {
+                setDraft(null);
+                setView(value);
+              }}
+            >
+              <Icon name={value === 'profile' ? 'users' : 'layers'} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </ModuleNavigation>
 
       {view === 'compare' && <CompareView list={list} />}
 

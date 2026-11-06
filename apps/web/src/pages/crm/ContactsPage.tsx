@@ -243,7 +243,7 @@ export function ContactsPage() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
-    <section>
+    <section className="crm-page">
       <PageHeading
         title="Contactos"
         description="Las personas que se registran se agregan solas, sin duplicarse por correo."
@@ -270,7 +270,7 @@ export function ContactsPage() {
       {options.isError && <Notice>{options.error.message}</Notice>}
 
       {creating && options.data && (
-        <form className="panel" onSubmit={submit} noValidate>
+        <form className="panel crm-form" onSubmit={submit} noValidate>
           <div className="panel-heading">
             <h2>Nuevo contacto</h2>
           </div>
@@ -304,7 +304,7 @@ export function ContactsPage() {
       )}
 
       {data && (
-        <p className="table-note">
+        <p className="table-note crm-list-summary">
           {data.total.toLocaleString('es-MX')}{' '}
           {data.total === 1 ? 'contacto' : 'contactos'} ·{' '}
           {data.reachable.toLocaleString('es-MX')} aceptan comunicaciones
@@ -377,6 +377,9 @@ export function ContactsPage() {
       )}
 
       <div className="panel table-panel">
+        <div className="panel-heading">
+          <h2>Directorio de contactos</h2>
+        </div>
         {data?.contacts.length === 0 ? (
           <p className="muted">
             {hasFilters
@@ -385,7 +388,7 @@ export function ContactsPage() {
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="crm-table">
               <thead>
                 <tr>
                   <th>Nombre</th>
@@ -398,27 +401,45 @@ export function ContactsPage() {
               <tbody>
                 {data?.contacts.map((contact) => (
                   <tr key={contact.id}>
-                    <td>
-                      <Link to={`/contactos/${contact.id}`}>
-                        <strong>
-                          {contact.firstName} {contact.lastName}
-                        </strong>
-                      </Link>
-                      {contact.position && (
-                        <small className="cell-note">{contact.position}</small>
-                      )}
+                    <td data-label="Nombre">
+                      <div className="crm-cell-content">
+                        <Link to={`/contactos/${contact.id}`}>
+                          <strong>
+                            {contact.firstName} {contact.lastName}
+                          </strong>
+                        </Link>
+                        {contact.position && (
+                          <small className="cell-note">
+                            {contact.position}
+                          </small>
+                        )}
+                      </div>
                     </td>
-                    <td>{contact.company?.name ?? '—'}</td>
-                    <td>
-                      {contact.email ?? '—'}
-                      {contact.optedOutAt && (
-                        <small className="cell-note">
-                          <span className="badge bad">Dado de baja</span>
-                        </small>
-                      )}
+                    <td data-label="Empresa">
+                      <div className="crm-cell-content">
+                        {contact.company?.name ?? '—'}
+                      </div>
                     </td>
-                    <td>{contact.phone ?? '—'}</td>
-                    <td>{contact.participations}</td>
+                    <td data-label="Correo">
+                      <div className="crm-cell-content">
+                        {contact.email ?? '—'}
+                        {contact.optedOutAt && (
+                          <small className="cell-note">
+                            <span className="badge bad">Dado de baja</span>
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td data-label="Teléfono">
+                      <div className="crm-cell-content">
+                        {contact.phone ?? '—'}
+                      </div>
+                    </td>
+                    <td data-label="Participaciones">
+                      <div className="crm-cell-content">
+                        {contact.participations}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

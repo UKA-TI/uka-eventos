@@ -141,7 +141,7 @@ export function ContactDetailPage() {
   };
 
   return (
-    <section>
+    <section className="crm-page contact-detail">
       <Link className="back-link" to="/contactos">
         Contactos
       </Link>
@@ -197,7 +197,7 @@ export function ContactDetailPage() {
       ) : null}
 
       {editing && options.data && (
-        <form className="panel" onSubmit={submit} noValidate>
+        <form className="panel crm-form" onSubmit={submit} noValidate>
           <div className="panel-heading">
             <h2>Editar contacto</h2>
           </div>
@@ -305,11 +305,15 @@ export function ContactDetailPage() {
           <div>
             <dt>Comunicaciones</dt>
             <dd>
-              {data.optedOutAt
-                ? 'Dado de baja'
-                : data.marketingConsentAt
-                  ? `Con permiso desde ${shortDate(data.marketingConsentAt)}`
-                  : 'Sin permiso'}
+              <span
+                className={`badge ${data.optedOutAt ? 'bad' : data.marketingConsentAt ? 'ok' : 'warn'}`}
+              >
+                {data.optedOutAt
+                  ? 'Dado de baja'
+                  : data.marketingConsentAt
+                    ? `Con permiso desde ${shortDate(data.marketingConsentAt)}`
+                    : 'Sin permiso'}
+              </span>
             </dd>
           </div>
           <div>
@@ -331,7 +335,7 @@ export function ContactDetailPage() {
           <p className="muted">Aún no participa en ningún evento.</p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="crm-table">
               <thead>
                 <tr>
                   <th>Evento</th>
@@ -346,25 +350,39 @@ export function ContactDetailPage() {
                   const [label, tone] = historyStatus(item.status);
                   return (
                     <tr key={item.id}>
-                      <td>
-                        {can('events.view', 'events.edit') ? (
-                          <Link to={`/eventos/${item.eventId}`}>
-                            {item.eventName}
-                          </Link>
-                        ) : (
-                          item.eventName
-                        )}
-                        <small className="cell-note">
-                          Edición {item.editionYear}
-                          {item.role === 'buyer' ? ' · Compró lugares' : ''}
-                        </small>
+                      <td data-label="Evento">
+                        <div className="crm-cell-content">
+                          {can('events.view', 'events.edit') ? (
+                            <Link to={`/eventos/${item.eventId}`}>
+                              {item.eventName}
+                            </Link>
+                          ) : (
+                            item.eventName
+                          )}
+                          <small className="cell-note">
+                            Edición {item.editionYear}
+                            {item.role === 'buyer' ? ' · Compró lugares' : ''}
+                          </small>
+                        </div>
                       </td>
-                      <td>{item.ticketName}</td>
-                      <td>{item.reference}</td>
-                      <td>
-                        <span className={`badge ${tone}`}>{label}</span>
+                      <td data-label="Boleto">
+                        <div className="crm-cell-content">
+                          {item.ticketName}
+                        </div>
                       </td>
-                      <td>{item.attended ? 'Sí' : 'No'}</td>
+                      <td data-label="Folio">
+                        <div className="crm-cell-content">{item.reference}</div>
+                      </td>
+                      <td data-label="Estado">
+                        <div className="crm-cell-content">
+                          <span className={`badge ${tone}`}>{label}</span>
+                        </div>
+                      </td>
+                      <td data-label="Asistió">
+                        <div className="crm-cell-content">
+                          {item.attended ? 'Sí' : 'No'}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

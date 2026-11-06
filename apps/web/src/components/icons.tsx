@@ -1,4 +1,29 @@
 const paths = {
+  map: (
+    <>
+      <path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m16 16 5 5" />
+    </>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+    </>
+  ),
+  alert: (
+    <>
+      <path d="m12 3 10 18H2L12 3Z" />
+      <path d="M12 9v5M12 17h.01" />
+    </>
+  ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   close: <path d="m6 6 12 12M18 6 6 18" />,
   wallet: (

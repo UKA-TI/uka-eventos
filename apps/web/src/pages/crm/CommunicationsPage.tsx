@@ -11,12 +11,19 @@ import { z } from 'zod';
 import { apiRequest, errorText, jsonRequest } from '../../api.js';
 import { usePermissions } from '../../auth/session.js';
 import { Field, Loading, Notice, PageHeading } from '../../components/ui.js';
+import { Icon } from '../../components/icons.js';
 import { issuesToErrors } from '../text.js';
 import { campaignState, useTemplates } from './crm.js';
+import { ModuleNavigation } from '../../components/ModuleNavigation.js';
+
+const communicationSections = [
+  ['envios', 'Envíos'],
+  ['plantillas', 'Plantillas'],
+] as const;
 
 export function VariableHelp() {
   return (
-    <p className="form-note">
+    <p className="form-note communication-variables">
       Puedes usar:{' '}
       {mergeVariables.map((variable, index) => (
         <span key={variable.key} title={variable.label}>
@@ -129,7 +136,7 @@ function TemplatesPanel() {
         </div>
       )}
       {formOpen && (
-        <form className="panel" onSubmit={submit} noValidate>
+        <form className="panel crm-form" onSubmit={submit} noValidate>
           <div className="panel-heading">
             <h2>{editingId ? 'Editar plantilla' : 'Nueva plantilla'}</h2>
           </div>
@@ -175,16 +182,28 @@ function TemplatesPanel() {
           </div>
         </form>
       )}
-      <div className="panel">
+      <div className="panel communication-templates">
+        <div className="panel-heading">
+          <h2>Plantillas de correo</h2>
+          {templates.data && (
+            <span className="result-count">
+              {templates.data.length}{' '}
+              {templates.data.length === 1 ? 'plantilla' : 'plantillas'}
+            </span>
+          )}
+        </div>
         {templates.data?.length === 0 ? (
           <p className="muted">Aún no hay plantillas.</p>
         ) : (
           <ul className="plain-list">
             {templates.data?.map((template) => (
               <li key={template.id}>
-                <span>
-                  <strong>{template.name}</strong>
-                  <small>{template.subject}</small>
+                <span className="communication-template-name">
+                  <Icon name="mail" />
+                  <span>
+                    <strong>{template.name}</strong>
+                    <small>{template.subject}</small>
+                  </span>
                 </span>
                 {can('communications.manage') && (
                   <div className="row-actions">
@@ -237,7 +256,7 @@ export function CommunicationsPage() {
   }
 
   return (
-    <section>
+    <section className="crm-page communications-page">
       <PageHeading
         title="Comunicaciones"
         description="Invitaciones y avisos a tus contactos. Cada correo incluye una liga para darse de baja."
@@ -253,36 +272,50 @@ export function CommunicationsPage() {
           )
         }
       />
-      <div className="tabs" role="tablist" aria-label="Comunicaciones">
-        {(
-          [
-            ['envios', 'Envíos'],
-            ['plantillas', 'Plantillas'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            className={tab === value ? 'tab active' : 'tab'}
-            role="tab"
-            type="button"
-            aria-selected={tab === value}
-            onClick={() => setTab(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ModuleNavigation
+        label="Comunicaciones"
+        current={tab}
+        items={communicationSections}
+        onSelect={(value) => setTab(value)}
+      >
+        <div className="tabs" role="tablist" aria-label="Comunicaciones">
+          {communicationSections.map(([value, label]) => (
+            <button
+              key={value}
+              className={tab === value ? 'tab active' : 'tab'}
+              role="tab"
+              type="button"
+              aria-selected={tab === value}
+              onClick={() => setTab(value)}
+            >
+              <Icon name={value === 'envios' ? 'mail' : 'layers'} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </ModuleNavigation>
       {tab === 'plantillas' ? (
         <TemplatesPanel />
       ) : (
         <>
           {campaigns.isError && <Notice>{campaigns.error.message}</Notice>}
           <div className="panel table-panel">
+            <div className="panel-heading">
+              <h2>Historial de comunicaciones</h2>
+              {campaigns.data && (
+                <span className="result-count">
+                  {campaigns.data.length}{' '}
+                  {campaigns.data.length === 1
+                    ? 'comunicación'
+                    : 'comunicaciones'}
+                </span>
+              )}
+            </div>
             {campaigns.data?.length === 0 ? (
               <p className="muted">Aún no hay comunicaciones.</p>
             ) : (
               <div className="table-scroll">
-                <table>
+                <table className="crm-table communications-table">
                   <thead>
                     <tr>
                       <th>Comunicación</th>
@@ -297,23 +330,29 @@ export function CommunicationsPage() {
                       const [label, tone] = campaignState(campaign);
                       return (
                         <tr key={campaign.id}>
-                          <td>
-                            <Link to={`/comunicaciones/${campaign.id}`}>
-                              <strong>{campaign.name}</strong>
-                            </Link>
-                            <small className="cell-note">
-                              {campaign.subject}
-                            </small>
+                          <td data-label="Comunicación">
+                            <div className="crm-cell-content">
+                              <Link to={`/comunicaciones/${campaign.id}`}>
+                                <strong>{campaign.name}</strong>
+                              </Link>
+                              <small className="cell-note">
+                                {campaign.subject}
+                              </small>
+                            </div>
                           </td>
-                          <td>
+                          <td data-label="Para">
                             {campaign.segmentName ??
                               (campaign.segmentId
                                 ? 'Segmento'
                                 : 'Todos los contactos')}
                           </td>
-                          <td>{campaign.audience.toLocaleString('es-MX')}</td>
-                          <td>{campaign.stats.sent.toLocaleString('es-MX')}</td>
-                          <td>
+                          <td data-label="Destinatarios">
+                            {campaign.audience.toLocaleString('es-MX')}
+                          </td>
+                          <td data-label="Enviados">
+                            {campaign.stats.sent.toLocaleString('es-MX')}
+                          </td>
+                          <td data-label="Estado">
                             <span className={`badge ${tone}`}>{label}</span>
                           </td>
                         </tr>

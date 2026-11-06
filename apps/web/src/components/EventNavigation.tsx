@@ -1,4 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon, type IconName } from './icons.js';
+import { ModuleNavigation } from './ModuleNavigation.js';
+
+const groupIcons: Record<string, IconName> = {
+  Ventas: 'wallet',
+  Asistentes: 'users',
+  'Día del evento': 'scan',
+  Configuración: 'settings',
+};
 
 /**
  * Las secciones del evento agrupadas por la tarea que resuelven. Cada acción vive en un
@@ -91,104 +100,97 @@ export function EventNavigation<T extends string>({
           setOpen(null);
       }}
     >
-      <div className="event-navigation-bar">
-        {tabs
-          .filter(([value]) => value === 'tablero')
-          .map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={`event-nav-trigger${current === value ? ' active' : ''}`}
-              aria-current={current === value ? 'page' : undefined}
-              onClick={() => select(value)}
-            >
-              {label}
-            </button>
-          ))}
-        {visibleGroups.map((group) => {
-          const expanded = open === group.label;
-          const only = group.items.length === 1 ? group.items[0] : null;
-          // Un grupo con una sola sección no necesita menú: un clic menos.
-          if (only) {
-            const [value, label] = only;
+      <ModuleNavigation
+        label="Secciones del evento"
+        current={current}
+        onSelect={select}
+        items={[
+          ...tabs.filter(([value]) => value === 'tablero'),
+          ...visibleGroups.flatMap((group) =>
+            group.items.map(
+              ([value, label]) => [value, label, group.label] as const,
+            ),
+          ),
+        ]}
+      >
+        <div className="event-navigation-bar">
+          {tabs
+            .filter(([value]) => value === 'tablero')
+            .map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={`event-nav-trigger${current === value ? ' active' : ''}`}
+                aria-current={current === value ? 'page' : undefined}
+                onClick={() => select(value)}
+              >
+                <Icon name="chart" />
+                {label}
+              </button>
+            ))}
+          {visibleGroups.map((group) => {
+            const expanded = open === group.label;
+            const only = group.items.length === 1 ? group.items[0] : null;
+            // Un grupo con una sola sección no necesita menú: un clic menos.
+            if (only) {
+              const [value, label] = only;
+              return (
+                <div className="event-nav-group" key={group.label}>
+                  <button
+                    type="button"
+                    className={`event-nav-trigger${current === value ? ' active' : ''}`}
+                    aria-current={current === value ? 'page' : undefined}
+                    onClick={() => select(value)}
+                  >
+                    <Icon name={groupIcons[group.label] ?? 'list'} />
+                    {label}
+                  </button>
+                </div>
+              );
+            }
             return (
               <div className="event-nav-group" key={group.label}>
                 <button
                   type="button"
-                  className={`event-nav-trigger${current === value ? ' active' : ''}`}
-                  aria-current={current === value ? 'page' : undefined}
-                  onClick={() => select(value)}
+                  className={`event-nav-trigger${currentGroup?.label === group.label ? ' active' : ''}`}
+                  aria-expanded={expanded}
+                  aria-controls={`event-nav-${group.tabs[0]}`}
+                  onClick={() => setOpen(expanded ? null : group.label)}
                 >
-                  {label}
+                  <Icon name={groupIcons[group.label] ?? 'list'} />
+                  {group.label}
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m4 6 4 4 4-4" />
+                  </svg>
                 </button>
+                {expanded && (
+                  <div
+                    className="event-nav-dropdown"
+                    id={`event-nav-${group.tabs[0]}`}
+                  >
+                    {group.items.map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-current={current === value ? 'page' : undefined}
+                        className={current === value ? 'active' : ''}
+                        onClick={() => select(value)}
+                      >
+                        <span className="event-nav-item-label">{label}</span>
+                        {descriptions[value] && (
+                          <span className="event-nav-item-desc">
+                            {descriptions[value]}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
-          }
-          return (
-            <div className="event-nav-group" key={group.label}>
-              <button
-                type="button"
-                className={`event-nav-trigger${currentGroup?.label === group.label ? ' active' : ''}`}
-                aria-expanded={expanded}
-                aria-controls={`event-nav-${group.tabs[0]}`}
-                onClick={() => setOpen(expanded ? null : group.label)}
-              >
-                {group.label}
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="m4 6 4 4 4-4" />
-                </svg>
-              </button>
-              {expanded && (
-                <div
-                  className="event-nav-dropdown"
-                  id={`event-nav-${group.tabs[0]}`}
-                >
-                  {group.items.map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-current={current === value ? 'page' : undefined}
-                      className={current === value ? 'active' : ''}
-                      onClick={() => select(value)}
-                    >
-                      <span className="event-nav-item-label">{label}</span>
-                      {descriptions[value] && (
-                        <span className="event-nav-item-desc">
-                          {descriptions[value]}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <label className="event-navigation-mobile field">
-        <span>Sección del evento</span>
-        <select
-          value={current}
-          onChange={(event) => select(event.target.value as T)}
-        >
-          {tabs
-            .filter(([value]) => value === 'tablero')
-            .map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          {visibleGroups.map((group) => (
-            <optgroup key={group.label} label={group.label}>
-              {group.items.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
+          })}
+        </div>
+      </ModuleNavigation>
       <p className="event-navigation-location">
         {currentGroup && (
           <>

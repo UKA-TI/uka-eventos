@@ -318,7 +318,7 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
   };
 
   return (
-    <>
+    <div className="finance-page">
       {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
       {closing && (
         <div className="panel">
@@ -341,22 +341,22 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
       )}
 
       <div className="stats">
-        <article className="stat">
+        <article className="stat finance-income">
           <span>Ingreso total</span>
           <strong>{money(totals.totalIncome)}</strong>
           <small>Boletos netos y donativos</small>
         </article>
-        <article className="stat">
+        <article className="stat finance-receivable">
           <span>Por cobrar</span>
           <strong>{money(totals.receivable)}</strong>
           <small>{money(totals.overdue)} vencido</small>
         </article>
-        <article className="stat">
+        <article className="stat finance-costs">
           <span>Costos reales</span>
           <strong>{money(totals.actualCosts)}</strong>
           <small>De {money(totals.budgeted)} presupuestado</small>
         </article>
-        <article className="stat">
+        <article className="stat finance-result">
           <span>Resultado a hoy</span>
           <strong>{money(totals.result)}</strong>
           <small>Proyectado: {money(totals.projectedResult)}</small>
@@ -624,7 +624,7 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="finance-table">
               <thead>
                 <tr>
                   <th>Concepto</th>
@@ -638,57 +638,73 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
               <tbody>
                 {budget.map((row) => (
                   <tr key={row.id}>
-                    <td>
-                      <strong>{row.concept}</strong>
+                    <td data-label="Concepto">
+                      <div className="finance-cell-content">
+                        <strong>{row.concept}</strong>
+                      </div>
                     </td>
-                    <td>{categoryLabel[row.category] ?? row.category}</td>
-                    <td className="numeric">{money(row.budgeted)}</td>
-                    <td className="numeric">
-                      {row.actual === null ? '—' : money(row.actual)}
+                    <td data-label="Categoría">
+                      <div className="finance-cell-content">
+                        {categoryLabel[row.category] ?? row.category}
+                      </div>
                     </td>
-                    <td className="numeric">
-                      {row.actual === null
-                        ? '—'
-                        : money(row.budgeted - row.actual)}
+                    <td className="numeric" data-label="Presupuesto">
+                      <div className="finance-cell-content">
+                        {money(row.budgeted)}
+                      </div>
+                    </td>
+                    <td className="numeric" data-label="Costo real">
+                      <div className="finance-cell-content">
+                        {row.actual === null ? '—' : money(row.actual)}
+                      </div>
+                    </td>
+                    <td className="numeric" data-label="Diferencia">
+                      <div className="finance-cell-content">
+                        {row.actual === null
+                          ? '—'
+                          : money(row.budgeted - row.actual)}
+                      </div>
                     </td>
                     {canManage && (
-                      <td className="row-actions">
-                        <button
-                          className="link-button"
-                          type="button"
-                          onClick={() => {
-                            setNotice(undefined);
-                            setAdding(false);
-                            setEditingId(row.id);
-                            setItem({
-                              category: row.category,
-                              concept: row.concept,
-                              budgeted: String(row.budgeted),
-                              actual:
-                                row.actual === null ? '' : String(row.actual),
-                              notes: row.notes ?? '',
-                            });
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="link-button danger"
-                          type="button"
-                          disabled={act.isPending}
-                          onClick={() => {
-                            if (window.confirm(`¿Eliminar ${row.concept}?`)) {
+                      <td className="row-actions" data-label="Acciones">
+                        <div className="finance-cell-content">
+                          <button
+                            className="link-button"
+                            type="button"
+                            onClick={() => {
                               setNotice(undefined);
-                              act.mutate({
-                                path: `/budget/${row.id}`,
-                                method: 'DELETE',
-                                success: 'Concepto eliminado.',
+                              setAdding(false);
+                              setEditingId(row.id);
+                              setItem({
+                                category: row.category,
+                                concept: row.concept,
+                                budgeted: String(row.budgeted),
+                                actual:
+                                  row.actual === null ? '' : String(row.actual),
+                                notes: row.notes ?? '',
                               });
-                            }
-                          }}
-                        >
-                          Eliminar
-                        </button>
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="link-button danger"
+                            type="button"
+                            disabled={act.isPending}
+                            onClick={() => {
+                              if (window.confirm(`¿Eliminar ${row.concept}?`)) {
+                                setNotice(undefined);
+                                act.mutate({
+                                  path: `/budget/${row.id}`,
+                                  method: 'DELETE',
+                                  success: 'Concepto eliminado.',
+                                });
+                              }
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -697,10 +713,10 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
                   <td colSpan={2}>
                     <strong>Total</strong>
                   </td>
-                  <td className="numeric">
+                  <td className="numeric" data-label="Presupuesto">
                     <strong>{money(totals.budgeted)}</strong>
                   </td>
-                  <td className="numeric">
+                  <td className="numeric" data-label="Costo real">
                     <strong>{money(totals.actualCosts)}</strong>
                   </td>
                   <td />
@@ -711,6 +727,6 @@ export function EventFinanceTab({ event }: { event: EventDetail }) {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

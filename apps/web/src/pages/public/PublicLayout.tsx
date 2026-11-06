@@ -14,6 +14,12 @@ export function PublicLayout({
     <div className="public-page">
       <header className="public-header">
         <img src={logoUrl} alt="Un Kilo de Ayuda" />
+        <div className="public-brand-name">
+          <strong>
+            Eventos <span>UKA</span>
+          </strong>
+          <small>Un Kilo de Ayuda</small>
+        </div>
       </header>
       <main className={wide ? 'public-card wide' : 'public-card'}>
         {children}

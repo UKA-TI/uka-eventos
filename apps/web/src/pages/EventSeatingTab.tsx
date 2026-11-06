@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice } from '../components/ui.js';
+import { SeatingTableGraphic } from '../components/SeatingTableGraphic.js';
 import { issuesToErrors } from './text.js';
 
 type Table = SeatingView['tables'][number];
@@ -359,6 +360,10 @@ export function EventSeatingTab({ event }: { event: EventDetail }) {
       </div>
 
       <div className="seating-screen">
+        <div className="seating-heading">
+          <h2>Acomodo de mesas</h2>
+          <p className="muted">Distribución de grupos y lugares en el salón.</p>
+        </div>
         <div className="seating-bar">
           <div className="seating-status">
             {data.publishedAt ? (
@@ -439,15 +444,21 @@ export function EventSeatingTab({ event }: { event: EventDetail }) {
           <aside className="panel seating-groups">
             <div className="panel-heading">
               <h2>Grupos</h2>
+              <span className="result-count">
+                {visibleGroups.length} de {data.groups.length}
+              </span>
             </div>
-            <input
-              className="note-input"
-              type="search"
-              placeholder="Buscar empresa o persona"
-              aria-label="Buscar grupo o persona"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <label className="field seating-search">
+              <span>Buscar grupo o persona</span>
+              <input
+                className="note-input"
+                type="search"
+                placeholder="Buscar empresa o persona"
+                aria-label="Buscar grupo o persona"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
             {data.groups.length === 0 && (
               <p className="muted">Aún no hay compras confirmadas.</p>
             )}
@@ -643,6 +654,14 @@ export function EventSeatingTab({ event }: { event: EventDetail }) {
           </aside>
 
           <div className="seating-main">
+            <div className="panel-heading seating-plan-heading">
+              <div>
+                <h2>Plano y mesas</h2>
+                <p className="muted">
+                  Selecciona una mesa para consultar sus lugares y personas.
+                </p>
+              </div>
+            </div>
             {canManage && (
               <div className="seating-tools">
                 <label className="button secondary small">
@@ -719,71 +738,94 @@ export function EventSeatingTab({ event }: { event: EventDetail }) {
               </form>
             )}
 
+            <p className="seating-scroll-hint">
+              ↔ Desliza para recorrer el plano
+            </p>
             <div
-              className={data.planVersion ? 'plan-area' : 'plan-area blank'}
-              ref={planArea}
+              className="seating-plan-viewport"
+              tabIndex={0}
+              role="region"
+              aria-label="Plano de mesas con desplazamiento horizontal"
             >
-              {data.planVersion ? (
-                <img
-                  src={`${base}/plan?v=${data.planVersion}`}
-                  alt={`Plano de ${event.venue ?? 'la sede'}`}
-                  draggable={false}
-                />
-              ) : (
-                data.tables.length === 0 && (
-                  <p className="muted">
-                    Sube el plano de la sede y agrega las mesas para colocarlas
-                    encima. También puedes trabajar sin plano.
-                  </p>
-                )
-              )}
-              {data.tables.map((table) => {
-                const at = position(table);
-                return (
-                  <button
-                    key={table.id}
-                    type="button"
-                    className={[
-                      'table-node',
-                      tableTone(table),
-                      table.zone ? 'zoned' : '',
-                      selectedId === table.id ? 'selected' : '',
-                      dropTarget === table.id ? 'drop' : '',
-                    ].join(' ')}
-                    style={{ left: `${at.x}%`, top: `${at.y}%` }}
-                    title={`${table.name}: ${table.occupied} de ${table.capacity}${table.zone ? ` · ${table.zone}` : ''}`}
-                    onPointerDown={(down) => startMove(down, table)}
-                    onClick={() => setSelectedId(table.id)}
-                    onDragOver={(over) => {
-                      over.preventDefault();
-                      setDropTarget(table.id);
-                    }}
-                    onDragLeave={() => setDropTarget(null)}
-                    onDrop={(drop) => dropOn(drop, table.id)}
-                  >
-                    <b>{table.name.replace(/^Mesa /, '')}</b>
-                    <small>
-                      {table.occupied}/{table.capacity}
-                    </small>
-                  </button>
-                );
-              })}
+              <div
+                className={data.planVersion ? 'plan-area' : 'plan-area blank'}
+                ref={planArea}
+              >
+                {data.planVersion ? (
+                  <img
+                    src={`${base}/plan?v=${data.planVersion}`}
+                    alt={`Plano de ${event.venue ?? 'la sede'}`}
+                    draggable={false}
+                  />
+                ) : (
+                  data.tables.length === 0 && (
+                    <p className="muted">
+                      Sube el plano de la sede y agrega las mesas para
+                      colocarlas encima. También puedes trabajar sin plano.
+                    </p>
+                  )
+                )}
+                {data.tables.map((table) => {
+                  const at = position(table);
+                  return (
+                    <button
+                      key={table.id}
+                      type="button"
+                      className={[
+                        'table-node',
+                        'seating-table',
+                        tableTone(table),
+                        table.zone ? 'zoned' : '',
+                        selectedId === table.id ? 'selected' : '',
+                        dropTarget === table.id ? 'drop' : '',
+                      ].join(' ')}
+                      style={{ left: `${at.x}%`, top: `${at.y}%` }}
+                      title={`${table.name}: ${table.occupied} de ${table.capacity}${table.zone ? ` · ${table.zone}` : ''}`}
+                      aria-label={`${table.name}: ${table.occupied} lugares ocupados de ${table.capacity}${table.zone ? `, zona ${table.zone}` : ''}`}
+                      aria-pressed={selectedId === table.id}
+                      onPointerDown={(down) => startMove(down, table)}
+                      onClick={() => setSelectedId(table.id)}
+                      onDragOver={(over) => {
+                        over.preventDefault();
+                        setDropTarget(table.id);
+                      }}
+                      onDragLeave={() => setDropTarget(null)}
+                      onDrop={(drop) => dropOn(drop, table.id)}
+                    >
+                      <SeatingTableGraphic
+                        capacity={table.capacity}
+                        occupied={table.occupied}
+                        zoned={Boolean(table.zone)}
+                      />
+                      <b>{table.name.replace(/^Mesa /, '')}</b>
+                      <small>
+                        {table.occupied}/{table.capacity}
+                      </small>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="plan-legend" aria-hidden="true">
+            <div className="plan-legend" aria-label="Estados de las mesas">
               <span>
-                <i className="empty" /> Vacía
+                <i className="chair-key occupied" aria-hidden="true" /> Lugar
+                ocupado
               </span>
               <span>
-                <i className="partial" /> Con lugar
-              </span>
-              <span>
-                <i className="full" /> Llena
+                <i className="chair-key" aria-hidden="true" /> Lugar disponible
               </span>
               <span>
                 <i className="zoned" /> Con zona
               </span>
+              <span>
+                <i className="selected" aria-hidden="true" /> Seleccionada
+              </span>
             </div>
+            <p className="seating-chair-note">
+              Las sillas muestran la cantidad de lugares ocupados; no indican la
+              posición de cada persona.
+            </p>
 
             {selected && (
               <TableDetail
@@ -839,7 +881,7 @@ function TableDetail({
   const [zone, setZone] = useState(table.zone ?? '');
 
   return (
-    <div className="panel table-detail">
+    <div className="panel table-detail event-config-panel">
       <div className="panel-heading">
         <h2>
           {table.name}: {table.occupied} de {table.capacity}

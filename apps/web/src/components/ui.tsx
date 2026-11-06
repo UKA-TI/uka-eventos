@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
+import { PageNavigationContext } from './page-navigation.js';
 
 export function Loading() {
   return (
@@ -58,14 +59,18 @@ export function PageHeading({
   description?: string;
   action?: ReactNode;
 }) {
+  const navigation = useContext(PageNavigationContext);
   return (
-    <div className="page-heading">
-      <div>
-        <h1>{title}</h1>
-        {description && <p className="muted">{description}</p>}
+    <>
+      <div className="page-heading">
+        <div>
+          <h1>{title}</h1>
+          {description && <p className="muted">{description}</p>}
+        </div>
+        {action}
       </div>
-      {action}
-    </div>
+      {navigation}
+    </>
   );
 }
 

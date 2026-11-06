@@ -116,7 +116,7 @@ export function CompaniesPage() {
   const seesDonations = can('donations.view', 'donations.manage');
 
   return (
-    <section>
+    <section className="crm-page">
       <PageHeading
         title="Empresas"
         description="Se crean solas con la organización que captura quien se registra."
@@ -136,7 +136,7 @@ export function CompaniesPage() {
       {companies.isError && <Notice>{companies.error.message}</Notice>}
 
       {formOpen && (
-        <form className="panel" onSubmit={submit} noValidate>
+        <form className="panel crm-form" onSubmit={submit} noValidate>
           <div className="panel-heading">
             <h2>{editingId ? 'Editar empresa' : 'Nueva empresa'}</h2>
           </div>
@@ -196,13 +196,21 @@ export function CompaniesPage() {
       </div>
 
       <div className="panel table-panel">
+        <div className="panel-heading">
+          <h2>Empresas y organizaciones</h2>
+          {visible && (
+            <span className="result-count">
+              {visible.length} {visible.length === 1 ? 'empresa' : 'empresas'}
+            </span>
+          )}
+        </div>
         {visible?.length === 0 ? (
           <p className="muted">
             {term ? 'Ninguna empresa coincide.' : 'Aún no hay empresas.'}
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="crm-table">
               <thead>
                 <tr>
                   <th>Empresa</th>
@@ -214,48 +222,60 @@ export function CompaniesPage() {
               <tbody>
                 {visible?.map((company) => (
                   <tr key={company.id}>
-                    <td>
-                      <strong>{company.name}</strong>
-                      {company.website && (
-                        <small className="cell-note">{company.website}</small>
-                      )}
+                    <td data-label="Empresa">
+                      <div className="crm-cell-content">
+                        <strong>{company.name}</strong>
+                        {company.website && (
+                          <small className="cell-note">{company.website}</small>
+                        )}
+                      </div>
                     </td>
-                    <td>
-                      <Link to={`/contactos?companyId=${company.id}`}>
-                        {company.contacts}
-                      </Link>
+                    <td data-label="Contactos">
+                      <div className="crm-cell-content">
+                        <Link to={`/contactos?companyId=${company.id}`}>
+                          {company.contacts}
+                        </Link>
+                      </div>
                     </td>
-                    {seesDonations && <td>{formatAmount(company.donated)}</td>}
-                    <td>
-                      {can('contacts.manage') && (
-                        <div className="row-actions">
-                          <button
-                            className="link-button"
-                            type="button"
-                            onClick={() => open(company)}
-                          >
-                            Editar
-                          </button>
-                          {company.contacts === 0 && (
-                            <button
-                              className="link-button danger"
-                              type="button"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `¿Borrar la empresa "${company.name}"?`,
-                                  )
-                                ) {
-                                  setNotice(undefined);
-                                  remove.mutate(company);
-                                }
-                              }}
-                            >
-                              Borrar
-                            </button>
-                          )}
+                    {seesDonations && (
+                      <td data-label="Donado">
+                        <div className="crm-cell-content">
+                          {formatAmount(company.donated)}
                         </div>
-                      )}
+                      </td>
+                    )}
+                    <td data-label="Acciones">
+                      <div className="crm-cell-content">
+                        {can('contacts.manage') && (
+                          <div className="row-actions">
+                            <button
+                              className="link-button"
+                              type="button"
+                              onClick={() => open(company)}
+                            >
+                              Editar
+                            </button>
+                            {company.contacts === 0 && (
+                              <button
+                                className="link-button danger"
+                                type="button"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `¿Borrar la empresa "${company.name}"?`,
+                                    )
+                                  ) {
+                                    setNotice(undefined);
+                                    remove.mutate(company);
+                                  }
+                                }}
+                              >
+                                Borrar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

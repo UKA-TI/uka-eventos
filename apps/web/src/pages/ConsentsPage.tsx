@@ -9,6 +9,13 @@ import { Link } from 'react-router-dom';
 import { apiRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Loading, Notice, PageHeading } from '../components/ui.js';
+import { Icon } from '../components/icons.js';
+import { ModuleNavigation } from '../components/ModuleNavigation.js';
+
+const consentSections = [
+  ['notices', 'Aviso de privacidad'],
+  ['marketing', 'Comunicaciones'],
+] as const;
 
 type View = 'notices' | 'marketing';
 
@@ -359,25 +366,28 @@ export function ConsentsPage() {
         title="Consentimientos"
         description="Quién aceptó qué, cuándo y con qué versión del aviso de privacidad."
       />
-      <div className="tabs" role="tablist">
-        {(
-          [
-            ['notices', 'Aviso de privacidad'],
-            ['marketing', 'Comunicaciones'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={view === value}
-            className={view === value ? 'tab active' : 'tab'}
-            onClick={() => setView(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ModuleNavigation
+        label="Consentimientos"
+        current={view}
+        items={consentSections}
+        onSelect={(value) => setView(value)}
+      >
+        <div className="tabs" role="tablist">
+          {consentSections.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={view === value}
+              className={view === value ? 'tab active' : 'tab'}
+              onClick={() => setView(value)}
+            >
+              <Icon name={value === 'notices' ? 'shield' : 'mail'} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </ModuleNavigation>
       {view === 'notices' ? <NoticesView /> : <MarketingView />}
     </section>
   );

@@ -168,11 +168,16 @@ export function PassPage() {
             />
           </div>
         ) : data.qrDataUrl ? (
-          <img
-            className="pass-qr"
-            src={data.qrDataUrl}
-            alt={`Código QR del pase ${data.folio}`}
-          />
+          <div className="pass-qr-block">
+            <img
+              className="pass-qr"
+              src={data.qrDataUrl}
+              alt={`Código QR del pase ${data.folio}`}
+            />
+            <p className="muted pass-note">
+              Presenta este código en la entrada. Es personal: no lo compartas.
+            </p>
+          </div>
         ) : (
           <p className="notice error" role="alert">
             Este pase ya no es válido. Si crees que es un error, escríbenos a
@@ -264,11 +269,6 @@ export function PassPage() {
             </div>
           )}
         </dl>
-        {data.qrDataUrl && (
-          <p className="muted pass-note">
-            Presenta este código en la entrada. Es personal: no lo compartas.
-          </p>
-        )}
         <p className="muted pass-note">
           ¿Perdiste este correo?{' '}
           <Link to={`/recuperar/${data.eventSlug}`}>Recuperar mi pase</Link>

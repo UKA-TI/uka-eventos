@@ -14,8 +14,16 @@ import { Link } from 'react-router-dom';
 import { apiRequest, errorText, jsonRequest } from '../api.js';
 import { usePermissions } from '../auth/session.js';
 import { Field, Loading, Notice, PageHeading } from '../components/ui.js';
+import { Icon } from '../components/icons.js';
 import { DueDateForm } from './OrderFinanceForms.js';
 import { formatAmount, issuesToErrors } from './text.js';
+import { ModuleNavigation } from '../components/ModuleNavigation.js';
+
+const collectionSections = [
+  ['receivables', 'Cuentas por cobrar'],
+  ['invoices', 'Facturas'],
+  ['policies', 'Políticas de cancelación'],
+] as const;
 
 type View = 'receivables' | 'invoices' | 'policies';
 type NoticeState = { kind: 'ok' | 'error'; text: string };
@@ -163,11 +171,17 @@ function ReceivablesView() {
           />
         ))}
       <div className="panel table-panel">
+        <div className="panel-heading finance-list-heading">
+          <h2>Cuentas por cobrar</h2>
+          <span className="result-count">
+            {rows.length} {rows.length === 1 ? 'compra' : 'compras'}
+          </span>
+        </div>
         {rows.length === 0 ? (
           <p className="muted">No hay saldos pendientes con estos filtros.</p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="finance-table">
               <thead>
                 <tr>
                   <th>Comprador</th>
@@ -180,79 +194,91 @@ function ReceivablesView() {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.orderId}>
-                    <td>
-                      <strong>{row.buyerName}</strong>
-                      <small className="cell-note">
-                        {row.organization ?? row.buyerEmail ?? 'Sin correo'}
-                      </small>
+                    <td data-label="Comprador">
+                      <div className="finance-cell-content">
+                        <strong>{row.buyerName}</strong>
+                        <small className="cell-note">
+                          {row.organization ?? row.buyerEmail ?? 'Sin correo'}
+                        </small>
+                      </div>
                     </td>
-                    <td>
-                      {row.eventName}
-                      <small className="cell-note">
-                        {row.reference} · {row.ticketName}
-                      </small>
+                    <td data-label="Evento">
+                      <div className="finance-cell-content">
+                        {row.eventName}
+                        <small className="cell-note">
+                          {row.reference} · {row.ticketName}
+                        </small>
+                      </div>
                     </td>
-                    <td className="numeric">
-                      <strong>{formatAmount(row.balance, row.currency)}</strong>
-                      <small className="cell-note">
-                        {row.amountPaid > 0
-                          ? `Pagado ${formatAmount(row.amountPaid, row.currency)}`
-                          : `De ${formatAmount(row.amountDue, row.currency)}`}
-                      </small>
+                    <td className="numeric" data-label="Saldo">
+                      <div className="finance-cell-content">
+                        <strong>
+                          {formatAmount(row.balance, row.currency)}
+                        </strong>
+                        <small className="cell-note">
+                          {row.amountPaid > 0
+                            ? `Pagado ${formatAmount(row.amountPaid, row.currency)}`
+                            : `De ${formatAmount(row.amountDue, row.currency)}`}
+                        </small>
+                      </div>
                     </td>
-                    <td>
-                      {row.dueAt ? (
-                        <>
-                          {new Date(row.dueAt).toLocaleDateString('es-MX', {
-                            timeZone: row.timeZone,
-                            dateStyle: 'medium',
-                          })}
-                          {row.daysOverdue ? (
-                            <span className="badge bad overdue-badge">
-                              {row.daysOverdue}{' '}
-                              {row.daysOverdue === 1 ? 'día' : 'días'} vencido
-                            </span>
-                          ) : null}
-                        </>
-                      ) : (
-                        'Sin fecha'
-                      )}
-                      <small className="cell-note">
-                        {row.lastReminderAt
-                          ? `Recordado el ${new Date(row.lastReminderAt).toLocaleDateString('es-MX', { timeZone: row.timeZone, dateStyle: 'medium' })}`
-                          : 'Sin recordatorios'}
-                        {row.remindersOn ? '' : ' · Automáticos apagados'}
-                      </small>
+                    <td data-label="Vence">
+                      <div className="finance-cell-content">
+                        {row.dueAt ? (
+                          <>
+                            {new Date(row.dueAt).toLocaleDateString('es-MX', {
+                              timeZone: row.timeZone,
+                              dateStyle: 'medium',
+                            })}
+                            {row.daysOverdue ? (
+                              <span className="badge bad overdue-badge">
+                                {row.daysOverdue}{' '}
+                                {row.daysOverdue === 1 ? 'día' : 'días'} vencido
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          'Sin fecha'
+                        )}
+                        <small className="cell-note">
+                          {row.lastReminderAt
+                            ? `Recordado el ${new Date(row.lastReminderAt).toLocaleDateString('es-MX', { timeZone: row.timeZone, dateStyle: 'medium' })}`
+                            : 'Sin recordatorios'}
+                          {row.remindersOn ? '' : ' · Automáticos apagados'}
+                        </small>
+                      </div>
                     </td>
 
-                    <td className="row-actions">
-                      {canCollect && row.buyerEmail && (
-                        <button
-                          className="link-button"
-                          type="button"
-                          disabled={remind.isPending}
-                          onClick={() => {
-                            setNotice(undefined);
-                            remind.mutate(row);
-                          }}
+                    <td className="row-actions" data-label="Acciones">
+                      <div className="finance-cell-content">
+                        {canCollect && row.buyerEmail && (
+                          <button
+                            className="link-button"
+                            type="button"
+                            disabled={remind.isPending}
+                            onClick={() => {
+                              setNotice(undefined);
+                              remind.mutate(row);
+                            }}
+                          >
+                            Recordar
+                          </button>
+                        )}
+                        {canCollect && (
+                          <button
+                            className="link-button"
+                            type="button"
+                            onClick={() => setEditingId(row.orderId)}
+                          >
+                            Cambiar fecha
+                          </button>
+                        )}
+                        <Link
+                          to={`/eventos/${row.eventId}?tab=registros&q=${encodeURIComponent(row.reference)}`}
                         >
-                          Recordar
-                        </button>
-                      )}
-                      {canCollect && (
-                        <button
-                          className="link-button"
-                          type="button"
-                          onClick={() => setEditingId(row.orderId)}
-                        >
-                          Cambiar fecha
-                        </button>
-                      )}
-                      <Link
-                        to={`/eventos/${row.eventId}?tab=registros&q=${encodeURIComponent(row.reference)}`}
-                      >
-                        Ver compra
-                      </Link>
+                          Ver compra
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -321,7 +347,7 @@ function InvoicesView() {
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="finance-table">
               <thead>
                 <tr>
                   <th>Compra</th>
@@ -337,75 +363,85 @@ function InvoicesView() {
                   ] ?? [row.financialStatus];
                   return (
                     <tr key={row.orderId}>
-                      <td>
-                        <strong>{row.buyerName}</strong>
-                        <small className="cell-note">
-                          {row.eventName} · {row.reference} · {label}
-                        </small>
-                      </td>
-                      <td>
-                        <strong>{row.fiscal.rfc}</strong>
-                        <small className="cell-note">
-                          {row.fiscal.legalName}
-                        </small>
-                        <small className="cell-note">
-                          Régimen {row.fiscal.regime} · CP{' '}
-                          {row.fiscal.postalCode} · {row.fiscal.cfdiUse} ·{' '}
-                          {row.fiscal.email}
-                        </small>
-                      </td>
-                      <td className="numeric">
-                        {formatAmount(row.amountPaid)}
-                        {row.amountRefunded > 0 && (
+                      <td data-label="Compra">
+                        <div className="finance-cell-content">
+                          <strong>{row.buyerName}</strong>
                           <small className="cell-note">
-                            Devuelto {formatAmount(row.amountRefunded)}
+                            {row.eventName} · {row.reference} · {label}
                           </small>
-                        )}
+                        </div>
                       </td>
-                      <td>
-                        {row.invoiceStatus === 'issued' ? (
-                          <>
-                            <span className="badge ok">{row.invoiceFolio}</span>
-                            {row.amountRefunded > 0 && (
-                              <small className="cell-note">
-                                Revisa la nota de crédito
-                              </small>
-                            )}
-                          </>
-                        ) : editingId === row.orderId ? (
-                          <span className="inline-form">
-                            <input
-                              aria-label="Folio de la factura"
-                              placeholder="Folio"
-                              value={folio}
-                              onChange={(e) => setFolio(e.target.value)}
-                            />
+                      <td data-label="Datos fiscales">
+                        <div className="finance-cell-content">
+                          <strong>{row.fiscal.rfc}</strong>
+                          <small className="cell-note">
+                            {row.fiscal.legalName}
+                          </small>
+                          <small className="cell-note">
+                            Régimen {row.fiscal.regime} · CP{' '}
+                            {row.fiscal.postalCode} · {row.fiscal.cfdiUse} ·{' '}
+                            {row.fiscal.email}
+                          </small>
+                        </div>
+                      </td>
+                      <td className="numeric" data-label="Cobrado">
+                        <div className="finance-cell-content">
+                          {formatAmount(row.amountPaid)}
+                          {row.amountRefunded > 0 && (
+                            <small className="cell-note">
+                              Devuelto {formatAmount(row.amountRefunded)}
+                            </small>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Factura">
+                        <div className="finance-cell-content">
+                          {row.invoiceStatus === 'issued' ? (
+                            <>
+                              <span className="badge ok">
+                                {row.invoiceFolio}
+                              </span>
+                              {row.amountRefunded > 0 && (
+                                <small className="cell-note">
+                                  Revisa la nota de crédito
+                                </small>
+                              )}
+                            </>
+                          ) : editingId === row.orderId ? (
+                            <span className="inline-form">
+                              <input
+                                aria-label="Folio de la factura"
+                                placeholder="Folio"
+                                value={folio}
+                                onChange={(e) => setFolio(e.target.value)}
+                              />
+                              <button
+                                className="button primary small"
+                                type="button"
+                                disabled={save.isPending}
+                                onClick={() => {
+                                  setNotice(undefined);
+                                  save.mutate(row);
+                                }}
+                              >
+                                Guardar
+                              </button>
+                            </span>
+                          ) : can('finance.manage') ? (
                             <button
-                              className="button primary small"
+                              className="link-button"
                               type="button"
-                              disabled={save.isPending}
                               onClick={() => {
-                                setNotice(undefined);
-                                save.mutate(row);
+                                setFolio('');
+                                setEditingId(row.orderId);
                               }}
                             >
-                              Guardar
+                              Registrar folio
                             </button>
-                          </span>
-                        ) : can('finance.manage') ? (
-                          <button
-                            className="link-button"
-                            type="button"
-                            onClick={() => {
-                              setFolio('');
-                              setEditingId(row.orderId);
-                            }}
-                          >
-                            Registrar folio
-                          </button>
-                        ) : (
-                          <span className="badge warn">Pendiente</span>
-                        )}
+                          ) : (
+                            <span className="badge warn">Pendiente</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -729,31 +765,41 @@ function PoliciesView() {
 export function CollectionsPage() {
   const [view, setView] = useState<View>('receivables');
   return (
-    <section>
+    <section className="finance-page collections-page">
       <PageHeading
         title="Cobranza"
         description="Lo que falta cobrar, las facturas por emitir y las políticas de cancelación."
       />
-      <div className="tabs" role="tablist">
-        {(
-          [
-            ['receivables', 'Cuentas por cobrar'],
-            ['invoices', 'Facturas'],
-            ['policies', 'Políticas de cancelación'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={view === value}
-            className={view === value ? 'tab active' : 'tab'}
-            onClick={() => setView(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ModuleNavigation
+        label="Cobranza"
+        current={view}
+        items={collectionSections}
+        onSelect={(value) => setView(value)}
+      >
+        <div className="tabs" role="tablist">
+          {collectionSections.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={view === value}
+              className={view === value ? 'tab active' : 'tab'}
+              onClick={() => setView(value)}
+            >
+              <Icon
+                name={
+                  value === 'receivables'
+                    ? 'wallet'
+                    : value === 'invoices'
+                      ? 'badge'
+                      : 'shield'
+                }
+              />
+              {label}
+            </button>
+          ))}
+        </div>
+      </ModuleNavigation>
       {view === 'receivables' && <ReceivablesView />}
       {view === 'invoices' && <InvoicesView />}
       {view === 'policies' && <PoliciesView />}

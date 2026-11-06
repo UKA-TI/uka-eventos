@@ -13,6 +13,20 @@ import { usePermissions, useSession } from '../auth/session.js';
 import { checkinStore } from '../checkin/store.js';
 import { Icon, type IconName } from './icons.js';
 import { Loading, Notice } from './ui.js';
+import { PageNavigationContext } from './page-navigation.js';
+import { ModuleNavigation } from './ModuleNavigation.js';
+
+const sectionRouteIcons: Record<string, IconName> = {
+  '/eventos': 'calendar',
+  '/series': 'layers',
+  '/contactos': 'contacts',
+  '/empresas': 'building',
+  '/segmentos': 'filter',
+  '/usuarios': 'users',
+  '/perfiles': 'shield',
+  '/bitacora': 'list',
+  '/consentimientos': 'badge',
+};
 
 function initials(name: string): string {
   return name
@@ -334,23 +348,43 @@ export function Shell({
         </header>
         <main className={bare ? 'content-bare' : 'content'}>
           <Notice>{notice}</Notice>
-          {sectionTabs && (
-            <nav className="tabs section-tabs" aria-label={sectionTabs.label}>
-              {sectionTabs.routes.map((entry) => (
-                <NavLink
-                  key={entry.to}
-                  to={entry.to}
-                  end
-                  className={({ isActive }) =>
-                    isActive ? 'tab active' : 'tab'
-                  }
+          <PageNavigationContext.Provider
+            value={
+              sectionTabs && (
+                <ModuleNavigation
+                  label={sectionTabs.label}
+                  current={path}
+                  items={sectionTabs.routes.map(
+                    (entry) => [entry.to, entry.label] as const,
+                  )}
+                  onSelect={(value) => navigate(value)}
                 >
-                  {entry.label}
-                </NavLink>
-              ))}
-            </nav>
-          )}
-          {children}
+                  <nav
+                    className="tabs section-tabs"
+                    aria-label={sectionTabs.label}
+                  >
+                    {sectionTabs.routes.map((entry) => (
+                      <NavLink
+                        key={entry.to}
+                        to={entry.to}
+                        end
+                        className={({ isActive }) =>
+                          isActive ? 'tab active' : 'tab'
+                        }
+                      >
+                        <Icon
+                          name={sectionRouteIcons[entry.to] ?? sectionTabs.icon}
+                        />
+                        {entry.label}
+                      </NavLink>
+                    ))}
+                  </nav>
+                </ModuleNavigation>
+              )
+            }
+          >
+            {children}
+          </PageNavigationContext.Provider>
         </main>
       </div>
     </div>
