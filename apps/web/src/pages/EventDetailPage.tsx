@@ -277,10 +277,11 @@ export function EventDetailPage() {
         );
       case 'finanzas':
         return can('finance.view', 'finance.manage');
+      // Cualquier evento puede vender varios lugares en una compra, y esas compras se
+      // siguen en Registro por grupo: no depende de un módulo.
       case 'invitados':
-        return canSeePeople;
       case 'mesas':
-        return (hasModule('corporate') || hasModule('tables')) && canSeePeople;
+        return canSeePeople;
       case 'acomodo':
         return hasModule('tables') && can('seating.view', 'seating.manage');
       case 'checkin':

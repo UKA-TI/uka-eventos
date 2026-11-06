@@ -350,8 +350,6 @@ export function EventRegistrationsTab({
   const canPay = can('payments.manage');
   const canCollect = can('payments.manage', 'finance.manage');
   const canRefund = can('refunds.manage');
-  const groupTabVisible =
-    event.modules.includes('corporate') || event.modules.includes('tables');
   const isClosed = event.status === 'closed';
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
@@ -933,41 +931,14 @@ export function EventRegistrationsTab({
                                     </Link>
                                   </p>
                                 )}
-                                {order.groupUrl &&
-                                  (groupTabVisible ? (
-                                    <p className="inline-actions">
-                                      <Link
-                                        to={`/eventos/${event.id}?tab=mesas`}
-                                      >
-                                        Ver el avance en Registro por grupo
-                                      </Link>
-                                    </p>
-                                  ) : (
-                                    <p className="inline-actions">
-                                      <a
-                                        href={order.groupUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        Abrir liga de registro
-                                      </a>
-                                      <button
-                                        className="link-button"
-                                        type="button"
-                                        disabled={act.isPending}
-                                        onClick={() => {
-                                          setNotice(undefined);
-                                          act.mutate({
-                                            path: `${order.id}/resend-link`,
-                                            success:
-                                              'La liga se agregó a la cola de correo.',
-                                          });
-                                        }}
-                                      >
-                                        Reenviar liga
-                                      </button>
-                                    </p>
-                                  ))}
+                                {order.groupUrl && (
+                                  <p className="inline-actions">
+                                    <Link to={`/eventos/${event.id}?tab=mesas`}>
+                                      Ver el avance en Asistentes › Registro por
+                                      grupo
+                                    </Link>
+                                  </p>
+                                )}
                               </div>
                               <div>
                                 <h3>Pagos</h3>

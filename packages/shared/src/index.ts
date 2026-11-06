@@ -240,7 +240,7 @@ export const eventModuleCatalog = [
     key: 'corporate',
     label: 'Compras corporativas',
     description:
-      'Una empresa compra varios lugares y su asistente registra a los invitados con una liga privada. Activa Asistentes › Registro por grupo.',
+      'Indica que este evento vende mesas o paquetes a empresas. Las compras de varios lugares se siguen en Asistentes › Registro por grupo en cualquier evento.',
   },
   {
     key: 'tables',
