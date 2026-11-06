@@ -117,7 +117,7 @@ export function UsersPage() {
   const isSelf = editing?.id === ownId;
 
   return (
-    <section>
+    <section className="crm-page admin-page">
       <PageHeading
         title="Usuarios"
         description="Solo las personas invitadas aquí pueden entrar, con su cuenta de Microsoft."
@@ -137,7 +137,7 @@ export function UsersPage() {
       {users.isError && <Notice>{users.error.message}</Notice>}
 
       {formOpen && (
-        <form className="panel" onSubmit={submit}>
+        <form className="panel crm-form" onSubmit={submit}>
           <div className="panel-heading">
             <h2>{editing ? 'Editar usuario' : 'Invitar usuario'}</h2>
           </div>
@@ -215,8 +215,17 @@ export function UsersPage() {
       )}
 
       <div className="panel table-panel">
+        <div className="panel-heading">
+          <h2>Directorio de usuarios</h2>
+          {users.data && (
+            <span className="result-count">
+              {users.data.length}{' '}
+              {users.data.length === 1 ? 'usuario' : 'usuarios'}
+            </span>
+          )}
+        </div>
         <div className="table-scroll">
-          <table>
+          <table className="crm-table">
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -230,15 +239,15 @@ export function UsersPage() {
             <tbody>
               {users.data?.map((user) => (
                 <tr key={user.id}>
-                  <td>
+                  <td data-label="Nombre">
                     <strong>{user.displayName}</strong>
                   </td>
-                  <td>{user.email}</td>
-                  <td>{user.role.name}</td>
-                  <td>
+                  <td data-label="Correo">{user.email}</td>
+                  <td data-label="Perfil">{user.role.name}</td>
+                  <td data-label="Estado">
                     <StatusBadge status={user.status} />
                   </td>
-                  <td>
+                  <td data-label="Último acceso">
                     {user.lastLoginAt
                       ? new Date(user.lastLoginAt).toLocaleString('es-MX', {
                           dateStyle: 'medium',
@@ -246,16 +255,18 @@ export function UsersPage() {
                         })
                       : 'Nunca'}
                   </td>
-                  <td className="row-actions">
-                    {canManage && (
-                      <button
-                        className="link-button"
-                        type="button"
-                        onClick={() => open(user)}
-                      >
-                        Editar
-                      </button>
-                    )}
+                  <td data-label="Acciones">
+                    <div className="row-actions">
+                      {canManage && (
+                        <button
+                          className="link-button"
+                          type="button"
+                          onClick={() => open(user)}
+                        >
+                          Editar
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

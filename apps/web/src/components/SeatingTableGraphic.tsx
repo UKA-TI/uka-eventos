@@ -27,16 +27,18 @@ export function SeatingTableGraphic({
             className={
               index < occupied ? 'table-chair occupied' : 'table-chair'
             }
-            transform={`translate(${60 + 45 * Math.cos(angle)} ${60 + 45 * Math.sin(angle)}) rotate(${degrees + 90})`}
+            transform={`translate(${60 + 45 * Math.cos(angle)} ${60 + 45 * Math.sin(angle)}) rotate(${index < occupied ? 0 : degrees + 90})`}
           >
             <rect
               x={-chairWidth / 2}
               y="-5"
               width={chairWidth}
               height="10"
-              rx="2"
+              rx={index < occupied ? 0 : 2}
             />
-            <path d={`M${-chairWidth / 2} -2 H${chairWidth / 2}`} />
+            {index >= occupied && (
+              <path d={`M${-chairWidth / 2} -2 H${chairWidth / 2}`} />
+            )}
           </g>
         );
       })}

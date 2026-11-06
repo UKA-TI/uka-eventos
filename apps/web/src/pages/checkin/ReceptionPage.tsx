@@ -83,6 +83,7 @@ function AdmitSheet({
         aria-modal="true"
         aria-label={`Ingreso de ${entry.guestName}`}
       >
+        <span className="reception-eyebrow">Ingreso manual</span>
         <strong className="admit-name">{entry.guestName}</strong>
         <span>
           {entry.ticketName} · {entry.folio}
@@ -243,6 +244,9 @@ function ResultOverlay({
       onClick={onClose}
       role="alert"
     >
+      <span className="scan-result-icon">
+        <Icon name={result.status === 'ok' ? 'badge' : 'alert'} />
+      </span>
       <strong className="scan-title">{view.title}</strong>
       {result.status !== 'unknown' && (
         <>
@@ -338,11 +342,14 @@ export function ReceptionHomePage() {
             className="station-option"
             onClick={() => navigate(`/recepcion/${event.id}`)}
           >
-            <strong>{event.name}</strong>
-            <small>
-              {formatEventDate(event.startsAt, event.timeZone, true)}
-              {event.venue ? ` · ${event.venue}` : ''}
-            </small>
+            <Icon name="calendar" />
+            <span className="station-option-copy">
+              <strong>{event.name}</strong>
+              <small>
+                {formatEventDate(event.startsAt, event.timeZone, true)}
+                {event.venue ? ` · ${event.venue}` : ''}
+              </small>
+            </span>
           </button>
         ))}
       </div>
@@ -446,7 +453,10 @@ export function ReceptionStationPage() {
                 setDoorId(point.id);
               }}
             >
-              <strong>{point.name}</strong>
+              <Icon name="scan" />
+              <span className="station-option-copy">
+                <strong>{point.name}</strong>
+              </span>
             </button>
           ))}
         </div>
@@ -647,22 +657,29 @@ function Station({
     <div className="station">
       <header className="station-bar">
         <div>
+          <span className="reception-eyebrow">
+            Recepción · Control de acceso
+          </span>
           <strong>{eventName}</strong>
           <button className="station-door" type="button" onClick={onChangeDoor}>
             {doorName} · cambiar
           </button>
         </div>
-        <Link to="/recepcion">Cambiar de evento</Link>
+        <Link className="button secondary small" to="/recepcion">
+          Cambiar de evento
+        </Link>
       </header>
 
       <div
         className={station.online ? 'station-status' : 'station-status offline'}
       >
         <span>
+          <Icon name={station.online ? 'shield' : 'alert'} />
           {station.online ? 'En línea' : 'Sin conexión'}
           {station.queueSize > 0 && ` · ${station.queueSize} por enviar`}
         </span>
         <span>
+          <Icon name="contacts" />
           {entered} de {station.entries.length} ingresaron
         </span>
       </div>
@@ -719,26 +736,36 @@ function Station({
       </ModuleNavigation>
 
       {mode === 'scan' && (
-        <>
+        <div className="station-scan-panel">
+          <div className="station-panel-heading">
+            <h2>
+              <Icon name="scan" />
+              Escanear pase
+            </h2>
+            <p className="muted">Coloca el código QR dentro del recuadro.</p>
+          </div>
           <QrScanner
             paused={outcome !== null || candidate !== null}
             onCode={onCode}
           />
           <form className="folio-entry" onSubmit={(e) => void lookUpFolio(e)}>
-            <input
-              className="station-search"
-              aria-label="Folio del pase"
-              placeholder="¿No lee el QR? Escribe el folio"
-              autoCapitalize="characters"
-              autoComplete="off"
-              autoCorrect="off"
-              enterKeyHint="search"
-              value={folio}
-              onChange={(e) => {
-                setFolio(e.target.value);
-                setFolioMiss('');
-              }}
-            />
+            <label className="field">
+              <span>Buscar por folio</span>
+              <input
+                className="station-search"
+                aria-label="Folio del pase"
+                placeholder="¿No lee el QR? Escribe el folio"
+                autoCapitalize="characters"
+                autoComplete="off"
+                autoCorrect="off"
+                enterKeyHint="search"
+                value={folio}
+                onChange={(e) => {
+                  setFolio(e.target.value);
+                  setFolioMiss('');
+                }}
+              />
+            </label>
             <button className="button secondary" type="submit">
               Buscar
             </button>
@@ -748,24 +775,30 @@ function Station({
               {folioMiss}
             </p>
           )}
-        </>
+        </div>
       )}
 
       {mode === 'search' && (
-        <div className="station-content">
-          <input
-            className="station-search"
-            type="search"
-            placeholder="Nombre o folio"
-            aria-label="Buscar por nombre o folio"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="station-content station-work-panel">
+          <div className="panel-heading">
+            <h2>Buscar invitado</h2>
+          </div>
+          <label className="field">
+            <span>Nombre o folio</span>
+            <input
+              className="station-search"
+              type="search"
+              placeholder="Nombre o folio"
+              aria-label="Buscar por nombre o folio"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
           <p className="muted">
             Solo para quien no pueda mostrar su QR. Verifica su identidad antes
             de darle ingreso.
           </p>
-          <ul className="plain-list">
+          <ul className="plain-list station-matches">
             {matches.map((entry) => (
               <li key={entry.tokenHash}>
                 <span>
@@ -803,7 +836,11 @@ function Station({
       )}
 
       {mode === 'incident' && (
-        <div className="station-content">
+        <div className="station-content station-work-panel">
+          <div className="panel-heading">
+            <h2>Registrar incidencia</h2>
+          </div>
+          <p className="muted">Describe lo ocurrido en este punto de acceso.</p>
           <label className="field">
             <span>¿Qué ocurrió?</span>
             <textarea

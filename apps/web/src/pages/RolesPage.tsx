@@ -149,29 +149,34 @@ function CompareView({ list }: { list: RoleRecord[] }) {
 
   return (
     <div className="panel table-panel">
+      <div className="panel-heading">
+        <h2>Comparación de permisos</h2>
+      </div>
       <div className="compare-controls">
         {Array.from({ length: COMPARE_SLOTS }, (_, slot) => (
-          <select
-            key={slot}
-            aria-label={`Perfil ${slot + 1} a comparar`}
-            value={chosen[slot] ?? ''}
-            onChange={(e) =>
-              setChosen((current) =>
-                Array.from(
-                  { length: COMPARE_SLOTS },
-                  (_item, index) =>
-                    (index === slot ? e.target.value : current[index]) ?? '',
-                ),
-              )
-            }
-          >
-            <option value="">Sin perfil</option>
-            {list.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
+          <label className="field" key={slot}>
+            <span>Perfil {slot + 1}</span>
+            <select
+              aria-label={`Perfil ${slot + 1} a comparar`}
+              value={chosen[slot] ?? ''}
+              onChange={(e) =>
+                setChosen((current) =>
+                  Array.from(
+                    { length: COMPARE_SLOTS },
+                    (_item, index) =>
+                      (index === slot ? e.target.value : current[index]) ?? '',
+                  ),
+                )
+              }
+            >
+              <option value="">Sin perfil</option>
+              {list.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
         ))}
         <label className="check-field">
           <input
@@ -187,37 +192,46 @@ function CompareView({ list }: { list: RoleRecord[] }) {
       ) : modules.length === 0 ? (
         <p className="muted">Estos perfiles tienen los mismos permisos.</p>
       ) : (
-        <table className="profiles-compare">
-          <thead>
-            <tr>
-              <th>Permiso</th>
-              {roles.map((role) => (
-                <th key={role.id} className="compare-role">
-                  {role.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {modules.map((module) => (
-            <tbody key={module.key}>
-              <tr className="module-row">
-                <th colSpan={roles.length + 1} scope="colgroup">
-                  {module.label}
-                </th>
+        <div
+          className="table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Comparación de permisos por perfil"
+        >
+          <table className="profiles-compare">
+            <thead>
+              <tr>
+                <th>Permiso</th>
+                {roles.map((role) => (
+                  <th key={role.id} className="compare-role">
+                    {role.name}
+                  </th>
+                ))}
               </tr>
-              {module.visible.map((action) => (
-                <tr key={action.code}>
-                  <td>{action.label}</td>
-                  {roles.map((role) => (
-                    <td key={role.id} className="compare-cell">
-                      <Mark granted={role.permissions.includes(action.code)} />
-                    </td>
-                  ))}
+            </thead>
+            {modules.map((module) => (
+              <tbody key={module.key}>
+                <tr className="module-row">
+                  <th colSpan={roles.length + 1} scope="colgroup">
+                    {module.label}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
+                {module.visible.map((action) => (
+                  <tr key={action.code}>
+                    <td>{action.label}</td>
+                    {roles.map((role) => (
+                      <td key={role.id} className="compare-cell">
+                        <Mark
+                          granted={role.permissions.includes(action.code)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
       )}
     </div>
   );
@@ -328,7 +342,7 @@ export function RolesPage() {
   };
 
   return (
-    <section>
+    <section className="crm-page admin-page">
       <PageHeading
         title="Perfiles y permisos"
         description="Elige un perfil para ver qué puede hacer. Los cambios aplican de inmediato a todas las personas con ese perfil."
@@ -417,7 +431,7 @@ export function RolesPage() {
 
           {draft ? (
             <form
-              className="panel"
+              className="panel crm-form"
               onSubmit={(event) => {
                 event.preventDefault();
                 setNotice(undefined);

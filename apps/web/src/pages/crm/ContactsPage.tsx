@@ -70,7 +70,7 @@ function FilterBar({
     </label>
   );
   return (
-    <div className="filters">
+    <div className="filters contacts-filters">
       <label className="filter-field filter-search">
         <span>Buscar contacto</span>
         <input
