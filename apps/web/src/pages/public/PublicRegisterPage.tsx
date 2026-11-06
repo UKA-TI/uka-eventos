@@ -13,6 +13,7 @@ import { FiscalFields } from '../OrderFinanceForms.js';
 import { useParams, Link } from 'react-router-dom';
 import { apiRequest, errorText } from '../../api.js';
 import { Field, Loading, Notice } from '../../components/ui.js';
+import { Icon } from '../../components/icons.js';
 import { formatEventDate, formatMoney, issuesToErrors } from '../text.js';
 import { PublicLayout } from './PublicLayout.js';
 
@@ -24,8 +25,12 @@ function Confirmation({
   result: PublicRegistrationResult;
 }) {
   const pending = result.status === 'pending_payment';
+  const several = result.seats > 1;
   return (
-    <>
+    <div className="public-confirmation">
+      <div className="public-confirmation-icon">
+        <Icon name={pending ? 'wallet' : 'badge'} />
+      </div>
       <h1>{pending ? 'Recibimos tu registro' : '¡Registro confirmado!'}</h1>
       <p className="muted">{event.name}</p>
       <dl className="data-list public-data">
@@ -43,8 +48,9 @@ function Confirmation({
       {pending && (
         <>
           <p>
-            Tu lugar queda apartado. Te enviaremos tu pase con código QR por
-            correo en cuanto registremos tu pago.
+            {several
+              ? `Tus ${result.seats} lugares quedan apartados. En cuanto registremos tu pago te enviaremos por correo una liga para registrar a cada invitado.`
+              : 'Tu lugar queda apartado. Te enviaremos tu pase con código QR por correo en cuanto registremos tu pago.'}
           </p>
           {result.paymentInstructions && (
             <div className="instructions">
@@ -67,7 +73,7 @@ function Confirmation({
           Registrar a mis invitados
         </a>
       )}
-    </>
+    </div>
   );
 }
 
@@ -80,6 +86,7 @@ export function PublicRegisterPage() {
     phone: '',
     organization: '',
     ticketTypeId: '',
+    quantity: '1',
   });
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -133,6 +140,9 @@ export function PublicRegisterPage() {
 
   const selected =
     form.ticketTypeId || (available.length === 1 ? available[0]!.id : '');
+  const chosen = data.tickets.find((ticket) => ticket.id === selected);
+  const quantity = Math.max(1, Math.floor(Number(form.quantity)) || 1);
+  const seats = (chosen?.seatsIncluded ?? 1) * quantity;
 
   const submit = (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
@@ -145,6 +155,7 @@ export function PublicRegisterPage() {
     const parsed = publicRegistrationSchema.safeParse({
       ...form,
       ticketTypeId: selected,
+      quantity: Number(form.quantity),
       organization: form.organization.trim() || null,
       fiscal: wantsInvoice ? fiscal : null,
       answers,
@@ -171,24 +182,31 @@ export function PublicRegisterPage() {
 
   return (
     <PublicLayout privacyUrl={data.privacyUrl}>
-      <h1>{data.name}</h1>
-      <p className="muted">
-        {formatEventDate(data.startsAt, data.timeZone, true)}
-        {data.venue ? ` · ${data.venue}` : ''}
-        {data.programStartsAt &&
-          ` · Programa ${new Date(data.programStartsAt).toLocaleTimeString('es-MX', { timeZone: data.timeZone, timeStyle: 'short' })}`}
-      </p>
-      {data.mapUrl && (
-        <p className="event-links">
-          <a href={data.mapUrl} target="_blank" rel="noreferrer">
-            Cómo llegar
-          </a>
+      <div className="public-event-heading">
+        <p className="public-eyebrow">Registro al evento</p>
+        <h1>{data.name}</h1>
+        <p className="public-event-meta">
+          <Icon name="calendar" />
+          <span>
+            {formatEventDate(data.startsAt, data.timeZone, true)}
+            {data.venue ? ` · ${data.venue}` : ''}
+            {data.programStartsAt &&
+              ` · Programa ${new Date(data.programStartsAt).toLocaleTimeString('es-MX', { timeZone: data.timeZone, timeStyle: 'short' })}`}
+          </span>
         </p>
-      )}
-      {data.description && (
-        <p className="event-description">{data.description}</p>
-      )}
-      <p className="form-note">
+        {data.mapUrl && (
+          <p className="event-links">
+            <a href={data.mapUrl} target="_blank" rel="noreferrer">
+              <Icon name="map" />
+              Cómo llegar
+            </a>
+          </p>
+        )}
+        {data.description && (
+          <p className="event-description">{data.description}</p>
+        )}
+      </div>
+      <p className="form-note public-recover-link">
         ¿Ya te registraste?{' '}
         <Link to={`/recuperar/${slug}`}>Recuperar mi pase</Link>
       </p>
@@ -198,7 +216,7 @@ export function PublicRegisterPage() {
       ) : data.tickets.length === 0 ? (
         <Notice>Por ahora no hay boletos a la venta.</Notice>
       ) : (
-        <form onSubmit={submit} noValidate>
+        <form className="public-register-form" onSubmit={submit} noValidate>
           {data.tickets.some((ticket) => ticket.price > 0) && (
             <p className="form-note">
               ¿Ya pagaste tu boleto por otro medio? No lo compres de nuevo:
@@ -209,7 +227,10 @@ export function PublicRegisterPage() {
               y te enviaremos tu invitación para registrarte.
             </p>
           )}
-          <h2 className="form-section">Elige tu boleto</h2>
+          <h2 className="form-section">
+            <Icon name="badge" />
+            Elige tu boleto
+          </h2>
           {errors.ticketTypeId && (
             <small className="field-error">{errors.ticketTypeId}</small>
           )}
@@ -248,7 +269,52 @@ export function PublicRegisterPage() {
             ))}
           </div>
 
-          <h2 className="form-section">Tus datos</h2>
+          {chosen && (
+            <div className="quantity-row">
+              <label className="field quantity-field">
+                <span>¿Cuántos boletos?</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={data.maxQuantity}
+                  value={form.quantity}
+                  onChange={(e) =>
+                    setForm({ ...form, quantity: e.target.value })
+                  }
+                />
+                {errors.quantity && (
+                  <small className="field-error">{errors.quantity}</small>
+                )}
+              </label>
+              <p className="quantity-summary">
+                {seats > 1 ? (
+                  <>
+                    <strong>{seats} lugares</strong>
+                    {chosen.price > 0 && (
+                      <>
+                        {' '}
+                        · Total{' '}
+                        {formatMoney(chosen.price * quantity, data.currency)}
+                      </>
+                    )}
+                    <small>
+                      {chosen.price > 0
+                        ? 'Cuando registremos tu pago te enviaremos una liga para registrar a cada invitado. Cada quien recibe su propio pase.'
+                        : 'Recibirás una liga para registrar a cada invitado. Cada quien recibe su propio pase.'}
+                    </small>
+                  </>
+                ) : (
+                  <small>Un lugar, a tu nombre.</small>
+                )}
+              </p>
+            </div>
+          )}
+
+          <h2 className="form-section">
+            <Icon name="contacts" />
+            Tus datos
+          </h2>
           <div className="form-grid">
             <Field label="Nombre" error={errors.firstName}>
               <input

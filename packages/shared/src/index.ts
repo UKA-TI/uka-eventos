@@ -587,6 +587,13 @@ export type FiscalData = z.infer<typeof fiscalDataSchema>;
 export const orderInputSchema = z.object({
   ...personFields,
   fiscal: fiscalDataSchema.nullish(),
+  /** Varios lugares en una sola compra: al pagarse, se envía una liga para registrar a cada invitado. */
+  quantity: z
+    .number('Escribe cuántos.')
+    .int('Escribe un número entero.')
+    .min(1, 'Debe ser al menos 1.')
+    .max(50, 'Para más de 50 lugares, escríbenos.')
+    .default(1),
   organization: z.string().trim().max(180).nullable(),
   ticketTypeId: z.string().min(1, 'Selecciona un boleto.').max(30),
   answers: answersSchema,
@@ -802,6 +809,7 @@ export const publicEventResponseSchema = z.object({
   currency: z.string(),
   privacyUrl: z.string(),
   cancellationPolicy: z.string().nullable(),
+  maxQuantity: z.number(),
   tickets: z.array(
     z.object({
       id: z.string(),

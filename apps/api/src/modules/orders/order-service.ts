@@ -654,7 +654,9 @@ export async function createOrder(params: {
       }
     }
 
-    await assertAvailable(tx, event, ticket, 1);
+    const quantity = input.quantity;
+    const seats = ticket.seatsIncluded * quantity;
+    await assertAvailable(tx, event, ticket, quantity);
 
     const answers = buildAnswers(event.formFields, input.answers);
     const reference = await nextReference(tx, eventId);
@@ -672,9 +674,7 @@ export async function createOrder(params: {
       },
     });
     const dueAt =
-      ticket.price.toNumber() > 0
-        ? paymentDueDate(event, ticket.seatsIncluded, now)
-        : null;
+      ticket.price.toNumber() > 0 ? paymentDueDate(event, seats, now) : null;
     const order = await tx.order.create({
       data: {
         eventId,
@@ -682,8 +682,9 @@ export async function createOrder(params: {
         buyerGuestId: guest.id,
         createdById,
         reference,
-        seats: ticket.seatsIncluded,
-        amountDue: ticket.price,
+        seats,
+        quantity,
+        amountDue: ticket.price.mul(quantity),
         source,
         answers,
         dueAt,
@@ -698,9 +699,9 @@ export async function createOrder(params: {
       },
     });
 
-    // Un boleto de un lugar es de quien lo compra; uno de varios lugares se
-    // reparte después con la liga privada.
-    if (ticket.seatsIncluded === 1) {
+    // Un lugar es de quien lo compra; varios lugares se reparten después con la
+    // liga privada, que tiene exactamente los lugares comprados.
+    if (seats === 1) {
       const registration = await tx.registration.create({
         data: {
           eventId,

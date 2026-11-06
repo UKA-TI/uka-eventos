@@ -271,6 +271,82 @@ describe.skipIf(!process.env.RUN_DB_TESTS)('finance', () => {
     });
   });
 
+  it('sells several seats in one purchase, with a link for exactly that many guests', async () => {
+    const order = await buy(`empresa${run}`, { quantity: 8 });
+    expect(order).toMatchObject({ seats: 8, quantity: 8 });
+    expect(order.amountDue.toNumber()).toBe(8000);
+    // Varios lugares tienen el plazo de compras corporativas.
+    expect(
+      Math.abs(order.dueAt!.getTime() - (Date.now() + 15 * day)),
+    ).toBeLessThan(60_000);
+    expect(
+      await prisma.registration.count({ where: { orderId: order.id } }),
+    ).toBe(0);
+    const pending = await prisma.emailMessage.findFirstOrThrow({
+      where: { kind: 'order_pending', refId: order.id },
+    });
+    expect(pending.toEmail).toBe(`empresa${run}@${domain}`);
+
+    await pay(order.id, 8000).expect(201);
+    const paid = await prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+    });
+    expect(paid.status).toBe('confirmed');
+    expect(paid.groupTokenHash).toBeTruthy();
+
+    const view = await orderView(order.reference);
+    const token = (view.groupUrl as string).split('/').pop();
+    const group = await request(app).get(`/api/public/groups/${token}`);
+    expect(group.body.seats).toBe(8);
+    const url = `/api/public/groups/${token}/guests`;
+    for (let seat = 0; seat < 8; seat += 1) {
+      const added = await request(app)
+        .post(url)
+        .set('Origin', origin)
+        .send({
+          firstName: `Invitado${seat}`,
+          lastName: 'Empresa',
+          email: `invitado${seat}-${run}@${domain}`,
+          phone: null,
+          organization: null,
+          authorized: false,
+        });
+      expect(added.status).toBe(201);
+    }
+    const ninth = await request(app)
+      .post(url)
+      .set('Origin', origin)
+      .send({
+        firstName: 'Noveno',
+        lastName: 'Empresa',
+        email: `noveno-${run}@${domain}`,
+        phone: null,
+        organization: null,
+        authorized: false,
+      });
+    expect(ninth.status).toBe(409);
+  });
+
+  it('rejects a quantity outside the allowed range', async () => {
+    for (const quantity of [0, 51, 2.5]) {
+      const response = await request(app)
+        .post(`/api/public/events/${slug}/register`)
+        .set('Origin', origin)
+        .send({
+          firstName: 'Cantidad',
+          lastName: 'Mala',
+          email: `cantidad@${domain}`,
+          phone: '5512345678',
+          organization: null,
+          ticketTypeId: ticketId,
+          answers: {},
+          privacyAccepted: true,
+          quantity,
+        });
+      expect(response.status).toBe(400);
+    }
+  });
+
   it('shows a partial payment and keeps the pass until it is paid in full', async () => {
     const order = await buy();
     await pay(order.id, 400).expect(201);

@@ -191,6 +191,7 @@ publicRouter.get(
       currency: event.currency,
       privacyUrl: PRIVACY_NOTICE_URL,
       cancellationPolicy: policy?.text ?? null,
+      maxQuantity: 50,
       tickets: event.ticketTypes
         .filter(
           (ticket) =>

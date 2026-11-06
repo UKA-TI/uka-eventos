@@ -176,6 +176,7 @@ function NewOrderForm({
     phone: '',
     organization: '',
     ticketTypeId: tickets.length === 1 ? tickets[0]!.id : '',
+    quantity: '1',
   });
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -193,6 +194,7 @@ function NewOrderForm({
     submitEvent.preventDefault();
     const parsed = orderInputSchema.safeParse({
       ...form,
+      quantity: Number(form.quantity),
       organization: form.organization.trim() || null,
       answers,
     });
@@ -231,6 +233,19 @@ function NewOrderForm({
               </option>
             ))}
           </select>
+        </Field>
+        <Field
+          label="Cantidad de boletos"
+          error={errors.quantity}
+          hint="Con más de un lugar, al pagarse se envía una liga para registrar a cada invitado."
+        >
+          <input
+            type="number"
+            min="1"
+            max="50"
+            value={form.quantity}
+            onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+          />
         </Field>
         <Field label="Nombre" error={errors.firstName}>
           <input
@@ -402,7 +417,7 @@ export function EventRegistrationsTab({
   const pages = Math.max(Math.ceil(total / pageSize), 1);
 
   return (
-    <>
+    <div className="finance-page">
       <div className="stats">
         <article className="stat">
           <span>Lugares ocupados</span>
@@ -574,6 +589,12 @@ export function EventRegistrationsTab({
       </div>
 
       <div className="panel table-panel">
+        <div className="panel-heading finance-list-heading">
+          <h2>Compras del evento</h2>
+          <span className="result-count">
+            {total.toLocaleString('es-MX')} {total === 1 ? 'compra' : 'compras'}
+          </span>
+        </div>
         {orders.data.orders.length === 0 ? (
           <p className="muted">
             {total === 0 && !search && !status
@@ -582,7 +603,7 @@ export function EventRegistrationsTab({
           </p>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="finance-table">
               <thead>
                 <tr>
                   <th>Referencia</th>
@@ -614,99 +635,154 @@ export function EventRegistrationsTab({
                 return (
                   <tbody key={order.id}>
                     <tr>
-                      <td>
-                        <strong>{order.reference}</strong>
+                      <td data-label="Referencia">
+                        <div className="finance-cell-content">
+                          <strong>{order.reference}</strong>
+                        </div>
                       </td>
-                      <td>
-                        {order.buyer.firstName} {order.buyer.lastName}
-                        <small className="cell-note">
-                          {order.buyer.organization ?? order.buyer.email}
-                        </small>
+                      <td data-label="Comprador">
+                        <div className="finance-cell-content">
+                          {order.buyer.firstName} {order.buyer.lastName}
+                          <small className="cell-note">
+                            {order.buyer.organization ?? order.buyer.email}
+                          </small>
+                        </div>
                       </td>
-                      <td>
-                        {order.ticketName}
-                        <small className="cell-note">
-                          {order.seats}{' '}
-                          {order.seats === 1 ? 'lugar' : 'lugares'}
-                        </small>
-                        {order.status === 'confirmed' &&
-                          (order.seats > 1 ||
-                            order.source === 'reconciled') && (
+                      <td data-label="Boleto">
+                        <div className="finance-cell-content">
+                          {order.ticketName}
+                          <small className="cell-note">
+                            {order.seats}{' '}
+                            {order.seats === 1 ? 'lugar' : 'lugares'}
+                          </small>
+                          {order.status === 'confirmed' &&
+                            (order.seats > 1 ||
+                              order.source === 'reconciled') && (
+                              <small className="cell-note">
+                                {
+                                  order.registrations.filter(
+                                    (item) => item.status !== 'cancelled',
+                                  ).length
+                                }{' '}
+                                registrados
+                              </small>
+                            )}
+                        </div>
+                      </td>
+                      <td data-label="Pagado">
+                        <div className="finance-cell-content">
+                          {order.amountDue === 0 ? (
+                            'Gratis'
+                          ) : (
+                            <>
+                              {formatAmount(order.amountPaid, event.currency)}
+                              <small className="cell-note">
+                                De{' '}
+                                {formatAmount(order.amountDue, event.currency)}
+                              </small>
+                            </>
+                          )}
+                          {order.amountRefunded > 0 && (
                             <small className="cell-note">
-                              {
-                                order.registrations.filter(
-                                  (item) => item.status !== 'cancelled',
-                                ).length
-                              }{' '}
-                              registrados
+                              Devuelto{' '}
+                              {formatAmount(
+                                order.amountRefunded,
+                                event.currency,
+                              )}
                             </small>
                           )}
+                          {order.dueAt &&
+                            order.status === 'pending_payment' && (
+                              <small className="cell-note">
+                                {overdue ? 'Venció el ' : 'Vence el '}
+                                {new Date(order.dueAt).toLocaleDateString(
+                                  'es-MX',
+                                  {
+                                    timeZone: event.timeZone,
+                                    dateStyle: 'medium',
+                                  },
+                                )}
+                              </small>
+                            )}
+                        </div>
                       </td>
-                      <td>
-                        {order.amountDue === 0 ? (
-                          'Gratis'
-                        ) : (
-                          <>
-                            {formatAmount(order.amountPaid, event.currency)}
-                            <small className="cell-note">
-                              De {formatAmount(order.amountDue, event.currency)}
-                            </small>
-                          </>
-                        )}
-                        {order.amountRefunded > 0 && (
-                          <small className="cell-note">
-                            Devuelto{' '}
-                            {formatAmount(order.amountRefunded, event.currency)}
-                          </small>
-                        )}
-                        {order.dueAt && order.status === 'pending_payment' && (
-                          <small className="cell-note">
-                            {overdue ? 'Venció el ' : 'Vence el '}
-                            {new Date(order.dueAt).toLocaleDateString('es-MX', {
-                              timeZone: event.timeZone,
-                              dateStyle: 'medium',
-                            })}
-                          </small>
-                        )}
+                      <td data-label="Estado">
+                        <div className="finance-cell-content">
+                          <span className={`badge ${tone}`}>{label}</span>
+                        </div>
                       </td>
-                      <td>
-                        <span className={`badge ${tone}`}>{label}</span>
-                      </td>
-                      <td className="row-actions">
-                        {canPay &&
-                          !isClosed &&
-                          order.status === 'pending_payment' &&
-                          remaining > 0 && (
-                            <button
-                              className="link-button"
-                              type="button"
-                              onClick={() => {
-                                setNotice(undefined);
-                                setOpenId(order.id);
-                                setPayingId(order.id);
-                              }}
-                            >
-                              Registrar pago
-                            </button>
-                          )}
-                        <button
-                          className="link-button"
-                          type="button"
-                          aria-expanded={open}
-                          onClick={() => {
-                            setOpenId(open ? '' : order.id);
-                            setPayingId(null);
-                            setPanel(null);
-                          }}
-                        >
-                          {open ? 'Ocultar' : 'Ver'}
-                        </button>
+                      <td className="row-actions" data-label="Acciones">
+                        <div className="finance-cell-content">
+                          {canPay &&
+                            !isClosed &&
+                            order.status === 'pending_payment' &&
+                            remaining > 0 && (
+                              <button
+                                className="link-button"
+                                type="button"
+                                onClick={() => {
+                                  setNotice(undefined);
+                                  setOpenId(order.id);
+                                  setPayingId(order.id);
+                                }}
+                              >
+                                Registrar pago
+                              </button>
+                            )}
+                          <button
+                            className="link-button"
+                            type="button"
+                            aria-expanded={open}
+                            onClick={() => {
+                              setOpenId(open ? '' : order.id);
+                              setPayingId(null);
+                              setPanel(null);
+                            }}
+                          >
+                            {open ? 'Ocultar' : 'Ver'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {open && (
                       <tr className="detail-row">
                         <td colSpan={6}>
                           <div className="order-detail">
+                            <dl className="order-money-summary">
+                              <div>
+                                <dt>Total de la compra</dt>
+                                <dd>
+                                  {formatAmount(
+                                    order.amountDue,
+                                    event.currency,
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Pagado</dt>
+                                <dd>
+                                  {formatAmount(
+                                    order.amountPaid,
+                                    event.currency,
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Saldo pendiente</dt>
+                                <dd>
+                                  {formatAmount(order.balance, event.currency)}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Reembolsado</dt>
+                                <dd>
+                                  {formatAmount(
+                                    order.amountRefunded,
+                                    event.currency,
+                                  )}
+                                </dd>
+                              </div>
+                            </dl>
                             {payingId === order.id && (
                               <PaymentForm
                                 event={event}
@@ -1135,6 +1211,6 @@ export function EventRegistrationsTab({
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 }

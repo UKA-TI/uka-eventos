@@ -136,29 +136,34 @@ function formatDate(date: Date | null, timeZone: string): string {
 }
 
 function layout(title: string, body: string, footer = ''): string {
-  return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f5f6f8;font-family:Arial,sans-serif;color:#1c1c1c">
-<table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-top:4px solid #FECE00;border-radius:8px">
-<tr><td style="padding:24px 28px">
-${LOGO_HEADER}
-<h1 style="margin:0 0 16px;font-size:21px">${escapeHtml(title)}</h1>
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head><body style="margin:0;padding:0;background:#edf3f8;font-family:Arial,Helvetica,sans-serif;color:#3f4c5a;-webkit-text-size-adjust:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#edf3f8"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #d6e3ee;border-top:4px solid #0077C9;border-radius:12px">
+<tr><td style="padding:20px 24px;border-bottom:1px solid #e1e7ee">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="120" valign="middle">${LOGO_HEADER}</td><td valign="middle" style="padding-left:16px"><p style="margin:0;padding-left:16px;border-left:3px solid #FECE00;color:#06385f;font-size:20px;font-weight:bold;line-height:1.3">Eventos UKA<br><span style="font-size:12px;font-weight:normal;color:#5e6b79">Un Kilo de Ayuda</span></p></td></tr></table>
+</td></tr>
+<tr><td style="padding:28px 24px;font-size:15px;line-height:1.7;overflow-wrap:anywhere">
+<h1 style="margin:0 0 20px;color:#06385f;font-size:25px;line-height:1.3">${escapeHtml(title)}</h1>
 ${body}
-<p style="margin:24px 0 0;padding-top:14px;border-top:1px solid #e2e4e8;color:#6b6b6b;font-size:12px">
+</td></tr><tr><td bgcolor="#f8fbfe" style="padding:20px 24px;border-top:1px solid #e1e7ee;border-radius:0 0 12px 12px">
+<p style="margin:0 0 8px;color:#06385f;font-size:12px;font-weight:bold">Un Kilo de Ayuda</p>
+<p style="margin:0;color:#5e6b79;font-size:12px;line-height:1.7">
 Consulta nuestro <a href="${PRIVACY_NOTICE_URL}" style="color:#0077C9">aviso de privacidad</a>.${footer}
 </p>
-</td></tr></table></body></html>`;
+</td></tr></table></td></tr></table></body></html>`;
 }
 
 function details(rows: [string, string][]): string {
-  return `<table role="presentation" style="margin:0 0 16px;font-size:14px">${rows
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f3f8fc" style="margin:0 0 20px;border:1px solid #d6e3ee;border-radius:8px;font-size:14px;line-height:1.6">${rows
     .map(
       ([label, value]) =>
-        `<tr><td style="padding:3px 14px 3px 0;color:#6b6b6b">${escapeHtml(label)}</td><td style="padding:3px 0;font-weight:bold">${escapeHtml(value)}</td></tr>`,
+        `<tr><td valign="top" width="30%" style="width:30%;padding:9px 12px;color:#5e6b79;overflow-wrap:normal">${escapeHtml(label)}</td><td valign="top" style="padding:9px 12px;color:#06385f;font-weight:bold;overflow-wrap:anywhere">${escapeHtml(value)}</td></tr>`,
     )
     .join('')}</table>`;
 }
 
 function button(url: string, label: string): string {
-  return `<p style="margin:18px 0"><a href="${url}" style="display:inline-block;padding:11px 18px;background:#0077C9;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></p>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0"><tr><td bgcolor="#0077C9" style="padding:14px 22px;background:#0077C9;border-radius:6px;text-align:center"><a href="${url}" style="display:inline-block;color:#ffffff;font-size:15px;line-height:1.4;text-decoration:none;font-weight:bold">${escapeHtml(label)}</a></td></tr></table>`;
 }
 
 /** La acción principal: una celda con fondo, porque Outlook ignora el relleno de un enlace. */
@@ -479,10 +484,17 @@ async function renderOrderPending(refId: string): Promise<EmailContent | null> {
     subject: `Registro recibido para ${order.event.name} (${order.reference})`,
     html: layout(
       'Recibimos tu registro',
-      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. Tu lugar queda apartado. Te enviaremos tu pase con código QR en cuanto registremos tu pago.</p>
+      `<p style="margin:0 0 14px">Hola, ${escapeHtml(order.buyer.firstName)}. ${
+        order.seats > 1
+          ? `Tus ${order.seats} lugares quedan apartados. En cuanto registremos tu pago te enviaremos una liga para registrar a cada invitado; cada quien recibirá su propio pase.`
+          : 'Tu lugar queda apartado. Te enviaremos tu pase con código QR en cuanto registremos tu pago.'
+      }</p>
 ${details([
   ['Evento', order.event.name],
   ['Boleto', order.ticketType.name],
+  ...(order.seats > 1
+    ? ([['Lugares', String(order.seats)]] as [string, string][])
+    : []),
   ['Referencia', order.reference],
   ['Total a pagar', amount],
   ...dueRows(order),
