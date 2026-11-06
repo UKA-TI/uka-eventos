@@ -1,0 +1,496 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  eventDetailResponseSchema,
+  eventDuplicateSchema,
+  type EventDetail,
+} from '@uka/shared';
+import { useState, type FormEvent } from 'react';
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import { apiRequest, errorText, jsonRequest } from '../api.js';
+import { usePermissions } from '../auth/session.js';
+import { EventNavigation } from '../components/EventNavigation.js';
+import { Field, Loading, Notice, StatusBadge } from '../components/ui.js';
+import { dateTimeInZoneToIso } from './dates.js';
+import { EventAccessPointsTab, EventCheckinTab } from './EventCheckinTab.js';
+import { ClosingDialog, EventFinanceTab } from './EventFinanceTab.js';
+import { EventOperatorsTab } from './EventOperatorsTab.js';
+import { EventDashboardTab } from './EventDashboardTab.js';
+import { EventGroupsTab } from './EventGroupsTab.js';
+import { EventGuestsTab } from './EventGuestsTab.js';
+import { EventSeatingTab } from './EventSeatingTab.js';
+import { EventFormFieldsTab } from './EventFormFieldsTab.js';
+import { EventGeneralForm } from './EventGeneralForm.js';
+import { EventModulesTab } from './EventModulesTab.js';
+import { EventRegistrationsTab } from './EventRegistrationsTab.js';
+import { EventSummaryTab } from './EventSummaryTab.js';
+import { EventTicketsTab } from './EventTicketsTab.js';
+import { formatEventDate, issuesToErrors, slugify } from './text.js';
+
+const tabs = [
+  ['tablero', 'Tablero'],
+  ['registros', 'Compras y pagos'],
+  ['finanzas', 'Finanzas del evento'],
+  ['invitados', 'Lista de invitados'],
+  ['mesas', 'Registro por grupo'],
+  ['acomodo', 'Acomodo de mesas'],
+  ['checkin', 'Entradas e incidencias'],
+  ['operadores', 'Operadores de recepción'],
+  ['resumen', 'Datos del evento'],
+  ['boletos', 'Tipos de boleto'],
+  ['formulario', 'Formulario de registro'],
+  ['accesos', 'Puntos de acceso'],
+  ['modulos', 'Módulos'],
+] as const;
+
+type Tab = (typeof tabs)[number][0];
+
+function NewEditionForm({
+  event,
+  onCancel,
+}: {
+  event: EventDetail;
+  onCancel: () => void;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { csrfToken } = usePermissions();
+  const nextYear = event.editionYear + 1;
+  const defaultName = event.name.includes(String(event.editionYear))
+    ? event.name.replace(String(event.editionYear), String(nextYear))
+    : `${event.name} ${nextYear}`;
+  const [form, setForm] = useState({
+    name: defaultName,
+    slug: slugify(defaultName),
+    editionYear: String(nextYear),
+    startsAt: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const create = useMutation({
+    mutationFn: async (input: unknown) =>
+      eventDetailResponseSchema.parse(
+        await apiRequest(
+          `/api/events/${event.id}/duplicate`,
+          jsonRequest('POST', input, csrfToken),
+        ),
+      ),
+    onSuccess: async (saved) => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await queryClient.invalidateQueries({ queryKey: ['series'] });
+      onCancel();
+      navigate(`/eventos/${saved.id}`);
+    },
+  });
+
+  const submit = (submitEvent: FormEvent) => {
+    submitEvent.preventDefault();
+    const parsed = eventDuplicateSchema.safeParse({
+      name: form.name,
+      slug: form.slug,
+      editionYear: Number(form.editionYear),
+      startsAt: form.startsAt
+        ? dateTimeInZoneToIso(form.startsAt, event.timeZone)
+        : null,
+      endsAt: null,
+    });
+    if (!parsed.success) {
+      setErrors(issuesToErrors(parsed.error.issues));
+      return;
+    }
+    setErrors({});
+    create.mutate(parsed.data);
+  };
+
+  return (
+    <form className="panel" onSubmit={submit} noValidate>
+      <div className="panel-heading">
+        <h2>Nueva edición de {event.series.name}</h2>
+      </div>
+      <p className="muted form-note">
+        Copia la configuración, los boletos y el formulario. No copia registros
+        ni asistentes, y queda como borrador.
+      </p>
+      {create.isError && (
+        <Notice>{errorText(create.error, 'No se pudo crear.')}</Notice>
+      )}
+      <div className="form-grid">
+        <Field label="Nombre" error={errors.name}>
+          <input
+            value={form.name}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                name: e.target.value,
+                slug: slugify(e.target.value),
+              })
+            }
+          />
+        </Field>
+        <Field label="Dirección pública" error={errors.slug}>
+          <input
+            value={form.slug}
+            onChange={(e) => setForm({ ...form, slug: e.target.value })}
+          />
+        </Field>
+        <Field label="Año de la edición" error={errors.editionYear}>
+          <input
+            type="number"
+            value={form.editionYear}
+            onChange={(e) => setForm({ ...form, editionYear: e.target.value })}
+          />
+        </Field>
+        <Field label="Inicio" error={errors.startsAt}>
+          <input
+            type="datetime-local"
+            value={form.startsAt}
+            onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+          />
+        </Field>
+      </div>
+      <div className="form-actions">
+        <button
+          className="button primary"
+          type="submit"
+          disabled={create.isPending}
+        >
+          {create.isPending ? 'Creando…' : 'Crear edición'}
+        </button>
+        <button className="button secondary" type="button" onClick={onCancel}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function EventDetailPage() {
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { can, csrfToken } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [closing, setClosing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [newEdition, setNewEdition] = useState(false);
+  const [notice, setNotice] = useState<{
+    kind: 'ok' | 'error';
+    text: string;
+  }>();
+  const key = ['event', id];
+
+  const query = useQuery({
+    queryKey: key,
+    queryFn: async () =>
+      eventDetailResponseSchema.parse(await apiRequest(`/api/events/${id}`)),
+  });
+
+  const refresh = async (saved?: EventDetail) => {
+    if (saved) {
+      queryClient.setQueryData(key, saved);
+    } else {
+      await queryClient.invalidateQueries({ queryKey: key });
+    }
+    await queryClient.invalidateQueries({ queryKey: ['events'] });
+    await queryClient.invalidateQueries({ queryKey: ['series'] });
+  };
+
+  const changeStatus = useMutation({
+    mutationFn: async ({
+      status,
+      note,
+    }: {
+      status: string;
+      note?: string | null;
+    }) =>
+      eventDetailResponseSchema.parse(
+        await apiRequest(
+          `/api/events/${id}/status`,
+          jsonRequest('POST', { status, note }, csrfToken),
+        ),
+      ),
+    onSuccess: async (saved) => {
+      setClosing(false);
+      await queryClient.invalidateQueries({ queryKey: ['finance', id] });
+      await refresh(saved);
+      setNotice({ kind: 'ok', text: 'Estado actualizado.' });
+    },
+    onError: (error) =>
+      setNotice({
+        kind: 'error',
+        text: errorText(error, 'No se pudo cambiar el estado.'),
+      }),
+  });
+
+  const remove = useMutation({
+    mutationFn: async () =>
+      apiRequest(
+        `/api/events/${id}`,
+        jsonRequest('DELETE', undefined, csrfToken),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await queryClient.invalidateQueries({ queryKey: ['series'] });
+      navigate('/eventos', { replace: true });
+    },
+    onError: (error) =>
+      setNotice({
+        kind: 'error',
+        text: errorText(error, 'No se pudo eliminar el evento.'),
+      }),
+  });
+
+  if (query.isPending) {
+    return <Loading />;
+  }
+  if (query.isError) {
+    return (
+      <div className="panel">
+        <Notice>{query.error.message}</Notice>
+        <Link to="/eventos">Volver a eventos</Link>
+      </div>
+    );
+  }
+
+  const event = query.data;
+  const hasModule = (key: (typeof event.modules)[number]) =>
+    event.modules.includes(key);
+  const canSeePeople = can(
+    'registrations.view',
+    'registrations.manage',
+    'payments.manage',
+    'checkin.manage',
+  );
+  // Cada sección aparece solo si el evento la usa y la persona puede abrirla.
+  const visible = (value: Tab): boolean => {
+    switch (value) {
+      case 'registros':
+        return can(
+          'registrations.view',
+          'registrations.manage',
+          'payments.manage',
+          'refunds.manage',
+        );
+      case 'finanzas':
+        return can('finance.view', 'finance.manage');
+      // Cualquier evento puede vender varios lugares en una compra, y esas compras se
+      // siguen en Registro por grupo: no depende de un módulo.
+      case 'invitados':
+      case 'mesas':
+        return canSeePeople;
+      case 'acomodo':
+        return hasModule('tables') && can('seating.view', 'seating.manage');
+      case 'checkin':
+      case 'accesos':
+        return hasModule('checkin') && can('checkin.operate', 'checkin.manage');
+      case 'operadores':
+        return hasModule('checkin') && can('checkin.manage');
+      default:
+        return true;
+    }
+  };
+  const visibleTabs = tabs
+    .filter(([value]) => visible(value))
+    .map(
+      ([value, label]) =>
+        [
+          value,
+          label +
+            (value === 'boletos'
+              ? ` (${event.ticketTypes.length})`
+              : value === 'formulario'
+                ? ` (${event.formFields.length})`
+                : ''),
+        ] as const,
+    );
+  const requested = visibleTabs.find(
+    ([value]) => value === searchParams.get('tab'),
+  )?.[0];
+  // Un borrador aún no tiene actividad: abre en sus datos, no en un tablero vacío.
+  const tab: Tab =
+    requested ?? (event.status === 'draft' ? 'resumen' : 'tablero');
+  // La sección vive en la dirección: se puede compartir, recargar y regresar con «Atrás».
+  const setTab = (next: Tab) => setSearchParams({ tab: next });
+  const groupTabVisible = visible('mesas');
+  const canEdit = can('events.edit');
+  const setStatus = (status: string) => {
+    setNotice(undefined);
+    changeStatus.mutate({ status });
+  };
+
+  return (
+    <section className="event-detail-page">
+      <Link className="back-link" to="/eventos">
+        Eventos
+      </Link>
+      <div className="page-heading event-heading">
+        <div className="event-identity">
+          <div className="event-heading-meta">
+            <span className="event-edition">Edición {event.editionYear}</span>
+            <StatusBadge status={event.status} />
+          </div>
+          <h1>{event.name}</h1>
+          <p className="muted">
+            {event.series.name} · {event.series.type}
+          </p>
+          <dl className="event-meta">
+            <div>
+              <dt>Fecha</dt>
+              <dd>{formatEventDate(event.startsAt, event.timeZone, true)}</dd>
+            </div>
+            {event.venue && (
+              <div>
+                <dt>Sede</dt>
+                <dd>{event.venue}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+        <div className="heading-actions event-heading-actions">
+          {can('events.create') && (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => setNewEdition(true)}
+            >
+              Nueva edición
+            </button>
+          )}
+          {canEdit && event.status !== 'active' && (
+            <button
+              className="button primary"
+              type="button"
+              disabled={
+                changeStatus.isPending || event.activationIssues.length > 0
+              }
+              onClick={() => setStatus('active')}
+            >
+              {event.status === 'closed' ? 'Reabrir' : 'Activar'}
+            </button>
+          )}
+          {canEdit && event.status === 'active' && (
+            <button
+              className="button secondary"
+              type="button"
+              disabled={changeStatus.isPending}
+              onClick={() => {
+                setNotice(undefined);
+                setClosing(true);
+              }}
+            >
+              Cerrar evento
+            </button>
+          )}
+          {can('events.delete') && event.status === 'draft' && (
+            <button
+              className="button secondary danger"
+              type="button"
+              disabled={remove.isPending}
+              onClick={() => {
+                if (window.confirm(`¿Eliminar el borrador "${event.name}"?`)) {
+                  setNotice(undefined);
+                  remove.mutate();
+                }
+              }}
+            >
+              Eliminar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
+
+      {canEdit &&
+        event.status === 'draft' &&
+        event.activationIssues.length > 0 && (
+          <div className="checklist" role="status">
+            <strong>Para activar este evento falta:</strong>
+            <ul>
+              {event.activationIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+      {newEdition && (
+        <NewEditionForm event={event} onCancel={() => setNewEdition(false)} />
+      )}
+
+      {closing && (
+        <ClosingDialog
+          event={event}
+          pending={changeStatus.isPending}
+          error={
+            changeStatus.isError
+              ? errorText(changeStatus.error, 'No se pudo cerrar.')
+              : ''
+          }
+          onClose={() => setClosing(false)}
+          onConfirm={(note) => changeStatus.mutate({ status: 'closed', note })}
+        />
+      )}
+
+      <EventNavigation
+        current={tab}
+        onSelect={(value) => {
+          setTab(value);
+          setEditing(false);
+        }}
+        tabs={visibleTabs}
+      />
+
+      {tab === 'resumen' &&
+        (editing ? (
+          <EventGeneralForm
+            key={event.updatedAt}
+            event={event}
+            onCancel={() => setEditing(false)}
+            onSaved={async (saved) => {
+              await refresh(saved);
+              setEditing(false);
+              setNotice({ kind: 'ok', text: 'Evento actualizado.' });
+            }}
+          />
+        ) : (
+          <EventSummaryTab
+            event={event}
+            onEdit={canEdit ? () => setEditing(true) : undefined}
+          />
+        ))}
+      {tab === 'tablero' && (
+        <EventDashboardTab
+          event={event}
+          groupTabVisible={groupTabVisible}
+          onOpenTab={(next) => setTab(next)}
+        />
+      )}
+      {tab === 'invitados' && <EventGuestsTab event={event} />}
+      {tab === 'acomodo' && <EventSeatingTab event={event} />}
+      {tab === 'mesas' && (
+        <EventGroupsTab event={event} onChanged={() => refresh()} />
+      )}
+      {tab === 'registros' && (
+        <EventRegistrationsTab event={event} onChanged={() => refresh()} />
+      )}
+      {tab === 'finanzas' && <EventFinanceTab event={event} />}
+      {tab === 'checkin' && <EventCheckinTab event={event} />}
+      {tab === 'operadores' && <EventOperatorsTab event={event} />}
+      {tab === 'accesos' && <EventAccessPointsTab event={event} />}
+      {tab === 'boletos' && (
+        <EventTicketsTab event={event} onChanged={() => refresh()} />
+      )}
+      {tab === 'formulario' && (
+        <EventFormFieldsTab event={event} onChanged={() => refresh()} />
+      )}
+      {tab === 'modulos' && (
+        <EventModulesTab event={event} onSaved={(saved) => refresh(saved)} />
+      )}
+    </section>
+  );
+}

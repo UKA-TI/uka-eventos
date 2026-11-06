@@ -1,84 +1,87 @@
-# UKA Eventos
+# EVENTOS UKA
 
-Plataforma de registro y operación de eventos de Un Kilo de Ayuda. El archivo
-`uka-eventos-mockup-gala.html` conserva el mockup visual de referencia.
+CRM para crear y administrar todos los eventos de Un Kilo de Ayuda. Se publica en
+`eventos.unkilodeayuda.org.mx`. El acceso es solo por invitación y con cuenta de
+Microsoft de la organización.
 
-## Requisitos
+`uka-eventos-mockup-gala.html` es la referencia visual de la Gala y de sus flujos.
 
-- Node.js 22.23.4 (referencia validada por el equipo en GoDaddy) y npm 10 o
-  superior.
-- Visual Studio Code (se recomiendan las extensiones listadas en
-  `.vscode/extensions.json`).
-- Docker Desktop es opcional; solo se necesita para ejecutar MySQL y Mailpit
-  locales mediante Compose.
+## Cómo está organizado
 
-## Inicio local en Windows + VS Code
+- `apps/api`: API con Express, Prisma y MariaDB. En producción también entrega la
+  interfaz, así que todo vive en una sola app de Node.
+- `apps/web`: interfaz con React y Vite.
+- `packages/shared`: validaciones y catálogo de permisos que usan las dos apps.
+- `docs/decisiones.md`: decisiones y pendientes del proyecto.
+- `docs/microsoft-entra.md`: cómo registrar la aplicación en Entra ID.
+- `docs/correo-microsoft.md`: cómo conectar el envío de correos.
+- `docs/despliegue-godaddy.md`: cómo publicar en GoDaddy.
 
-1. Clona el repositorio y abre su carpeta en VS Code.
-2. Usa la versión de Node declarada en `.nvmrc` (con nvm-windows, por ejemplo,
-   `nvm install 22.23.4` y `nvm use 22.23.4`). Copia `.env.example` a `.env` y
-   configura una base MySQL accesible. No uses credenciales de producción en
-   el equipo local. `DATABASE_URL` es la cadena que usa Prisma; codifica en
-   URL cualquier carácter especial de usuario o contraseña. Las variables
-   `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` siguen siendo
-   compatibles con la API si no se define `DATABASE_URL`.
-3. En una terminal PowerShell, ejecuta:
+Se trabaja primero en local y después se exporta a GoDaddy.
+
+## Inicio local
+
+Requisitos: Node.js 22.23.4 (`.nvmrc`), npm 10 o superior y MariaDB 10.11, la misma
+versión de GoDaddy.
+
+1. Instala y activa Node con nvm-windows: `nvm install 22.23.4` y `nvm use 22.23.4`.
+2. Copia `.env.example` como `.env` y configura `DATABASE_URL` y
+   `SHADOW_DATABASE_URL`. Codifica en URL los caracteres especiales de la contraseña.
+3. Agrega `DEV_LOGIN_ENABLED=true` para entrar sin Microsoft en tu equipo.
+4. Ejecuta:
 
    ```powershell
    npm ci
+   npm run db:deploy
+   npm run db:seed
    npm run dev
    ```
 
-4. Abre <http://localhost:5173>. La API escucha en
+5. Abre <http://localhost:5173>. La API responde en
    <http://localhost:3001/api/health>.
 
-La API devuelve HTTP 200 solo cuando `SELECT 1` se ejecuta correctamente en
-MySQL. Si el servicio de base de datos no está disponible, responde HTTP 503.
-La interfaz y la API arrancan sin Docker, pero el estado de salud será 503 si
-no hay una base MySQL accesible y configurada en `.env`.
+El seed es solo para desarrollo: crea tres cuentas de prueba (`*@uka.test`) y dos
+eventos de ejemplo. Se niega a correr en producción.
 
-### Prisma y datos de desarrollo
+## Acceso y permisos
 
-Con una base MySQL compatible configurada en `DATABASE_URL`, ejecuta:
+- **Login:** el navegador autentica con Microsoft y el servidor valida el token
+  (firma, emisor, audiencia y tenant). Después se usa una cookie de sesión httpOnly.
+- **Invitaciones:** solo entra quien está registrado en **Usuarios**. La primera vez
+  se liga su identidad de Microsoft (tenant + object id).
+- **Perfiles:** Administrador, Recepción y Consulta vienen de fábrica, y se pueden
+  crear más desde **Perfiles y permisos**. Administrador siempre tiene todo y no se
+  puede modificar.
+- **Límites de seguridad:** nadie puede otorgar permisos que no tiene ni cambiar su
+  propio perfil o desactivarse.
+- **Módulos nuevos:** se agregan al catálogo `permissionCatalog` de
+  `packages/shared/src/index.ts` y aparecen solos en la matriz.
 
-```powershell
-npm run db:generate
-npm run db:migrate
-```
+## Registro, pases y pagos
 
-`db:migrate` crea y aplica una migración local de desarrollo. Necesita una base
-shadow: configura `SHADOW_DATABASE_URL` con un esquema vacío e independiente o
-da al usuario local de migraciones permiso para crearla. En un entorno ya
-desplegado, aplica migraciones revisadas con `npm run db:deploy`; no uses
-`migrate dev` en producción.
+- **Ligas públicas, sin iniciar sesión:** `/r/<dirección>` para registrarse, `/pase/<token>`
+  para ver el pase y `/mesa/<token>` para capturar invitados de un boleto con varios lugares.
+- **Boletos gratuitos:** el pase se emite al registrarse.
+- **Boletos de paga:** el lugar queda apartado y el pase se emite cuando el total se
+  registra en el CRM. Si se anula el pago o se cancela el pedido, el QR deja de ser válido.
+- **Cupo:** los pedidos pendientes y confirmados ocupan lugar. Un pendiente lo libera
+  solo si se cancela.
+- **Correos:** van a una cola con límite de envío. Sin configurar `MAIL_CLIENT_*`, esperan
+  en la cola. Ver `docs/correo-microsoft.md`.
 
-El seed es solo para desarrollo y solicita `SEED_ADMIN_PASSWORD`,
-`SEED_RECEPTION_PASSWORD` y `SEED_QUERY_PASSWORD` en `.env` (cada una con al
-menos 12 caracteres). No usa contraseñas predeterminadas. Ejecútalo con
-`npm run db:seed`; crea el evento Gala y datos ficticios y es repetible.
+## Recepción
 
-La prueba unitaria de folios, con cobertura mínima del 90%, corre con
-`npm run test:folio-coverage`. La verificación de concurrencia contra MySQL
-real requiere una base migrada y corre con `npm run test:folio-integration`;
-crea y elimina un evento de prueba.
+La pantalla de recepción está en `/recepcion` y se puede instalar en el teléfono desde
+el navegador: en Android con **Instalar app** y en iPhone, desde Safari, con **Compartir >
+Agregar a inicio**. La cámara y el modo sin conexión requieren HTTPS.
 
-### Servicios locales opcionales
-
-Para levantar MySQL y Mailpit con Docker Compose, ejecuta
-`npm run infra:up`; Mailpit queda en <http://localhost:8025>. Para detenerlos,
-ejecuta `npm run infra:down`. También puedes configurar MySQL y un servidor SMTP
-de desarrollo instalados localmente y no instalar Docker.
-
-Docker no forma parte del despliegue de producción: GoDaddy Node.js Hosting
-ejecuta la API y el servicio MySQL de cPanel. En ese entorno la aplicación usa
-el `PORT` que asigna GoDaddy y requiere las variables de conexión MySQL.
-
-Para preparar la API para GoDaddy, ejecuta `npm ci`, `npm run build` y
-`npm start`. Configura `DATABASE_URL` en las variables de entorno de la
-aplicación en cPanel (o las variables `DB_*` compatibles con la API); no subas
-`.env` al hosting ni al repositorio. Antes de ejecutar migraciones o el seed
-desde CLI, configura también `DATABASE_URL`. El endpoint de humo es
-`GET /api/health`.
+- **Con internet:** cada lectura se valida en vivo, así que un QR no entra dos veces.
+- **Sin internet:** valida contra la lista descargada y guarda las lecturas para enviarlas
+  al volver la señal. Si dos teléfonos sin señal leyeron el mismo pase, cuenta el primero
+  y el otro queda como incidencia.
+- **Antes del evento:** cada teléfono debe abrir la pantalla con internet e iniciar sesión,
+  para descargar la lista. Esa lista solo tiene nombre, folio y tipo de boleto, y se borra
+  al cerrar sesión.
 
 ## Calidad
 
@@ -89,15 +92,12 @@ npm test
 npm run build
 ```
 
-Los commits siguen Conventional Commits; Husky ejecuta Prettier para los
-archivos preparados y la CI valida lint, tipos, pruebas y build en los PR a
-`main`.
+Pruebas contra una base migrada, que no corren en CI:
 
-## Configuración de despliegue
+```powershell
+npm run test:db-integration --workspace @uka/api
+npm run test:folio-integration
+```
 
-Los secretos y valores por entorno se configuran mediante variables de entorno;
-no se deben guardar en el repositorio. El equipo ya validó en GoDaddy Node.js
-v22.23.4 y una conexión a MySQL de cPanel con `SELECT 1`. Eso valida el entorno
-del proveedor; el smoke test de `/api/health` de esta aplicación todavía debe
-ejecutarse después de configurar las variables y desplegarla. Las decisiones y
-controles pendientes están en `docs/decisiones.md`.
+Los commits siguen Conventional Commits. La CI valida lint, tipos, pruebas y build
+en los PR a `main`.

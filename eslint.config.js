@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/coverage/**',
       '**/generated/**',
       'node_modules/**',
+      // Resultados de pruebas y diagnósticos locales: git ya los ignora.
+      'test-results/**',
     ],
   },
   js.configs.recommended,
