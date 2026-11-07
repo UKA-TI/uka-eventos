@@ -27,6 +27,7 @@
     "express-rate-limit": "7.5.0",
     "helmet": "8.0.0",
     "jose": "^6.2.15",
+    "mariadb": "3.5.4",
     "pdf-lib": "1.17.1",
     "pino": "10.4.0",
     "pino-http": "11.0.0",

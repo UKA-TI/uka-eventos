@@ -2,6 +2,7 @@ import type { Logger } from 'pino';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { config } from '../../config.js';
 import { prisma } from '../../database.js';
+import { errorReason } from '../../error-reason.js';
 import {
   graphTransport,
   MailServiceError,
@@ -218,7 +219,7 @@ export function startMailWorker(logger: Logger): () => void {
         logger.info(result, 'Mail queue processed');
       }
     } catch (error) {
-      logger.error({ err: error }, 'Mail queue failed');
+      logger.error({ err: error }, `Mail queue failed: ${errorReason(error)}`);
     } finally {
       running = false;
     }

@@ -1,7 +1,8 @@
 import { createApp } from './app.js';
 import { ensureSystemData } from './bootstrap.js';
 import { config } from './config.js';
-import { prisma } from './database.js';
+import { prisma, probeDatabase } from './database.js';
+import { errorReason } from './error-reason.js';
 import { startMailWorker } from './modules/mail/queue.js';
 import { pino } from 'pino';
 
@@ -12,7 +13,11 @@ try {
   await ensureSystemData();
 } catch (error) {
   // La app arranca de todos modos para que /api/health muestre el problema.
-  logger.error({ err: error }, 'Could not prepare system roles');
+  logger.error(
+    { err: error },
+    `Could not prepare system roles: ${errorReason(error)}`,
+  );
+  logger.error(`Database check: ${await probeDatabase()}`);
 }
 
 const server = createApp().listen(port, () => {
