@@ -18,7 +18,13 @@ const connection = {
   allowPublicKeyRetrieval: true,
 } as const;
 
-const adapter = new PrismaMariaDb({ ...connection, connectionLimit: 10 });
+// Si la base no contesta, falla en 5 s en lugar de dejar esperando al proxy del
+// hospedaje, que marcaría la app como caída.
+const adapter = new PrismaMariaDb({
+  ...connection,
+  connectionLimit: 10,
+  acquireTimeout: 5000,
+});
 
 export const prisma = new PrismaClient({ adapter });
 
